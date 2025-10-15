@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .error-container {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .error-code {
+      font-size: 120px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+      line-height: 1;
+      animation: bounce 2s infinite;
+    }
+    
+    .error-icon {
+      font-size: 80px;
+      margin: 20px 0;
+      animation: spin 3s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error-message {
+      font-size: 24px;
+      color: #333;
+      margin: 20px 0;
+      font-weight: 600;
+    }
+    
+    .error-description {
+      color: #666;
+      font-size: 16px;
+      margin: 15px 0 30px;
+      line-height: 1.6;
+    }
+    
+    .home-links {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-container">
+      <div class="error-code">404</div>
+      <div class="error-icon">🔍</div>
+      <h1 class="error-message">Oops! Page Not Found</h1>
+      <p class="error-description">
+        The page you're looking for doesn't exist or has been moved.<br>
+        Let's get you back on track!
+      </p>
+      
+      <div class="home-links">
+        <a href="/" class="link">🏠 Go Home</a>
+        <a href="/fetch" class="link">🔍 Search Files</a>
+      </div>
+    </div>
+  </div>
+  {% include 'mobile_optimizations.html' %}
+</body>
+</html>

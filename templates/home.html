@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIC Datasheet Manager | Home</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .hero-section {
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    .hero-title {
+      font-size: 36px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 15px;
+      animation: slideIn 0.6s ease;
+    }
+    
+    .hero-subtitle {
+      color: #666;
+      font-size: 18px;
+      margin-bottom: 30px;
+      animation: slideIn 0.8s ease;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .feature-card {
+      padding: 30px 20px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      cursor: pointer;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+      border-color: #667eea;
+      background: white;
+    }
+    
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      display: inline-block;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .feature-card:nth-child(1) .feature-icon { animation-delay: 0s; }
+    .feature-card:nth-child(2) .feature-icon { animation-delay: 0.2s; }
+    .feature-card:nth-child(3) .feature-icon { animation-delay: 0.4s; }
+    
+    .feature-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .feature-desc {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .cta-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 30px 0;
+    }
+    
+    .cta-primary {
+      padding: 18px 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      display: inline-block;
+    }
+    
+    .cta-primary:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
+    }
+    
+    .cta-secondary {
+      padding: 18px 40px;
+      background: white;
+      color: #667eea;
+      text-decoration: none;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      border: 2px solid #667eea;
+      display: inline-block;
+    }
+    
+    .cta-secondary:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-5px);
+    }
+    
+    .stats-section {
+      margin: 40px 0;
+      padding: 30px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      border-radius: 20px;
+      text-align: center;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .stat-item {
+      padding: 20px;
+    }
+    
+    .stat-number {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 28px;
+      }
+      
+      .hero-subtitle {
+        font-size: 16px;
+      }
+      
+      .cta-primary, .cta-secondary {
+        width: 100%;
+        padding: 15px 30px;
+        font-size: 16px;
+      }
+      
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 900px;">
+    <div class="hero-section">
+      <h1 class="hero-title">📊 LIC Datasheet Manager</h1>
+      <p class="hero-subtitle">
+        Manage your client datasheets efficiently and securely<br>
+        Store, retrieve, and organize with ease
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <      <div class="feature-card" onclick="window.location.href='{{ url_for('home') }}'">
+        <div class="feature-icon">📤</div>
+        <h3 class="feature-title">Upload</h3>
+        <p class="feature-desc">
+          Quickly upload client datasheets to secure cloud storage
+        </p>
+      </div>
+
+      <div class="feature-card" onclick="window.location.href='/fetch'">
+        <div class="feature-icon">🔍</div>
+        <h3 class="feature-title">Search</h3>
+        <p class="feature-desc">
+          Find any client datasheet instantly by name
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3 class="feature-title">Secure</h3>
+        <p class="feature-desc">
+          All data stored securely on Google Drive
+        </p>
+      </div>
+    </div>
+
+    <div class="cta-buttons">
+      <a href="{{ url_for('home') }}" class="cta-primary">📤 Upload Datasheet</a>
+      <a href="/fetch" class="cta-secondary">🔍 Search Datasheet</a>
+    </div>
+
+    <div class="stats-section">
+      <h3 style="margin-top: 0; color: #333;">✨ Why Choose Us?</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-number">⚡</div>
+          <div class="stat-label">Lightning Fast</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">🔐</div>
+          <div class="stat-label">100% Secure</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">☁️</div>
+          <div class="stat-label">Cloud Backup</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">📱</div>
+          <div class="stat-label">Mobile Ready</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; color: #999; font-size: 14px;">
+      <p>Powered by Google Drive • Secure • Reliable</p>
+    </div>
+  </div>
+  {% include 'mobile_optimizations.html' %}
+</body>
+</html>

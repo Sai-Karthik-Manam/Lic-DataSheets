@@ -1,0 +1,148 @@
+<!-- Quick Search Component -->
+<div class="quick-search-container">
+  <button class="quick-search-trigger" onclick="openQuickSearch()">
+    🔍 Quick Search
+  </button>
+</div>
+
+<div class="quick-search-shortcut">
+  Press <kbd>Ctrl+K</kbd> to search
+</div>
+
+<div class="quick-search-modal" id="quickSearchModal" onclick="closeQuickSearch(event)">
+  <div class="quick-search-box" onclick="event.stopPropagation()">
+    <div class="quick-search-header">
+      <input 
+        type="text" 
+        class="quick-search-input" 
+        id="quickSearchInput"
+        placeholder="🔎 Search clients by name..."
+        oninput="performQuickSearch()"
+        autofocus
+      >
+    </div>
+    <div class="quick-search-results" id="quickSearchResults">
+      <div class="quick-search-empty">
+        <div class="quick-search-empty-icon">🔍</div>
+        <p>Start typing to search clients...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let searchTimeout;
+
+  function openQuickSearch() {
+    const modal = document.getElementById('quickSearchModal');
+    modal.classList.add('active');
+    document.getElementById('quickSearchInput').focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeQuickSearch(event) {
+    if (event && event.target.id !== 'quickSearchModal') return;
+    const modal = document.getElementById('quickSearchModal');
+    modal.classList.remove('active');
+    document.getElementById('quickSearchInput').value = '';
+    document.getElementById('quickSearchResults').innerHTML = `
+      <div class="quick-search-empty">
+        <div class="quick-search-empty-icon">🔍</div>
+        <p>Start typing to search clients...</p>
+      </div>
+    `;
+    document.body.style.overflow = '';
+  }
+
+  function performQuickSearch() {
+    const query = document.getElementById('quickSearchInput').value.trim();
+    const resultsContainer = document.getElementById('quickSearchResults');
+
+    if (query.length < 2) {
+      resultsContainer.innerHTML = `
+        <div class="quick-search-empty">
+          <div class="quick-search-empty-icon">🔍</div>
+          <p>Type at least 2 characters to search...</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Debounce search
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      resultsContainer.innerHTML = `
+        <div class="quick-search-empty">
+          <div class="quick-search-empty-icon">⏳</div>
+          <p>Searching...</p>
+        </div>
+      `;
+
+      fetch(`/api/quick_search?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.results && data.results.length > 0) {
+            let html = '';
+            data.results.forEach(result => {
+              html += `
+                <div class="quick-search-item" onclick="selectClient('${result.name}')">
+                  <div>
+                    <div class="quick-search-item-name">${result.name}</div>
+                    <div class="quick-search-item-meta">
+                      📄 ${result.doc_count} documents • 📅 ${result.updated_at}
+                    </div>
+                  </div>
+                  <div style="color: #667eea; font-size: 20px;">→</div>
+                </div>
+              `;
+            });
+            resultsContainer.innerHTML = html;
+          } else {
+            resultsContainer.innerHTML = `
+              <div class="quick-search-empty">
+                <div class="quick-search-empty-icon">😕</div>
+                <p>No clients found matching "${query}"</p>
+              </div>
+            `;
+          }
+        })
+        .catch(error => {
+          resultsContainer.innerHTML = `
+            <div class="quick-search-empty">
+              <div class="quick-search-empty-icon">❌</div>
+              <p>Error: ${error.message}</p>
+            </div>
+          `;
+        });
+    }, 300);
+  }
+
+  function selectClient(name) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/fetch_data';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'name';
+    input.value = name;
+    
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  // Keyboard shortcut: Ctrl+K or Cmd+K
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      openQuickSearch();
+    }
+    
+    // ESC to close
+    if (e.key === 'Escape') {
+      closeQuickSearch({ target: { id: 'quickSearchModal' } });
+    }
+  });
+</script>
+{% include 'mobile_optimizations.html' %}

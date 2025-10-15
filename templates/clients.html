@@ -1,0 +1,569 @@
+<script>
+    function viewClient(name) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/fetch_data';
+      
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'name';
+      input.value = name;
+      
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function editClient(clientId, currentName) {
+      const newName = prompt(`Edit client name:\n\nCurrent name: ${currentName}\n\nEnter new name:`, currentName);
+      
+      if (!newName || newName === currentName) {
+        return;
+      }
+      
+      if (newName.trim().length < 2) {
+        alert('Client name must be at least 2 characters long');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('new_name', newName.trim());
+      
+      fetch(`/edit_client/${clientId}`, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('✅ ' + data.message);
+          location.reload();
+        } else {
+          alert('❌ Error: ' + data.error);
+        }
+      })
+      .catch(error => {
+        alert('❌ Network error: ' + error);
+      });
+    }
+
+    // Add row numbers on load
+    window.addEventListener('load', function() {
+      const table = document.getElementById('clientsTable');
+      if (table) {
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach((row, index) => {
+          const firstCell = row.querySelector('td:first-child');
+          if (firstCell) {
+            firstCell.style.fontWeight = '600';
+            firstCell.style.color = '#999';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Clients | LIC Manager</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .clients-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .filters-section {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .filter-group label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    
+    .filter-group select:focus,
+    .filter-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .btn-filter {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-filter:hover {
+      background: #5568d3;
+    }
+    
+    .btn-clear {
+      padding: 10px 20px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    
+    .sort-icon {
+      cursor: pointer;
+      margin-left: 5px;
+      opacity: 0.5;
+    }
+    
+    .sort-icon.active {
+      opacity: 1;
+      color: #667eea;
+    }
+    
+    .btn-edit {
+      padding: 5px 10px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 5px;
+    }
+    
+    .btn-edit:hover {
+      background: #ffb300;
+    }
+    
+    .clients-count {
+      padding: 15px 25px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 15px;
+      font-weight: 600;
+      font-size: 18px;
+    }
+    
+    .clients-table-container {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .clients-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .clients-table thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .clients-table th {
+      padding: 18px 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .clients-table td {
+      padding: 18px 15px;
+      border-bottom: 1px solid #e9ecef;
+      color: #333;
+      font-size: 15px;
+    }
+    
+    .clients-table tbody tr {
+      transition: all 0.3s ease;
+    }
+    
+    .clients-table tbody tr:hover {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      transform: scale(1.01);
+    }
+    
+    .client-name-cell {
+      font-weight: 600;
+      color: #667eea;
+      cursor: pointer;
+    }
+    
+    .client-name-cell:hover {
+      text-decoration: underline;
+    }
+    
+    .doc-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      background: #e7f3ff;
+      color: #0057a0;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .date-cell {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .action-cell {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-view {
+      padding: 8px 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-view:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    
+    .empty-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+    
+    .search-box {
+      margin: 20px 0;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 15px 50px 15px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 15px;
+      font-size: 16px;
+    }
+    
+    .search-icon {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      color: #999;
+    }
+    
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 25px 0;
+    }
+    
+    .stat-card {
+      padding: 25px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 15px;
+      text-align: center;
+      border-left: 5px solid #667eea;
+    }
+    
+    .stat-number {
+      font-size: 36px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+      .clients-table-container {
+        overflow-x: auto;
+      }
+      
+      .clients-table {
+        font-size: 13px;
+      }
+      
+      .clients-table th,
+      .clients-table td {
+        padding: 12px 8px;
+      }
+      
+      .action-cell {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 1200px;">
+    <div class="clients-header">
+      <h1 style="margin: 0;">👥 All Clients</h1>
+      <div class="clients-count">
+        📊 Total: {{ clients|length }} Clients
+      </div>
+    </div>
+
+    {% if clients and clients|length > 0 %}
+      <div class="filters-section">
+        <h4 style="margin-top: 0; color: #333;">🔍 Search & Filter</h4>
+        <form method="GET" action="/clients">
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label>Search by Name</label>
+              <input 
+                type="text" 
+                name="search" 
+                placeholder="Client name..."
+                value="{{ search_query }}"
+              >
+            </div>
+            
+            <div class="filter-group">
+              <label>Sort By</label>
+              <select name="sort">
+                <option value="updated_at" {% if sort_by == 'Updated At' %}selected{% endif %}>Last Updated</option>
+                <option value="name" {% if sort_by == 'Name' %}selected{% endif %}>Name</option>
+                <option value="created_at" {% if sort_by == 'Created At' %}selected{% endif %}>Created Date</option>
+                <option value="doc_count" {% if sort_by == 'Doc Count' %}selected{% endif %}>Document Count</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label>Order</label>
+              <select name="order">
+                <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+                <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label>Filter by Documents</label>
+              <select name="filter_docs">
+                <option value="" {% if not filter_docs %}selected{% endif %}>All</option>
+                <option value="0" {% if filter_docs == '0' %}selected{% endif %}>No Documents</option>
+                <option value="1-3" {% if filter_docs == '1-3' %}selected{% endif %}>1-3 Documents</option>
+                <option value="4" {% if filter_docs == '4' %}selected{% endif %}>Complete (4 docs)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="margin-top: 15px;">
+            <button type="submit" class="btn-filter">🔍 Apply Filters</button>
+            <a href="/clients" class="btn-clear" style="text-decoration: none; display: inline-block;">🔄 Clear</a>
+          </div>
+        </form>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-number">{{ clients|length }}</div>
+          <div class="stat-label">Total Clients</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">
+            {% set total_docs = namespace(count=0) %}
+            {% for client in clients %}
+              {% set total_docs.count = total_docs.count + client[4] %}
+            {% endfor %}
+            {{ total_docs.count }}
+          </div>
+          <div class="stat-label">Total Documents</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">
+            {% set active = namespace(count=0) %}
+            {% for client in clients %}
+              {% if client[4] > 0 %}
+                {% set active.count = active.count + 1 %}
+              {% endif %}
+            {% endfor %}
+            {{ active.count }}
+          </div>
+          <div class="stat-label">Active Clients</div>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="🔎 Search clients by name..."
+          onkeyup="searchClients()"
+        >
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <div class="clients-table-container">
+        <table class="clients-table" id="clientsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>👤 Client Name</th>
+              <th>📄 Documents</th>
+              <th>📅 Created</th>
+              <th>🔄 Updated</th>
+              <th>⚡ Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>
+                <span class="client-name-cell" onclick="viewClient('{{ client[0] }}')">
+                  {{ client[0] }}
+                </span>
+              </td>
+              <td>
+                <span class="doc-badge">{{ client[3] }} doc{{ 's' if client[3] != 1 else '' }}</span>
+              </td>
+              <td class="date-cell">{{ client[1][:10] }}</td>
+              <td class="date-cell">{{ client[2][:10] }}</td>
+              <td>
+                <div class="action-cell">
+                  <button class="btn-edit" onclick="editClient('{{ client[0] }}', '{{ client[1] }}')">
+                    ✏️ Edit
+                  </button>
+                  <button class="btn-view" onclick="viewClient('{{ client[1] }}')">
+                    👁️ View
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <h2>No Clients Yet</h2>
+        <p style="color: #666; margin: 15px 0;">
+          Start by uploading documents for your first client!
+        </p>
+        <a href="/" class="link" style="display: inline-block; margin-top: 20px;">
+          📤 Upload Documents
+        </a>
+      </div>
+    {% endif %}
+
+    {% if error %}
+      <div class="error">❌ <strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="/" class="link">📤 Upload Documents</a>
+      <a href="/fetch" class="link">🔍 Search Client</a>
+    </div>
+  </div>
+
+  <script>
+    function viewClient(name) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/fetch_data';
+      
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'name';
+      input.value = name;
+      
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function searchClients() {
+      const input = document.getElementById('searchInput');
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById('clientsTable');
+      const tr = table.getElementsByTagName('tr');
+
+      for (let i = 1; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName('td')[1];
+        if (td) {
+          const txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = '';
+          } else {
+            tr[i].style.display = 'none';
+          }
+        }
+      }
+    }
+
+    // Add row numbers on load
+    window.addEventListener('load', function() {
+      const table = document.getElementById('clientsTable');
+      if (table) {
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach((row, index) => {
+          const firstCell = row.querySelector('td:first-child');
+          if (firstCell) {
+            firstCell.style.fontWeight = '600';
+            firstCell.style.color = '#999';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

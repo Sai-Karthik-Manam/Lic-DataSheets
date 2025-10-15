@@ -1,0 +1,229 @@
+<!-- Mobile Optimizations Script -->
+<script>
+  // Detect mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/.test(navigator.userAgent);
+
+  // Add mobile class to body
+  if (isMobile) {
+    document.body.classList.add('mobile-device');
+  }
+  
+  if (isIOS) {
+    document.body.classList.add('ios-device');
+  }
+  
+  if (isAndroid) {
+    document.body.classList.add('android-device');
+  }
+
+  // Prevent double-tap zoom on buttons
+  document.addEventListener('DOMContentLoaded', function() {
+    const buttons = document.querySelectorAll('button, .link, a');
+    buttons.forEach(button => {
+      button.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        this.click();
+      }, { passive: false });
+    });
+  });
+
+  // Improve touch scrolling
+  if (isMobile) {
+    document.addEventListener('touchmove', function(e) {
+      // Allow scrolling
+    }, { passive: true });
+  }
+
+  // Handle orientation change
+  window.addEventListener('orientationchange', function() {
+    // Adjust layout after orientation change
+    setTimeout(function() {
+      window.scrollTo(0, 0);
+    }, 100);
+  });
+
+  // Viewport height fix for mobile browsers
+  function setVH() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  }
+  
+  setVH();
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', setVH);
+
+  // Improve form input experience on mobile
+  if (isMobile) {
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputs = document.querySelectorAll('input[type="text"], input[type="password"], input[type="email"]');
+      
+      inputs.forEach(input => {
+        // Prevent zoom on focus (iOS)
+        input.addEventListener('focus', function() {
+          if (isIOS) {
+            document.querySelector('meta[name="viewport"]').setAttribute(
+              'content',
+              'width=device-width, initial-scale=1, maximum-scale=1'
+            );
+          }
+        });
+        
+        input.addEventListener('blur', function() {
+          if (isIOS) {
+            document.querySelector('meta[name="viewport"]').setAttribute(
+              'content',
+              'width=device-width, initial-scale=1'
+            );
+          }
+        });
+      });
+    });
+  }
+
+  // Add pull-to-refresh indicator
+  let touchStartY = 0;
+  let touchEndY = 0;
+  
+  document.addEventListener('touchstart', function(e) {
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  
+  document.addEventListener('touchend', function(e) {
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+  }, { passive: true });
+  
+  function handleSwipe() {
+    // Check if at top of page and swiping down
+    if (window.scrollY === 0 && touchEndY > touchStartY + 100) {
+      // Pull to refresh
+      const refreshIndicator = document.createElement('div');
+      refreshIndicator.style.cssText = `
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(102, 126, 234, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        z-index: 9999;
+        font-size: 14px;
+        font-weight: 600;
+      `;
+      refreshIndicator.textContent = '🔄 Refreshing...';
+      document.body.appendChild(refreshIndicator);
+      
+      setTimeout(() => {
+        location.reload();
+      }, 500);
+    }
+  }
+
+  // Optimize images for mobile
+  if (isMobile) {
+    document.addEventListener('DOMContentLoaded', function() {
+      const images = document.querySelectorAll('img');
+      images.forEach(img => {
+        img.loading = 'lazy';
+      });
+    });
+  }
+
+  // Add touch ripple effect
+  document.addEventListener('DOMContentLoaded', function() {
+    if (isMobile) {
+      const buttons = document.querySelectorAll('button, .link');
+      
+      buttons.forEach(button => {
+        button.addEventListener('touchstart', function(e) {
+          const ripple = document.createElement('span');
+          ripple.style.cssText = `
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: scale(0);
+            animation: rippleEffect 0.6s ease-out;
+          `;
+          
+          const rect = this.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height);
+          ripple.style.width = ripple.style.height = `${size}px`;
+          ripple.style.left = `${e.touches[0].clientX - rect.left - size/2}px`;
+          ripple.style.top = `${e.touches[0].clientY - rect.top - size/2}px`;
+          
+          this.style.position = 'relative';
+          this.style.overflow = 'hidden';
+          this.appendChild(ripple);
+          
+          setTimeout(() => ripple.remove(), 600);
+        });
+      });
+      
+      // Add ripple animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes rippleEffect {
+          to {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  });
+
+  // Show install prompt for PWA (if configured)
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Show install button
+    const installBtn = document.createElement('button');
+    installBtn.textContent = '📱 Install App';
+    installBtn.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      cursor: pointer;
+    `;
+    
+    installBtn.addEventListener('click', async () => {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.remove();
+    });
+    
+    if (isMobile) {
+      document.body.appendChild(installBtn);
+      
+      // Auto-hide after 10 seconds
+      setTimeout(() => {
+        if (installBtn.parentNode) {
+          installBtn.style.opacity = '0';
+          installBtn.style.transition = 'opacity 0.5s';
+          setTimeout(() => installBtn.remove(), 500);
+        }
+      }, 10000);
+    }
+  });
+
+  console.log('Mobile optimizations loaded!');
+  console.log('Device:', isMobile ? 'Mobile' : 'Desktop');
+  console.log('OS:', isIOS ? 'iOS' : isAndroid ? 'Android' : 'Other');
+</script>
