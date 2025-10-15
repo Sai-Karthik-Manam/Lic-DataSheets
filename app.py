@@ -12,13 +12,6 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
-# Add this to check database status
-import os
-print(f"Current directory: {os.getcwd()}")
-print(f"Database exists: {os.path.exists('database.db')}")
-if os.path.exists('database.db'):
-    print(f"Database size: {os.path.getsize('database.db')} bytes")
-    
 # Load environment variables
 load_dotenv()
 
@@ -330,6 +323,59 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Change user password"""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        # Validation
+        if not current_password or not new_password or not confirm_password:
+            flash('All fields are required.', 'error')
+            return render_template('change_password.html')
+        
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters long.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password == current_password:
+            flash('New password must be different from current password.', 'error')
+            return render_template('change_password.html')
+        
+        # Verify current password
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
+            user = cur.fetchone()
+            
+            if not user or not check_password_hash(user[0], current_password):
+                flash('Current password is incorrect.', 'error')
+                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
+                return render_template('change_password.html')
+            
+            # Update password
+            hashed_password = generate_password_hash(new_password)
+            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
+                       (hashed_password, session['user_id']))
+            conn.commit()
+        
+        log_activity("PASSWORD_CHANGED", "Password updated successfully")
+        flash('Password changed successfully! Please login again.', 'success')
+        
+        # Logout user after password change
+        session.clear()
+        return redirect(url_for('login'))
+    
+    return render_template('change_password.html')
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -427,7 +473,6 @@ def upload():
             return render_template('upload.html')
         
         # Validate all uploaded files
-
         uploaded_files = {}
         for doc_type, file in files.items():
             if file and file.filename != '':
@@ -922,6 +967,59 @@ def delete_document():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Change user password"""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        # Validation
+        if not current_password or not new_password or not confirm_password:
+            flash('All fields are required.', 'error')
+            return render_template('change_password.html')
+        
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters long.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password == current_password:
+            flash('New password must be different from current password.', 'error')
+            return render_template('change_password.html')
+        
+        # Verify current password
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
+            user = cur.fetchone()
+            
+            if not user or not check_password_hash(user[0], current_password):
+                flash('Current password is incorrect.', 'error')
+                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
+                return render_template('change_password.html')
+            
+            # Update password
+            hashed_password = generate_password_hash(new_password)
+            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
+                       (hashed_password, session['user_id']))
+            conn.commit()
+        
+        log_activity("PASSWORD_CHANGED", "Password updated successfully")
+        flash('Password changed successfully! Please login again.', 'success')
+        
+        # Logout user after password change
+        session.clear()
+        return redirect(url_for('login'))
+    
+    return render_template('change_password.html')
+
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -1013,11 +1111,8 @@ def server_error(e):
     flash("Internal server error. Please try again.", "error")
     return redirect(url_for('home')), 500
 
+
 if __name__ == '__main__':
     # Use environment variable for debug mode
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    # Use Render's PORT if available, otherwise default to 5000
-    port = int(os.environ.get('PORT', 5000))
-    
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
