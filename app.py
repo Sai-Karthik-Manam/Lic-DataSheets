@@ -427,6 +427,7 @@ def upload():
             return render_template('upload.html')
         
         # Validate all uploaded files
+        
         uploaded_files = {}
         for doc_type, file in files.items():
             if file and file.filename != '':
