@@ -427,7 +427,7 @@ def upload():
             return render_template('upload.html')
         
         # Validate all uploaded files
-        
+
         uploaded_files = {}
         for doc_type, file in files.items():
             if file and file.filename != '':
@@ -1013,8 +1013,11 @@ def server_error(e):
     flash("Internal server error. Please try again.", "error")
     return redirect(url_for('home')), 500
 
-
 if __name__ == '__main__':
     # Use environment variable for debug mode
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
+    
+    # Use Render's PORT if available, otherwise default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
