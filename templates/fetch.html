@@ -208,8 +208,8 @@
                 <span class="doc-type-icon">📄</span>
               </div>
               <div class="doc-meta">📁 {{ client.documents.datasheet.file_name }}</div>
-              <div class="doc-meta">💾 {{ (client.documents.datasheet.file_size / (1024*1024))|round(2) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.datasheet.upload_time[:16] }}</div>
+              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.datasheet.file_size / (1024*1024)) }} MB</div>
+              <div class="doc-meta">⏰ {{ client.documents.datasheet.upload_time }}</div>
               <div class="doc-actions">
                 <form action="/download_document" method="post" style="flex: 1;">
                   <input type="hidden" name="file_id" value="{{ client.documents.datasheet.file_id }}">
@@ -239,8 +239,8 @@
                 <span class="doc-type-icon">🆔</span>
               </div>
               <div class="doc-meta">📁 {{ client.documents.aadhaar.file_name }}</div>
-              <div class="doc-meta">💾 {{ (client.documents.aadhaar.file_size / (1024*1024))|round(2) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.aadhaar.upload_time[:16] }}</div>
+              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.aadhaar.file_size / (1024*1024)) }} MB</div>
+              <div class="doc-meta">⏰ {{ client.documents.aadhaar.upload_time }}</div>
               <div class="doc-actions">
                 <form action="/download_document" method="post" style="flex: 1;">
                   <input type="hidden" name="file_id" value="{{ client.documents.aadhaar.file_id }}">
@@ -434,6 +434,5 @@
     // Auto-focus on search input
     document.getElementById('clientName').focus();
   </script>
-  {% include 'mobile_optimizations.html' %}
 </body>
 </html>

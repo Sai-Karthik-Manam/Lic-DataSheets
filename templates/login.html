@@ -181,7 +181,23 @@
 
     <div class="register-link">
       <p>Don't have an account? <a href="/register">Register here</a></p>
+      <p style="margin-top: 10px;"><a href="/forgot_password" style="color: #dc3545;">🔑 Forgot Password?</a></p>
     </div>
+
+    <!-- Show logout button if coming from logout -->
+    {% if session.get('username') %}
+    <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 10px; border-left: 4px solid #28a745;">
+      <p style="margin: 0; color: #155724;">
+        ✅ You are already logged in as <strong>{{ session.username }}</strong>
+      </p>
+      <a href="/dashboard" class="btn-login" style="display: block; margin-top: 10px; text-decoration: none; text-align: center;">
+        📊 Go to Dashboard
+      </a>
+      <a href="/logout" class="btn-login" style="display: block; margin-top: 10px; text-decoration: none; text-align: center; background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+        🚪 Logout
+      </a>
+    </div>
+    {% endif %}
 
     <div class="default-creds">
       <strong>⚠️ Default Admin Credentials:</strong>
@@ -197,6 +213,5 @@
     // Auto-focus username field
     document.getElementById('username').focus();
   </script>
-  {% include 'mobile_optimizations.html' %}
 </body>
 </html>

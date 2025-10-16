@@ -323,57 +323,6 @@ def login():
     return render_template('login.html')
 
 
-@app.route('/change_password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    """Change user password"""
-    if request.method == 'POST':
-        current_password = request.form.get('current_password', '')
-        new_password = request.form.get('new_password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        
-        # Validation
-        if not current_password or not new_password or not confirm_password:
-            flash('All fields are required.', 'error')
-            return render_template('change_password.html')
-        
-        if len(new_password) < 6:
-            flash('New password must be at least 6 characters long.', 'error')
-            return render_template('change_password.html')
-        
-        if new_password != confirm_password:
-            flash('New passwords do not match.', 'error')
-            return render_template('change_password.html')
-        
-        if new_password == current_password:
-            flash('New password must be different from current password.', 'error')
-            return render_template('change_password.html')
-        
-        # Verify current password
-        with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
-            user = cur.fetchone()
-            
-            if not user or not check_password_hash(user[0], current_password):
-                flash('Current password is incorrect.', 'error')
-                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
-                return render_template('change_password.html')
-            
-            # Update password
-            hashed_password = generate_password_hash(new_password)
-            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
-                       (hashed_password, session['user_id']))
-            conn.commit()
-        
-        log_activity("PASSWORD_CHANGED", "Password updated successfully")
-        flash('Password changed successfully! Please login again.', 'success')
-        
-        # Logout user after password change
-        session.clear()
-        return redirect(url_for('login'))
-    
-    return render_template('change_password.html')
 
 
 @app.route('/logout')
@@ -387,6 +336,7 @@ def logout():
     return redirect(url_for('login'))
 
 
+# Main Routes
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Register new user"""
@@ -435,7 +385,113 @@ def register():
     return render_template('register.html')
 
 
-# Main Routes
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    """Forgot password - Step 1: Verify username"""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        
+        if not username:
+            flash('Please enter your username.', 'error')
+            return render_template('forgot_password.html')
+        
+        # Check if user exists
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+            user = cur.fetchone()
+            
+            if not user:
+                flash('Username not found.', 'error')
+                log_activity("FORGOT_PASSWORD_FAILED", f"Username not found: {username}")
+                return render_template('forgot_password.html')
+        
+        # Generate 6-digit reset code
+        import random
+        import string
+        reset_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        
+        # Store reset code in session (expires with session)
+        session['reset_code'] = reset_code
+        session['reset_username'] = username
+        session['reset_code_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        log_activity("FORGOT_PASSWORD_INITIATED", f"Reset code generated for: {username}")
+        
+        return render_template('forgot_password.html', reset_code=reset_code, username=username)
+    
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset_password_confirm', methods=['POST'])
+def reset_password_confirm():
+    """Forgot password - Step 2: Reset with code"""
+    username = request.form.get('username', '').strip()
+    reset_code = request.form.get('reset_code', '').strip().upper()
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    
+    # Validation
+    if not all([username, reset_code, new_password, confirm_password]):
+        flash('All fields are required.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if len(new_password) < 6:
+        flash('Password must be at least 6 characters long.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if new_password != confirm_password:
+        flash('Passwords do not match.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    # Verify reset code
+    if 'reset_code' not in session or 'reset_username' not in session:
+        flash('Reset session expired. Please try again.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if session['reset_username'] != username:
+        flash('Invalid username.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if session['reset_code'] != reset_code:
+        flash('Invalid reset code. Please try again.', 'error')
+        log_activity("RESET_PASSWORD_FAILED", f"Invalid code for: {username}")
+        return redirect(url_for('forgot_password'))
+    
+    # Check if code expired (15 minutes)
+    from datetime import datetime, timedelta
+    code_time = datetime.strptime(session['reset_code_time'], "%Y-%m-%d %H:%M:%S")
+    if datetime.now() - code_time > timedelta(minutes=15):
+        flash('Reset code expired. Please request a new one.', 'error')
+        session.pop('reset_code', None)
+        session.pop('reset_username', None)
+        session.pop('reset_code_time', None)
+        return redirect(url_for('forgot_password'))
+    
+    # Update password
+    try:
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            hashed_password = generate_password_hash(new_password)
+            cur.execute("UPDATE users SET password = ? WHERE username = ?", 
+                       (hashed_password, username))
+            conn.commit()
+        
+        # Clear reset session
+        session.pop('reset_code', None)
+        session.pop('reset_username', None)
+        session.pop('reset_code_time', None)
+        
+        log_activity("PASSWORD_RESET_SUCCESS", f"Password reset for: {username}")
+        flash('Password reset successful! Please login with your new password.', 'success')
+        return redirect(url_for('login'))
+    
+    except Exception as e:
+        print(f"Password reset error: {str(e)}")
+        flash('An error occurred. Please try again.', 'error')
+        return redirect(url_for('forgot_password'))
+
+
 @app.route('/')
 @login_required
 def home():
