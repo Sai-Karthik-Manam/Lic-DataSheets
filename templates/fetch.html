@@ -271,8 +271,8 @@
                 <span class="doc-type-icon">🎴</span>
               </div>
               <div class="doc-meta">📁 {{ client.documents.pan.file_name }}</div>
-              <div class="doc-meta">💾 {{ (client.documents.pan.file_size / (1024*1024))|round(2) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.pan.upload_time[:16] }}</div>
+              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.pan.file_size / (1024*1024)) }} MB</div>
+              <div class="doc-meta">⏰ {{ client.documents.pan.upload_time }}</div>
               <div class="doc-actions">
                 <form action="/download_document" method="post" style="flex: 1;">
                   <input type="hidden" name="file_id" value="{{ client.documents.pan.file_id }}">
@@ -303,8 +303,8 @@
                 <span class="doc-type-icon">💰</span>
               </div>
               <div class="doc-meta">📁 {{ client.documents.bank_account.file_name }}</div>
-              <div class="doc-meta">💾 {{ (client.documents.bank_account.file_size / (1024*1024))|round(2) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.bank_account.upload_time[:16] }}</div>
+              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.bank_account.file_size / (1024*1024)) }} MB</div>
+              <div class="doc-meta">⏰ {{ client.documents.bank_account.upload_time }}</div>
               <div class="doc-actions">
                 <form action="/download_document" method="post" style="flex: 1;">
                   <input type="hidden" name="file_id" value="{{ client.documents.bank_account.file_id }}">
@@ -429,6 +429,12 @@
       .catch(error => {
         alert('❌ Network error: ' + error);
       });
+    }
+
+    // Update documents function
+    function updateDocuments(name) {
+      // Redirect to upload page with client name pre-filled
+      window.location.href = '/?update=' + encodeURIComponent(name);
     }
 
     // Auto-focus on search input

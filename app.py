@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, Response, send_file, jsonify,
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import json
 import tempfile
@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+import random
+import string
 
 # Load environment variables
 load_dotenv()
@@ -22,8 +24,6 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-product
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'pdf'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 UPLOAD_FOLDER = 'uploads'
-
-# Document types
 DOCUMENT_TYPES = ['datasheet', 'aadhaar', 'pan', 'bank_account']
 
 # Ensure upload directory exists
@@ -43,8 +43,8 @@ def validate_file_size(file):
     return size <= MAX_FILE_SIZE
 
 
-# Login required decorator
 def login_required(f):
+    """Login required decorator"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -105,10 +105,10 @@ def setup_google_auth():
                 user_agent=None
             )
             gauth.credentials = credentials
-            print("✅ Using existing refresh token")
+            print("✓ Using existing refresh token")
         else:
-            print("🔐 First time setup - please authenticate with Google Drive")
-            print("⚠️ After authentication, save the refresh token to GOOGLE_REFRESH_TOKEN in .env")
+            print("⚠ First time setup - please authenticate with Google Drive")
+            print("⚠ After authentication, save the refresh token to GOOGLE_REFRESH_TOKEN in .env")
             gauth.GetFlow()
             gauth.flow.params.clear()
             gauth.flow.params.update({
@@ -117,12 +117,12 @@ def setup_google_auth():
                 'response_type': 'code'
             })
             gauth.LocalWebserverAuth()
-            print(f"✅ Authentication complete. Save this refresh token: {gauth.credentials.refresh_token}")
+            print(f"✓ Authentication complete. Save this refresh token: {gauth.credentials.refresh_token}")
         
         return gauth
     
     except Exception as e:
-        print(f"❌ Error setting up Google Drive authentication: {str(e)}")
+        print(f"✗ Error setting up Google Drive authentication: {str(e)}")
         traceback.print_exc()
         raise
 
@@ -130,9 +130,9 @@ def setup_google_auth():
 try:
     gauth = setup_google_auth()
     drive = GoogleDrive(gauth)
-    print("✅ Google Drive initialized successfully")
+    print("✓ Google Drive initialized successfully")
 except Exception as e:
-    print(f"❌ Failed to initialize Google Drive: {str(e)}")
+    print(f"✗ Failed to initialize Google Drive: {str(e)}")
     drive = None
 
 # Google Drive Root Folder ID
@@ -207,12 +207,12 @@ def init_db():
                     "INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
                     ('admin', admin_password, 'admin@example.com', 'admin', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 )
-                print("✅ Default admin user created (username: admin, password: admin123)")
-                print("⚠️  IMPORTANT: Change the default password after first login!")
+                print("✓ Default admin user created (username: admin, password: admin123)")
+                print("⚠ IMPORTANT: Change the default password after first login!")
             
-        print("✅ Database initialized successfully")
+        print("✓ Database initialized successfully")
     except Exception as e:
-        print(f"❌ Error initializing database: {str(e)}")
+        print(f"✗ Error initializing database: {str(e)}")
         raise
 
 
@@ -266,11 +266,11 @@ def get_or_create_client_folder(client_name):
             )
         
         log_activity("CREATE_CLIENT", f"Created client: {client_name}")
-        print(f"✅ Created folder for client: {client_name}")
+        print(f"✓ Created folder for client: {client_name}")
         return folder['id']
     
     except Exception as e:
-        print(f"❌ Error creating client folder: {str(e)}")
+        print(f"✗ Error creating client folder: {str(e)}")
         raise
 
 
@@ -323,20 +323,6 @@ def login():
     return render_template('login.html')
 
 
-
-
-@app.route('/logout')
-@login_required
-def logout():
-    """Logout user"""
-    username = session.get('username')
-    log_activity("LOGOUT", f"User logged out: {username}")
-    session.clear()
-    flash('You have been logged out successfully.', 'success')
-    return redirect(url_for('login'))
-
-
-# Main Routes
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Register new user"""
@@ -385,6 +371,59 @@ def register():
     return render_template('register.html')
 
 
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Change user password"""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        # Validation
+        if not current_password or not new_password or not confirm_password:
+            flash('All fields are required.', 'error')
+            return render_template('change_password.html')
+        
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters long.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password == current_password:
+            flash('New password must be different from current password.', 'error')
+            return render_template('change_password.html')
+        
+        # Verify current password
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
+            user = cur.fetchone()
+            
+            if not user or not check_password_hash(user[0], current_password):
+                flash('Current password is incorrect.', 'error')
+                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
+                return render_template('change_password.html')
+            
+            # Update password
+            hashed_password = generate_password_hash(new_password)
+            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
+                       (hashed_password, session['user_id']))
+            conn.commit()
+        
+        log_activity("PASSWORD_CHANGED", "Password updated successfully")
+        flash('Password changed successfully! Please login again.', 'success')
+        
+        # Logout user after password change
+        session.clear()
+        return redirect(url_for('login'))
+    
+    return render_template('change_password.html')
+
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     """Forgot password - Step 1: Verify username"""
@@ -407,8 +446,6 @@ def forgot_password():
                 return render_template('forgot_password.html')
         
         # Generate 6-digit reset code
-        import random
-        import string
         reset_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         
         # Store reset code in session (expires with session)
@@ -459,7 +496,6 @@ def reset_password_confirm():
         return redirect(url_for('forgot_password'))
     
     # Check if code expired (15 minutes)
-    from datetime import datetime, timedelta
     code_time = datetime.strptime(session['reset_code_time'], "%Y-%m-%d %H:%M:%S")
     if datetime.now() - code_time > timedelta(minutes=15):
         flash('Reset code expired. Please request a new one.', 'error')
@@ -492,6 +528,18 @@ def reset_password_confirm():
         return redirect(url_for('forgot_password'))
 
 
+@app.route('/logout')
+@login_required
+def logout():
+    """Logout user"""
+    username = session.get('username')
+    log_activity("LOGOUT", f"User logged out: {username}")
+    session.clear()
+    flash('You have been logged out successfully.', 'success')
+    return redirect(url_for('login'))
+
+
+# Main Routes
 @app.route('/')
 @login_required
 def home():
@@ -502,7 +550,7 @@ def home():
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload():
-    """Upload multiple documents for a client"""
+    """Upload or update documents for a client"""
     if not drive:
         flash("Google Drive not initialized. Check server logs.", "error")
         return render_template('upload.html')
@@ -523,9 +571,10 @@ def upload():
             'bank_account': request.files.get('bank_account')
         }
         
-        # Datasheet is mandatory
-        if not files['datasheet'] or files['datasheet'].filename == '':
-            flash("Datasheet is mandatory!", "error")
+        # Check if at least ONE file is uploaded
+        has_files = any(file and file.filename != '' for file in files.values())
+        if not has_files:
+            flash("Please upload at least one document!", "error")
             return render_template('upload.html')
         
         # Validate all uploaded files
@@ -546,6 +595,31 @@ def upload():
         folder_id = get_or_create_client_folder(name)
         client_id = get_client_id(name)
         user_id = session.get('user_id')
+        
+        # Check for existing documents to delete old versions
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            for doc_type in uploaded_files.keys():
+                cur.execute(
+                    "SELECT file_id FROM documents WHERE client_id = ? AND document_type = ?",
+                    (client_id, doc_type)
+                )
+                old_file = cur.fetchone()
+                
+                if old_file:
+                    # Delete old file from Google Drive
+                    try:
+                        old_gfile = drive.CreateFile({'id': old_file[0]})
+                        old_gfile.Delete()
+                        log_activity("REPLACE_DOCUMENT", f"Replaced {doc_type} for {name}")
+                    except Exception as e:
+                        print(f"Warning: Could not delete old file: {str(e)}")
+                    
+                    # Delete old record from database
+                    conn.execute(
+                        "DELETE FROM documents WHERE client_id = ? AND document_type = ?",
+                        (client_id, doc_type)
+                    )
         
         # Upload each file
         upload_results = []
@@ -575,10 +649,10 @@ def upload():
                 file_url = f"https://drive.google.com/uc?export=download&id={gfile['id']}"
                 mime_type = gfile.get('mimeType', 'image/jpeg')
                 
-                # Save to database (replace if exists)
+                # Save to database
                 with sqlite3.connect("database.db") as conn:
                     conn.execute(
-                        """INSERT OR REPLACE INTO documents 
+                        """INSERT INTO documents 
                            (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) 
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (client_id, doc_type, gfile['id'], filename, file_url, 
@@ -588,7 +662,8 @@ def upload():
                 upload_results.append({
                     'type': doc_type,
                     'filename': filename,
-                    'url': file_url
+                    'url': file_url,
+                    'action': 'updated' if old_file else 'uploaded'
                 })
                 
                 cleanup_temp_file(temp_path)
@@ -605,7 +680,7 @@ def upload():
                 (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), name)
             )
         
-        flash(f"Documents uploaded successfully for {name}!", "success")
+        flash(f"Successfully processed {len(upload_results)} document(s) for {name}!", "success")
         return render_template("upload.html", success=True, name=name, upload_results=upload_results)
     
     except Exception as e:
@@ -613,6 +688,46 @@ def upload():
         traceback.print_exc()
         flash(f"Upload failed: {str(e)}", "error")
         return render_template('upload.html')
+
+
+@app.route('/update_documents/<client_name>')
+@login_required
+def update_documents_page(client_name):
+    """Page to update/add documents for existing client"""
+    try:
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT c.id, c.name, c.folder_id
+                FROM clients c
+                WHERE c.name = ?
+            """, (client_name,))
+            client = cur.fetchone()
+            
+            if not client:
+                flash(f"Client '{client_name}' not found!", "error")
+                return redirect(url_for('list_clients'))
+            
+            client_id = client[0]
+            
+            # Get existing documents
+            cur.execute("""
+                SELECT document_type, file_name, upload_time
+                FROM documents
+                WHERE client_id = ?
+            """, (client_id,))
+            
+            existing_docs = {row[0]: {'filename': row[1], 'upload_time': row[2]} 
+                           for row in cur.fetchall()}
+        
+        return render_template('update_documents.html', 
+                             client_name=client_name, 
+                             existing_docs=existing_docs)
+    
+    except Exception as e:
+        print(f"Error loading update page: {str(e)}")
+        flash(f"Error: {str(e)}", "error")
+        return redirect(url_for('list_clients'))
 
 
 @app.route('/fetch')
@@ -999,17 +1114,13 @@ def delete_document():
                 return jsonify({'success': False, 'error': 'Document not found'}), 404
             
             doc_type, client_id = result
-            
-            # Datasheet cannot be deleted if it's the only document
-            if doc_type == 'datasheet':
-                cur.execute("SELECT COUNT(*) FROM documents WHERE client_id = ?", (client_id,))
-                count = cur.fetchone()[0]
-                if count == 1:
-                    return jsonify({'success': False, 'error': 'Cannot delete datasheet when it\'s the only document. Delete entire client instead.'}), 400
         
         # Delete from Google Drive
-        gfile = drive.CreateFile({'id': file_id})
-        gfile.Delete()
+        try:
+            gfile = drive.CreateFile({'id': file_id})
+            gfile.Delete()
+        except Exception as e:
+            print(f"Warning: Could not delete from Drive: {str(e)}")
         
         # Delete from database
         with sqlite3.connect("database.db") as conn:
@@ -1021,59 +1132,6 @@ def delete_document():
     except Exception as e:
         print(f"Delete document error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/change_password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    """Change user password"""
-    if request.method == 'POST':
-        current_password = request.form.get('current_password', '')
-        new_password = request.form.get('new_password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        
-        # Validation
-        if not current_password or not new_password or not confirm_password:
-            flash('All fields are required.', 'error')
-            return render_template('change_password.html')
-        
-        if len(new_password) < 6:
-            flash('New password must be at least 6 characters long.', 'error')
-            return render_template('change_password.html')
-        
-        if new_password != confirm_password:
-            flash('New passwords do not match.', 'error')
-            return render_template('change_password.html')
-        
-        if new_password == current_password:
-            flash('New password must be different from current password.', 'error')
-            return render_template('change_password.html')
-        
-        # Verify current password
-        with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
-            user = cur.fetchone()
-            
-            if not user or not check_password_hash(user[0], current_password):
-                flash('Current password is incorrect.', 'error')
-                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
-                return render_template('change_password.html')
-            
-            # Update password
-            hashed_password = generate_password_hash(new_password)
-            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
-                       (hashed_password, session['user_id']))
-            conn.commit()
-        
-        log_activity("PASSWORD_CHANGED", "Password updated successfully")
-        flash('Password changed successfully! Please login again.', 'success')
-        
-        # Logout user after password change
-        session.clear()
-        return redirect(url_for('login'))
-    
-    return render_template('change_password.html')
 
 
 @app.route('/dashboard')

@@ -193,11 +193,11 @@
       >
       
       <div class="doc-grid">
-        <!-- Datasheet (Required) -->
+        <!-- Datasheet (Required for new clients) -->
         <div class="doc-card required" id="card-datasheet">
           <div class="doc-header">
             <span class="doc-title">📄 Datasheet</span>
-            <span class="doc-badge badge-required">REQUIRED</span>
+            <span class="doc-badge badge-required">REQUIRED (New)</span>
           </div>
           <div class="doc-icon">📊</div>
           <div class="file-input-small">
@@ -205,8 +205,7 @@
               type="file" 
               name="datasheet" 
               id="datasheet" 
-              accept="image/*,application/pdf" 
-              required
+              accept="image/*,application/pdf"
               onchange="handleFileSelect('datasheet')"
             >
             <label for="datasheet" class="file-label-small">
@@ -215,6 +214,9 @@
           </div>
           <div class="file-info-small" id="info-datasheet"></div>
           <img class="preview-small" id="preview-datasheet" alt="Preview">
+          <small style="display: block; margin-top: 8px; color: #666; font-size: 11px;">
+            Required for new clients. Optional for updates.
+          </small>
         </div>
 
         <!-- Aadhaar Card (Optional) -->
@@ -299,8 +301,10 @@
         <small>
           ℹ️ <strong>Allowed formats:</strong> JPG, PNG, GIF, BMP, WEBP, PDF<br>
           ℹ️ <strong>Maximum size:</strong> 10MB per file<br>
-          ⚠️ <strong>Note:</strong> Datasheet is mandatory, others are optional<br>
-          💡 <strong>Tip:</strong> All documents will be organized in a folder for this client
+          ⚠️ <strong>New Clients:</strong> Datasheet is mandatory<br>
+          ✨ <strong>Existing Clients:</strong> Upload any document(s) to add or replace<br>
+          💡 <strong>Tip:</strong> You can upload documents one at a time or all together<br>
+          🔄 <strong>Update:</strong> Uploading a document again will replace the old one
         </small>
       </div>
     </form>
@@ -409,7 +413,37 @@
 
     // Auto-focus on name input
     document.getElementById('clientName').focus();
+
+    // Check if updating existing client
+    const updateClient = sessionStorage.getItem('updateClient');
+    if (updateClient) {
+      document.getElementById('clientName').value = updateClient;
+      document.getElementById('clientName').readOnly = true;
+      
+      // Show update message
+      const container = document.querySelector('.container');
+      const updateAlert = document.createElement('div');
+      updateAlert.className = 'success';
+      updateAlert.style.marginBottom = '20px';
+      updateAlert.innerHTML = `
+        ℹ️ <strong>Updating documents for: ${updateClient}</strong><br>
+        Upload any document(s) to add or replace existing ones.<br>
+        <button onclick="clearUpdate()" style="margin-top: 10px; padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+          ↻ Upload for Different Client
+        </button>
+      `;
+      container.insertBefore(updateAlert, container.firstChild.nextSibling);
+      
+      // Remove from session after showing
+      sessionStorage.removeItem('updateClient');
+    }
+
+    function clearUpdate() {
+      document.getElementById('clientName').value = '';
+      document.getElementById('clientName').readOnly = false;
+      document.getElementById('clientName').focus();
+      document.querySelector('.success').remove();
+    }
   </script>
-  {% include 'mobile_optimizations.html' %}
 </body>
 </html>
