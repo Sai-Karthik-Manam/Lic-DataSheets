@@ -30,7 +30,7 @@ DOCUMENT_TYPES = ['datasheet', 'aadhaar', 'pan', 'bank_account']
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Google Drive Setup
-ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', "1ADorPsFHr7HYRMPR7zQdtbSAazWIk7o9")
+ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', "16YRzr42wKQQiPuqGTgD9N2Hto5Di4KSw")
 
 def setup_google_auth():
     """Setup Google Drive authentication with proper error handling"""
