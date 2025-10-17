@@ -1,69 +1,4 @@
-<script>
-    function viewClient(name) {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/fetch_data';
-      
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'name';
-      input.value = name;
-      
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-    }
-
-    function editClient(clientId, currentName) {
-      const newName = prompt(`Edit client name:\n\nCurrent name: ${currentName}\n\nEnter new name:`, currentName);
-      
-      if (!newName || newName === currentName) {
-        return;
-      }
-      
-      if (newName.trim().length < 2) {
-        alert('Client name must be at least 2 characters long');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('new_name', newName.trim());
-      
-      fetch(`/edit_client/${clientId}`, {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('✅ ' + data.message);
-          location.reload();
-        } else {
-          alert('❌ Error: ' + data.error);
-        }
-      })
-      .catch(error => {
-        alert('❌ Network error: ' + error);
-      });
-    }
-
-    // Add row numbers on load
-    window.addEventListener('load', function() {
-      const table = document.getElementById('clientsTable');
-      if (table) {
-        const rows = table.querySelectorAll('tbody tr');
-        rows.forEach((row, index) => {
-          const firstCell = row.querySelector('td:first-child');
-          if (firstCell) {
-            firstCell.style.fontWeight = '600';
-            firstCell.style.color = '#999';
-          }
-        });
-      }
-    });
-  </script>
-</body>
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -147,33 +82,6 @@
       margin-left: 10px;
     }
     
-    .sort-icon {
-      cursor: pointer;
-      margin-left: 5px;
-      opacity: 0.5;
-    }
-    
-    .sort-icon.active {
-      opacity: 1;
-      color: #667eea;
-    }
-    
-    .btn-edit {
-      padding: 5px 10px;
-      background: #ffc107;
-      color: #333;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      margin-right: 5px;
-    }
-    
-    .btn-edit:hover {
-      background: #ffb300;
-    }
-    
     .clients-count {
       padding: 15px 25px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -186,8 +94,9 @@
     .clients-table-container {
       background: white;
       border-radius: 20px;
-      overflow: hidden;
+      overflow: visible;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 100%;
     }
     
     .clients-table {
@@ -222,7 +131,6 @@
     
     .clients-table tbody tr:hover {
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      transform: scale(1.01);
     }
     
     .client-name-cell {
@@ -270,6 +178,23 @@
     .btn-view:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-edit {
+      padding: 8px 15px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-edit:hover {
+      background: #ffb300;
+      transform: translateY(-2px);
     }
     
     .empty-state {
@@ -333,6 +258,17 @@
       font-weight: 500;
     }
 
+    /* IMPORTANT: Remove max-height that was limiting display */
+    .clients-table-container {
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    
+    .clients-table tbody {
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
     @media (max-width: 768px) {
       .clients-table-container {
         overflow-x: auto;
@@ -349,6 +285,11 @@
       
       .action-cell {
         flex-direction: column;
+      }
+      
+      .btn-view, .btn-edit {
+        padding: 6px 10px;
+        font-size: 12px;
       }
     }
   </style>
@@ -412,6 +353,7 @@
           </div>
         </form>
       </div>
+
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-number">{{ clients|length }}</div>
@@ -468,15 +410,15 @@
             <tr>
               <td>{{ loop.index }}</td>
               <td>
-                <span class="client-name-cell" onclick="viewClient('{{ client[0] }}')">
-                  {{ client[0] }}
+                <span class="client-name-cell" onclick="viewClient('{{ client[1] }}')">
+                  {{ client[1] }}
                 </span>
               </td>
               <td>
-                <span class="doc-badge">{{ client[3] }} doc{{ 's' if client[3] != 1 else '' }}</span>
+                <span class="doc-badge">{{ client[4] }} doc{{ 's' if client[4] != 1 else '' }}</span>
               </td>
-              <td class="date-cell">{{ client[1][:10] }}</td>
               <td class="date-cell">{{ client[2][:10] }}</td>
+              <td class="date-cell">{{ client[3][:10] }}</td>
               <td>
                 <div class="action-cell">
                   <button class="btn-edit" onclick="editClient('{{ client[0] }}', '{{ client[1] }}')">
@@ -492,6 +434,15 @@
           </tbody>
         </table>
       </div>
+
+      <!-- DEBUG INFO -->
+      <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 10px; font-size: 12px; color: #666;">
+        <strong>Debug Info:</strong><br>
+        Total clients in database: {{ clients|length }}<br>
+        Showing rows: 1 to {{ clients|length }}<br>
+        Filter applied: {{ 'Yes' if search_query or filter_docs else 'No' }}
+      </div>
+
     {% else %}
       <div class="empty-state">
         <div class="empty-icon">👥</div>
@@ -531,6 +482,39 @@
       form.submit();
     }
 
+    function editClient(clientId, currentName) {
+      const newName = prompt(`Edit client name:\n\nCurrent name: ${currentName}\n\nEnter new name:`, currentName);
+      
+      if (!newName || newName === currentName) {
+        return;
+      }
+      
+      if (newName.trim().length < 2) {
+        alert('Client name must be at least 2 characters long');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('new_name', newName.trim());
+      
+      fetch(`/edit_client/${clientId}`, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('✅ ' + data.message);
+          location.reload();
+        } else {
+          alert('❌ Error: ' + data.error);
+        }
+      })
+      .catch(error => {
+        alert('❌ Network error: ' + error);
+      });
+    }
+
     function searchClients() {
       const input = document.getElementById('searchInput');
       const filter = input.value.toUpperCase();
@@ -549,21 +533,6 @@
         }
       }
     }
-
-    // Add row numbers on load
-    window.addEventListener('load', function() {
-      const table = document.getElementById('clientsTable');
-      if (table) {
-        const rows = table.querySelectorAll('tbody tr');
-        rows.forEach((row, index) => {
-          const firstCell = row.querySelector('td:first-child');
-          if (firstCell) {
-            firstCell.style.fontWeight = '600';
-            firstCell.style.color = '#999';
-          }
-        });
-      }
-    });
   </script>
 </body>
 </html>
