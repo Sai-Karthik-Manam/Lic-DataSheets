@@ -761,8 +761,12 @@ def list_clients():
     """List all clients with sorting and filtering"""
     try:
         # Sync from Google Drive on every clients page load
-        print("🔄 Syncing clients from Google Drive...")
-        sync_drive_to_database()
+        try:
+            print("🔄 Syncing clients from Google Drive...")
+            sync_drive_to_database()
+        except (Exception, SystemExit) as sync_error:
+            print(f"⚠ Sync failed: {sync_error}")
+            # Continue without sync to prevent 500 error
         
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
