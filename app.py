@@ -740,7 +740,7 @@ def fetch_page():
 @app.route('/fetch_data', methods=['POST'])
 @login_required
 def fetch_data():
-    """Fetch all documents for a client"""
+    """Fetch all documents for a client - IMPROVED VERSION"""
     try:
         name = request.form.get('name', '').strip()
         
@@ -748,9 +748,10 @@ def fetch_data():
             flash("Please enter a name", "error")
             return render_template('fetch.html')
         
-        # Get client info
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
+            
+            # Try exact match first
             cur.execute("""
                 SELECT c.id, c.name, c.folder_id, c.created_at, c.updated_at
                 FROM clients c
@@ -758,8 +759,32 @@ def fetch_data():
             """, (name,))
             client = cur.fetchone()
             
+            # If no exact match, try case-insensitive
             if not client:
-                return render_template('fetch.html', not_found=True, name=name)
+                cur.execute("""
+                    SELECT c.id, c.name, c.folder_id, c.created_at, c.updated_at
+                    FROM clients c
+                    WHERE LOWER(c.name) = LOWER(?)
+                """, (name,))
+                client = cur.fetchone()
+            
+            # If still not found, try partial match
+            if not client:
+                cur.execute("""
+                    SELECT c.id, c.name, c.folder_id, c.created_at, c.updated_at
+                    FROM clients c
+                    WHERE c.name LIKE ?
+                """, (f'%{name}%',))
+                matches = cur.fetchall()
+                
+                if matches:
+                    # Show suggestions
+                    suggestions = [m[1] for m in matches]
+                    flash(f"Client '{name}' not found. Did you mean: {', '.join(suggestions)}?", "error")
+                    return render_template('fetch.html', suggestions=suggestions)
+                else:
+                    # Definitely not found
+                    return render_template('fetch.html', not_found=True, name=name)
             
             client_id, client_name, folder_id, created_at, updated_at = client
             
@@ -768,7 +793,14 @@ def fetch_data():
                 SELECT document_type, file_id, file_name, url, file_size, mime_type, upload_time
                 FROM documents
                 WHERE client_id = ?
-                ORDER BY document_type
+                ORDER BY 
+                    CASE document_type
+                        WHEN 'datasheet' THEN 1
+                        WHEN 'aadhaar' THEN 2
+                        WHEN 'pan' THEN 3
+                        WHEN 'bank_account' THEN 4
+                        ELSE 5
+                    END
             """, (client_id,))
             
             documents = {}
@@ -778,23 +810,24 @@ def fetch_data():
                     'file_id': file_id,
                     'file_name': file_name,
                     'url': url,
-                    'file_size': file_size,
-                    'mime_type': mime_type,
-                    'upload_time': upload_time,
+                    'file_size': file_size if file_size else 0,  # Handle NULL
+                    'mime_type': mime_type if mime_type else 'application/octet-stream',
+                    'upload_time': upload_time if upload_time else 'Unknown',
                     'image_url': f"/image/{file_id}"
                 }
         
         client_info = {
             'id': client_id,
             'name': client_name,
-            'folder_id': folder_id,
-            'created_at': created_at,
-            'updated_at': updated_at,
+            'folder_id': folder_id if folder_id else 'N/A',
+            'created_at': created_at if created_at else 'Unknown',
+            'updated_at': updated_at if updated_at else 'Unknown',
             'documents': documents
         }
         
-        log_activity("VIEW_CLIENT", f"Viewed client: {name}")
-        return render_template('fetch.html', client=client_info, name=name)
+        log_activity("VIEW_CLIENT", f"Viewed client: {client_name}")
+        flash(f"Showing documents for: {client_name}", "success")
+        return render_template('fetch.html', client=client_info, name=client_name)
     
     except Exception as e:
         print(f"Fetch error: {str(e)}")
