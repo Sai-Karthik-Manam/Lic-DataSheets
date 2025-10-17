@@ -1258,8 +1258,18 @@ def server_error(e):
     flash("Internal server error. Please try again.", "error")
     return redirect(url_for('home')), 500
 
+def auto_sync_on_startup():
+    # ... copy the function from artifact ...
+    pass
 
 if __name__ == '__main__':
-    # Use environment variable for debug mode
+    # Run sync before starting app
+    try:
+        print("🔄 Running auto-sync...")
+        auto_sync_on_startup()
+    except Exception as e:
+        print(f"⚠️ Sync error: {e}")
+    
+    # Start app
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
+    app.run(debug=debug_mode, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
