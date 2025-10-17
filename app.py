@@ -31,6 +31,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Google Drive Setup
 ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', "16YRzr42wKQQiPuqGTgD9N2Hto5Di4KSw")
+print(f"🔍 Using Google Drive Folder ID: {ROOT_FOLDER_ID}")
 
 def setup_google_auth():
     """Setup Google Drive authentication with proper error handling"""
@@ -197,9 +198,31 @@ def sync_drive_to_database():
         
         # Get all client folders from Google Drive
         query = f"'{ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        print(f"🔍 Querying Google Drive with: {query}")
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
-        
+
         print(f"📁 Found {len(folder_list)} folders in Google Drive")
+        if len(folder_list) == 0:
+            print("⚠️  No folders found! This could mean:")
+            print(f"   - The folder ID '{ROOT_FOLDER_ID}' is incorrect")
+            print("   - The folder is empty")
+            print("   - The folder doesn't exist or is not accessible")
+            print("   - The Google Drive API permissions are insufficient")
+
+            # Try to verify the folder exists
+            try:
+                test_file = drive.CreateFile({'id': ROOT_FOLDER_ID})
+                test_file.FetchMetadata()
+                print(f"✓ Root folder exists: '{test_file['title']}' (ID: {ROOT_FOLDER_ID})")
+            except Exception as e:
+                print(f"✗ Root folder verification failed: {str(e)}")
+                print("   This suggests the GOOGLE_DRIVE_FOLDER_ID is incorrect!")
+        else:
+            print("📂 Folders found:")
+            for folder in folder_list[:5]:  # Show first 5
+                print(f"   - {folder['title']} (ID: {folder['id']})")
+            if len(folder_list) > 5:
+                print(f"   ... and {len(folder_list) - 5} more")
         
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
@@ -232,7 +255,7 @@ def sync_drive_to_database():
                     
                     # Get all files in this folder
                     files_query = f"'{folder_id}' in parents and trashed=false"
-                    files_list = drive.ListFile({'q': files_query, 'pageSize': 100}).GetList()
+                    files_list = drive.ListFile({'q': files_query}).GetList()
                     
                     # Process each file
                     for file in files_list:
