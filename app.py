@@ -14,7 +14,7 @@ from functools import wraps
 import random
 import string
 
-# Load environment variables
+# ==================== INITIALIZATION ====================
 load_dotenv()
 
 app = Flask(__name__)
@@ -26,13 +26,12 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 UPLOAD_FOLDER = 'uploads'
 DOCUMENT_TYPES = ['datasheet', 'aadhaar', 'pan', 'bank_account']
 
-# Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Google Drive Setup
 ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', "16YRzr42wKQQiPuqGTgD9N2Hto5Di4KSw")
 print(f"🔍 Using Google Drive Folder ID: {ROOT_FOLDER_ID}")
 
+# ==================== GOOGLE DRIVE SETUP ====================
 def setup_google_auth():
     """Setup Google Drive authentication with proper error handling"""
     try:
@@ -46,7 +45,6 @@ def setup_google_auth():
                 "Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env file"
             )
         
-        # Create client config
         client_config = {
             "installed": {
                 "client_id": client_id,
@@ -109,7 +107,7 @@ except Exception as e:
     print(f"✗ Failed to initialize Google Drive: {str(e)}")
     drive = None
 
-# Database setup
+# ==================== DATABASE SETUP ====================
 def init_db():
     """Initialize database with proper error handling"""
     try:
@@ -163,7 +161,6 @@ def init_db():
             conn.execute('CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(document_type)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_username ON users(username)')
             
-            # Create default admin user if not exists
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM users")
             if cursor.fetchone()[0] == 0:
@@ -182,12 +179,8 @@ def init_db():
 init_db()
 
 # ==================== GOOGLE DRIVE SYNC FUNCTIONS ====================
-
 def sync_drive_to_database():
-    """
-    Sync all clients and documents from Google Drive to database
-    This is the KEY function that loads existing data
-    """
+    """Sync all clients and documents from Google Drive to database"""
     if not drive:
         print("⚠ Google Drive not initialized, skipping sync")
         return 0
@@ -196,7 +189,6 @@ def sync_drive_to_database():
         print("🔄 Starting Google Drive sync...")
         synced_count = 0
         
-        # Get all client folders from Google Drive
         query = f"'{ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
         print(f"🔍 Querying Google Drive with: {query}")
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
@@ -209,7 +201,6 @@ def sync_drive_to_database():
             print("   - The folder doesn't exist or is not accessible")
             print("   - The Google Drive API permissions are insufficient")
 
-            # Try to verify the folder exists
             try:
                 test_file = drive.CreateFile({'id': ROOT_FOLDER_ID})
                 test_file.FetchMetadata()
@@ -219,7 +210,7 @@ def sync_drive_to_database():
                 print("   This suggests the GOOGLE_DRIVE_FOLDER_ID is incorrect!")
         else:
             print("📂 Folders found:")
-            for folder in folder_list[:5]:  # Show first 5
+            for folder in folder_list[:5]:
                 print(f"   - {folder['title']} (ID: {folder['id']})")
             if len(folder_list) > 5:
                 print(f"   ... and {len(folder_list) - 5} more")
@@ -234,30 +225,25 @@ def sync_drive_to_database():
                 modified_date = folder.get('modifiedDate', datetime.now().isoformat())[:19].replace('T', ' ')
                 
                 try:
-                    # Check if client already exists
                     cur.execute("SELECT id FROM clients WHERE name = ?", (folder_name,))
                     existing_client = cur.fetchone()
                     
                     if existing_client:
                         client_id = existing_client[0]
-                        # Update folder_id and timestamps
                         cur.execute(
                             "UPDATE clients SET folder_id = ?, updated_at = ? WHERE id = ?",
                             (folder_id, modified_date, client_id)
                         )
                     else:
-                        # Insert new client
                         cur.execute(
                             "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
                             (folder_name, folder_id, created_date, modified_date)
                         )
                         client_id = cur.lastrowid
                     
-                    # Get all files in this folder
                     files_query = f"'{folder_id}' in parents and trashed=false"
                     files_list = drive.ListFile({'q': files_query}).GetList()
                     
-                    # Process each file
                     for file in files_list:
                         file_id = file['id']
                         file_name = file['title']
@@ -266,7 +252,6 @@ def sync_drive_to_database():
                         upload_time = file.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' ')
                         file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
                         
-                        # Determine document type from filename
                         file_lower = file_name.lower()
                         if 'datasheet' in file_lower:
                             doc_type = 'datasheet'
@@ -277,16 +262,14 @@ def sync_drive_to_database():
                         elif 'bank' in file_lower or 'account' in file_lower:
                             doc_type = 'bank_account'
                         else:
-                            doc_type = 'datasheet'  # Default
+                            doc_type = 'datasheet'
                         
-                        # Check if document already exists
                         cur.execute(
                             "SELECT COUNT(*) FROM documents WHERE file_id = ?",
                             (file_id,)
                         )
                         
                         if cur.fetchone()[0] == 0:
-                            # Insert new document
                             try:
                                 cur.execute(
                                     """INSERT INTO documents 
@@ -322,7 +305,6 @@ def sync_single_client(client_name):
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
             
-            # Find client folder
             query = f"'{ROOT_FOLDER_ID}' in parents and title='{client_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
             folder_list = drive.ListFile({'q': query}).GetList()
             
@@ -332,12 +314,10 @@ def sync_single_client(client_name):
             folder = folder_list[0]
             folder_id = folder['id']
             
-            # Check if client exists in DB
             cur.execute("SELECT id FROM clients WHERE name = ?", (client_name,))
             existing = cur.fetchone()
             
             if not existing:
-                # Create new client
                 cur.execute(
                     "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
                     (client_name, folder_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
@@ -346,17 +326,14 @@ def sync_single_client(client_name):
             
             client_id = existing[0] if existing else cur.lastrowid
             
-            # Get files in folder
             files_query = f"'{folder_id}' in parents and trashed=false"
             files_list = drive.ListFile({'q': files_query}).GetList()
             
-            # Sync each file
             for file in files_list:
                 file_id = file['id']
                 
                 cur.execute("SELECT COUNT(*) FROM documents WHERE file_id = ?", (file_id,))
                 if cur.fetchone()[0] == 0:
-                    # Determine doc type
                     file_lower = file['title'].lower()
                     if 'datasheet' in file_lower:
                         doc_type = 'datasheet'
@@ -386,7 +363,6 @@ def sync_single_client(client_name):
         return False
 
 # ==================== HELPER FUNCTIONS ====================
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -465,10 +441,10 @@ def cleanup_temp_file(filepath):
     except Exception as e:
         print(f"Warning: Could not remove temp file {filepath}: {str(e)}")
 
-# ==================== ROUTES ====================
-
+# ==================== AUTHENTICATION ROUTES ====================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """User login page"""
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
@@ -488,7 +464,7 @@ def login():
             session['role'] = user[3]
             log_activity("LOGIN", f"User logged in: {username}")
             flash(f'Welcome back, {username}!', 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password.', 'error')
             log_activity("LOGIN_FAILED", f"Failed login attempt: {username}")
@@ -497,6 +473,7 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """User registration page"""
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
@@ -538,14 +515,245 @@ def register():
     
     return render_template('register.html')
 
+@app.route('/logout')
+@login_required
+def logout():
+    """User logout"""
+    username = session.get('username')
+    log_activity("LOGOUT", f"User logged out: {username}")
+    session.clear()
+    flash('You have been logged out successfully.', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    """Forgot password - Step 1: Verify username and generate reset code"""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        
+        if not username:
+            flash('Please enter your username.', 'error')
+            return render_template('forgot_password.html')
+        
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+            user = cur.fetchone()
+        
+        if user:
+            # Generate 6-character reset code
+            reset_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            
+            # Store in session with expiry time
+            session['reset_username'] = username
+            session['reset_code'] = reset_code
+            session['reset_expiry'] = (datetime.now() + timedelta(minutes=15)).isoformat()
+            
+            log_activity("FORGOT_PASSWORD_INITIATED", f"Password reset requested for: {username}")
+            
+            return render_template('forgot_password.html', 
+                                 reset_code=reset_code, 
+                                 username=username)
+        else:
+            flash('Username not found.', 'error')
+            log_activity("FORGOT_PASSWORD_FAILED", f"Unknown username: {username}")
+    
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password_confirm', methods=['POST'])
+def reset_password_confirm():
+    """Forgot password - Step 2: Confirm reset code and change password"""
+    username = request.form.get('username', '').strip()
+    reset_code = request.form.get('reset_code', '').strip().upper()
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    
+    # Verify session data
+    if 'reset_username' not in session or 'reset_code' not in session:
+        flash('Reset session expired. Please start again.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if username != session.get('reset_username'):
+        flash('Invalid reset request.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    # Check expiry
+    expiry_time = datetime.fromisoformat(session.get('reset_expiry'))
+    if datetime.now() > expiry_time:
+        session.pop('reset_username', None)
+        session.pop('reset_code', None)
+        session.pop('reset_expiry', None)
+        flash('Reset code expired. Please request a new one.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    # Verify reset code
+    if reset_code != session.get('reset_code'):
+        flash('Invalid reset code. Please check and try again.', 'error')
+        log_activity("RESET_PASSWORD_FAILED", f"Invalid code for: {username}")
+        return render_template('forgot_password.html', 
+                             reset_code=session.get('reset_code'),
+                             username=username)
+    
+    # Validate passwords
+    if len(new_password) < 6:
+        flash('Password must be at least 6 characters long.', 'error')
+        return render_template('forgot_password.html', 
+                             reset_code=session.get('reset_code'),
+                             username=username)
+    
+    if new_password != confirm_password:
+        flash('Passwords do not match.', 'error')
+        return render_template('forgot_password.html', 
+                             reset_code=session.get('reset_code'),
+                             username=username)
+    
+    # Update password
+    with sqlite3.connect("database.db") as conn:
+        cur = conn.cursor()
+        hashed_password = generate_password_hash(new_password)
+        cur.execute("UPDATE users SET password = ? WHERE username = ?", 
+                   (hashed_password, username))
+        conn.commit()
+    
+    # Clear session
+    session.pop('reset_username', None)
+    session.pop('reset_code', None)
+    session.pop('reset_expiry', None)
+    
+    log_activity("RESET_PASSWORD_SUCCESS", f"Password reset for: {username}")
+    flash('Password reset successful! Please login with your new password.', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Change user password (when logged in)"""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not current_password or not new_password or not confirm_password:
+            flash('All fields are required.', 'error')
+            return render_template('change_password.html')
+        
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters long.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password == current_password:
+            flash('New password must be different from current password.', 'error')
+            return render_template('change_password.html')
+        
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
+            user = cur.fetchone()
+            
+            if not user or not check_password_hash(user[0], current_password):
+                flash('Current password is incorrect.', 'error')
+                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
+                return render_template('change_password.html')
+            
+            hashed_password = generate_password_hash(new_password)
+            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
+                       (hashed_password, session['user_id']))
+            conn.commit()
+        
+        log_activity("PASSWORD_CHANGED", "Password updated successfully")
+        flash('Password changed successfully! Please login again.', 'success')
+        
+        session.clear()
+        return redirect(url_for('login'))
+    
+    return render_template('change_password.html')
+
+# ==================== MAIN PAGES ====================
 @app.route('/')
 @login_required
 def home():
+    """Upload page - redirect to upload"""
     return render_template('upload.html')
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """Dashboard with statistics"""
+    try:
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            
+            cur.execute("SELECT COUNT(*) FROM clients")
+            total_clients = cur.fetchone()[0]
+            
+            cur.execute("SELECT COUNT(*) FROM documents")
+            total_docs = cur.fetchone()[0]
+            
+            cur.execute("SELECT COUNT(*) FROM users")
+            total_users = cur.fetchone()[0]
+            
+            cur.execute("""
+                SELECT u.username, a.action, a.details, a.timestamp
+                FROM activity_logs a
+                LEFT JOIN users u ON a.user_id = u.id
+                ORDER BY a.timestamp DESC
+                LIMIT 10
+            """)
+            recent_activity = cur.fetchall()
+            
+            cur.execute("""
+                SELECT document_type, COUNT(*) as count
+                FROM documents
+                GROUP BY document_type
+                ORDER BY count DESC
+            """)
+            doc_distribution = cur.fetchall()
+            
+            cur.execute("""
+                SELECT c.name, c.created_at, COUNT(d.id) as doc_count
+                FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id
+                GROUP BY c.id
+                ORDER BY c.created_at DESC
+                LIMIT 5
+            """)
+            recent_clients = cur.fetchall()
+        
+        stats = {
+            'total_clients': total_clients,
+            'total_docs': total_docs,
+            'total_users': total_users,
+            'recent_activity': recent_activity,
+            'doc_distribution': doc_distribution,
+            'recent_clients': recent_clients
+        }
+        
+        return render_template('dashboard.html', stats=stats)
+    
+    except Exception as e:
+        print(f"Dashboard error: {str(e)}")
+        traceback.print_exc()
+        flash(f"Error loading dashboard: {str(e)}", "error")
+        
+        stats = {
+            'total_clients': 0,
+            'total_docs': 0,
+            'total_users': 0,
+            'recent_activity': [],
+            'doc_distribution': [],
+            'recent_clients': []
+        }
+        return render_template('dashboard.html', stats=stats)
+
+# ==================== DOCUMENT UPLOAD ROUTES ====================
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload():
+    """Upload documents for a client"""
     if not drive:
         flash("Google Drive not initialized. Check server logs.", "error")
         return render_template('upload.html')
@@ -668,14 +876,17 @@ def upload():
         flash(f"Upload failed: {str(e)}", "error")
         return render_template('upload.html')
 
+# ==================== CLIENT SEARCH & FETCH ROUTES ====================
 @app.route('/fetch')
 @login_required
 def fetch_page():
+    """Fetch/search page"""
     return render_template('fetch.html')
 
 @app.route('/fetch_data', methods=['POST'])
 @login_required
 def fetch_data():
+    """Fetch client data and documents"""
     try:
         name = request.form.get('name', '').strip()
         
@@ -683,7 +894,6 @@ def fetch_data():
             flash("Please enter a name", "error")
             return render_template('fetch.html')
         
-        # Try to sync this specific client first
         sync_single_client(name)
         
         with sqlite3.connect("database.db") as conn:
@@ -755,18 +965,17 @@ def fetch_data():
         flash(f"Error fetching data: {str(e)}", "error")
         return render_template('fetch.html')
 
+# ==================== CLIENT MANAGEMENT ROUTES ====================
 @app.route('/clients')
 @login_required
 def list_clients():
     """List all clients with sorting and filtering"""
     try:
-        # Sync from Google Drive on every clients page load
         try:
             print("🔄 Syncing clients from Google Drive...")
             sync_drive_to_database()
         except (Exception, SystemExit) as sync_error:
             print(f"⚠ Sync failed: {sync_error}")
-            # Continue without sync to prevent 500 error
         
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
@@ -829,42 +1038,6 @@ def list_clients():
         flash(f"Error: {str(e)}", "error")
         return render_template('clients.html', clients=[])
 
-@app.route('/api/quick_search')
-@login_required
-def quick_search():
-    """Quick search API endpoint"""
-    try:
-        query = request.args.get('q', '').strip()
-        
-        if not query or len(query) < 2:
-            return jsonify({'results': []})
-        
-        with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT c.name, COUNT(d.id) as doc_count, c.updated_at
-                FROM clients c
-                LEFT JOIN documents d ON c.id = d.client_id
-                WHERE c.name LIKE ?
-                GROUP BY c.id
-                ORDER BY c.updated_at DESC
-                LIMIT 10
-            """, (f'%{query}%',))
-            
-            results = []
-            for row in cur.fetchall():
-                results.append({
-                    'name': row[0],
-                    'doc_count': row[1],
-                    'updated_at': row[2][:10] if row[2] else ''
-                })
-        
-        return jsonify({'results': results})
-    
-    except Exception as e:
-        print(f"Quick search error: {str(e)}")
-        return jsonify({'results': [], 'error': str(e)})
-
 @app.route('/edit_client/<int:client_id>', methods=['POST'])
 @login_required
 def edit_client(client_id):
@@ -902,6 +1075,45 @@ def edit_client(client_id):
         print(f"Edit client error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/delete_client', methods=['POST'])
+@login_required
+def delete_client():
+    """Delete entire client folder and all documents"""
+    if not drive:
+        return jsonify({'success': False, 'error': 'Google Drive not initialized'}), 503
+    
+    try:
+        name = request.form.get('name', '').strip()
+        
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id, folder_id FROM clients WHERE name = ?", (name,))
+            result = cur.fetchone()
+        
+        if result:
+            client_id, folder_id = result
+            
+            try:
+                folder = drive.CreateFile({'id': folder_id})
+                folder.Delete()
+                
+                with sqlite3.connect("database.db") as conn:
+                    conn.execute("DELETE FROM documents WHERE client_id = ?", (client_id,))
+                    conn.execute("DELETE FROM clients WHERE id = ?", (client_id,))
+                
+                log_activity("DELETE_CLIENT", f"Deleted client and all documents: {name}")
+                return jsonify({'success': True, 'message': f'Successfully deleted all data for {name}'})
+            
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'Failed to delete: {str(e)}'}), 500
+        else:
+            return jsonify({'success': False, 'error': 'Client not found'}), 404
+    
+    except Exception as e:
+        print(f"Delete error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== DOCUMENT MANAGEMENT ROUTES ====================
 @app.route('/image/<file_id>')
 @login_required
 def serve_image(file_id):
@@ -985,44 +1197,6 @@ def download_document():
         print(f"Download error: {str(e)}")
         return f"Download failed: {str(e)}", 500
 
-@app.route('/delete_client', methods=['POST'])
-@login_required
-def delete_client():
-    """Delete entire client folder and all documents"""
-    if not drive:
-        return jsonify({'success': False, 'error': 'Google Drive not initialized'}), 503
-    
-    try:
-        name = request.form.get('name', '').strip()
-        
-        with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT id, folder_id FROM clients WHERE name = ?", (name,))
-            result = cur.fetchone()
-        
-        if result:
-            client_id, folder_id = result
-            
-            try:
-                folder = drive.CreateFile({'id': folder_id})
-                folder.Delete()
-                
-                with sqlite3.connect("database.db") as conn:
-                    conn.execute("DELETE FROM documents WHERE client_id = ?", (client_id,))
-                    conn.execute("DELETE FROM clients WHERE id = ?", (client_id,))
-                
-                log_activity("DELETE_CLIENT", f"Deleted client and all documents: {name}")
-                return jsonify({'success': True, 'message': f'Successfully deleted all data for {name}'})
-            
-            except Exception as e:
-                return jsonify({'success': False, 'error': f'Failed to delete: {str(e)}'}), 500
-        else:
-            return jsonify({'success': False, 'error': 'Client not found'}), 404
-    
-    except Exception as e:
-        print(f"Delete error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @app.route('/delete_document', methods=['POST'])
 @login_required
 def delete_document():
@@ -1062,134 +1236,44 @@ def delete_document():
         print(f"Delete document error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/dashboard')
+# ==================== API ROUTES ====================
+@app.route('/api/quick_search')
 @login_required
-def dashboard():
-    """Dashboard with statistics"""
+def quick_search():
+    """Quick search API endpoint"""
     try:
+        query = request.args.get('q', '').strip()
+        
+        if not query or len(query) < 2:
+            return jsonify({'results': []})
+        
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
-            
-            cur.execute("SELECT COUNT(*) FROM clients")
-            total_clients = cur.fetchone()[0]
-            
-            cur.execute("SELECT COUNT(*) FROM documents")
-            total_docs = cur.fetchone()[0]
-            
-            cur.execute("SELECT COUNT(*) FROM users")
-            total_users = cur.fetchone()[0]
-            
             cur.execute("""
-                SELECT u.username, a.action, a.details, a.timestamp
-                FROM activity_logs a
-                LEFT JOIN users u ON a.user_id = u.id
-                ORDER BY a.timestamp DESC
-                LIMIT 10
-            """)
-            recent_activity = cur.fetchall()
-            
-            cur.execute("""
-                SELECT document_type, COUNT(*) as count
-                FROM documents
-                GROUP BY document_type
-                ORDER BY count DESC
-            """)
-            doc_distribution = cur.fetchall()
-            
-            cur.execute("""
-                SELECT c.name, c.created_at, COUNT(d.id) as doc_count
+                SELECT c.name, COUNT(d.id) as doc_count, c.updated_at
                 FROM clients c
                 LEFT JOIN documents d ON c.id = d.client_id
+                WHERE c.name LIKE ?
                 GROUP BY c.id
-                ORDER BY c.created_at DESC
-                LIMIT 5
-            """)
-            recent_clients = cur.fetchall()
+                ORDER BY c.updated_at DESC
+                LIMIT 10
+            """, (f'%{query}%',))
+            
+            results = []
+            for row in cur.fetchall():
+                results.append({
+                    'name': row[0],
+                    'doc_count': row[1],
+                    'updated_at': row[2][:10] if row[2] else ''
+                })
         
-        stats = {
-            'total_clients': total_clients,
-            'total_docs': total_docs,
-            'total_users': total_users,
-            'recent_activity': recent_activity,
-            'doc_distribution': doc_distribution,
-            'recent_clients': recent_clients
-        }
-        
-        return render_template('dashboard.html', stats=stats)
+        return jsonify({'results': results})
     
     except Exception as e:
-        print(f"Dashboard error: {str(e)}")
-        traceback.print_exc()
-        flash(f"Error loading dashboard: {str(e)}", "error")
-        
-        stats = {
-            'total_clients': 0,
-            'total_docs': 0,
-            'total_users': 0,
-            'recent_activity': [],
-            'doc_distribution': [],
-            'recent_clients': []
-        }
-        return render_template('dashboard.html', stats=stats)
+        print(f"Quick search error: {str(e)}")
+        return jsonify({'results': [], 'error': str(e)})
 
-@app.route('/change_password', methods=['GET', 'POST'])
-@login_required
-def change_password():
-    """Change user password"""
-    if request.method == 'POST':
-        current_password = request.form.get('current_password', '')
-        new_password = request.form.get('new_password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        
-        if not current_password or not new_password or not confirm_password:
-            flash('All fields are required.', 'error')
-            return render_template('change_password.html')
-        
-        if len(new_password) < 6:
-            flash('New password must be at least 6 characters long.', 'error')
-            return render_template('change_password.html')
-        
-        if new_password != confirm_password:
-            flash('New passwords do not match.', 'error')
-            return render_template('change_password.html')
-        
-        if new_password == current_password:
-            flash('New password must be different from current password.', 'error')
-            return render_template('change_password.html')
-        
-        with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT password FROM users WHERE id = ?", (session['user_id'],))
-            user = cur.fetchone()
-            
-            if not user or not check_password_hash(user[0], current_password):
-                flash('Current password is incorrect.', 'error')
-                log_activity("PASSWORD_CHANGE_FAILED", "Incorrect current password")
-                return render_template('change_password.html')
-            
-            hashed_password = generate_password_hash(new_password)
-            cur.execute("UPDATE users SET password = ? WHERE id = ?", 
-                       (hashed_password, session['user_id']))
-            conn.commit()
-        
-        log_activity("PASSWORD_CHANGED", "Password updated successfully")
-        flash('Password changed successfully! Please login again.', 'success')
-        
-        session.clear()
-        return redirect(url_for('login'))
-    
-    return render_template('change_password.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    """Logout user"""
-    username = session.get('username')
-    log_activity("LOGOUT", f"User logged out: {username}")
-    session.clear()
-    flash('You have been logged out successfully.', 'success')
-    return redirect(url_for('login'))
-
+# ==================== ERROR HANDLERS ====================
 @app.errorhandler(404)
 def not_found(e):
     """Handle 404 errors"""
@@ -1201,23 +1285,27 @@ def server_error(e):
     flash("Internal server error. Please try again.", "error")
     return redirect(url_for('home')), 500
 
+# ==================== APPLICATION STARTUP ====================
 if __name__ == '__main__':
-    # Run initial sync on startup
-    print("\n" + "=" * 60)
-    print("🚀 LIC Manager Starting Up")
-    print("=" * 60)
+    # Only run sync on main process (not reloader)
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        print("\n" + "=" * 60)
+        print("🚀 LIC Manager Starting Up")
+        print("=" * 60)
+        
+        try:
+            print("🔄 Running initial Google Drive sync...")
+            synced = sync_drive_to_database()
+            if synced > 0:
+                print(f"✓ Initial sync complete! Synced {synced} new documents")
+            else:
+                print(f"✓ Sync complete! All documents already in database")
+        except Exception as e:
+            print(f"⚠ Sync warning (non-critical): {e}")
+        
+        print("=" * 60)
+        print("✓ Server ready!")
+        print("=" * 60 + "\n")
     
-    try:
-        print("🔄 Running initial Google Drive sync...")
-        synced = sync_drive_to_database()
-        print(f"✓ Initial sync complete! Synced {synced} documents")
-    except Exception as e:
-        print(f"⚠ Sync warning (non-critical): {e}")
-    
-    print("=" * 60)
-    print("✓ Server ready!")
-    print("=" * 60 + "\n")
-    
-    # Start app
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     app.run(debug=debug_mode, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
