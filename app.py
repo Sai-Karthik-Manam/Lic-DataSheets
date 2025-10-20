@@ -186,34 +186,16 @@ def sync_drive_to_database():
         return 0
     
     try:
-        print("🔄 Starting Google Drive sync...")
         synced_count = 0
         
         query = f"'{ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
-        print(f"🔍 Querying Google Drive with: {query}")
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
 
         print(f"📁 Found {len(folder_list)} folders in Google Drive")
+        
         if len(folder_list) == 0:
-            print("⚠️  No folders found! This could mean:")
-            print(f"   - The folder ID '{ROOT_FOLDER_ID}' is incorrect")
-            print("   - The folder is empty")
-            print("   - The folder doesn't exist or is not accessible")
-            print("   - The Google Drive API permissions are insufficient")
-
-            try:
-                test_file = drive.CreateFile({'id': ROOT_FOLDER_ID})
-                test_file.FetchMetadata()
-                print(f"✓ Root folder exists: '{test_file['title']}' (ID: {ROOT_FOLDER_ID})")
-            except Exception as e:
-                print(f"✗ Root folder verification failed: {str(e)}")
-                print("   This suggests the GOOGLE_DRIVE_FOLDER_ID is incorrect!")
-        else:
-            print("📂 Folders found:")
-            for folder in folder_list[:5]:
-                print(f"   - {folder['title']} (ID: {folder['id']})")
-            if len(folder_list) > 5:
-                print(f"   ... and {len(folder_list) - 5} more")
+            print("⚠️  No folders found in Google Drive")
+            return 0
         
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
@@ -240,6 +222,7 @@ def sync_drive_to_database():
                             (folder_name, folder_id, created_date, modified_date)
                         )
                         client_id = cur.lastrowid
+                        print(f"  ✓ Added new client: {folder_name}")
                     
                     files_query = f"'{folder_id}' in parents and trashed=false"
                     files_list = drive.ListFile({'q': files_query}).GetList()
@@ -278,9 +261,10 @@ def sync_drive_to_database():
                                     (client_id, doc_type, file_id, file_name, file_url, file_size, mime_type, upload_time)
                                 )
                                 synced_count += 1
-                                print(f"  ✓ Synced: {folder_name} → {doc_type} ({file_name})")
-                            except sqlite3.IntegrityError as e:
-                                print(f"  ⚠ Skipped duplicate: {file_name}")
+                                print(f"  ✓ Synced: {folder_name} → {doc_type}")
+                            except sqlite3.IntegrityError:
+                                # Silently skip duplicates - already in database
+                                pass
                     
                     conn.commit()
                 
@@ -288,7 +272,8 @@ def sync_drive_to_database():
                     print(f"  ✗ Error syncing folder '{folder_name}': {str(e)}")
                     continue
         
-        print(f"✓ Sync complete! Synced {synced_count} documents")
+        if synced_count > 0:
+            print(f"✓ Sync complete! Added {synced_count} new documents")
         return synced_count
     
     except Exception as e:
@@ -441,10 +426,23 @@ def cleanup_temp_file(filepath):
     except Exception as e:
         print(f"Warning: Could not remove temp file {filepath}: {str(e)}")
 
+# ==================== LANDING PAGE ====================
+@app.route('/')
+def index():
+    """Landing page - public access"""
+    # If already logged in, redirect to dashboard
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return render_template('index.html')
+
 # ==================== AUTHENTICATION ROUTES ====================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login page"""
+    # If already logged in, redirect to dashboard
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
@@ -464,7 +462,17 @@ def login():
             session['role'] = user[3]
             log_activity("LOGIN", f"User logged in: {username}")
             flash(f'Welcome back, {username}!', 'success')
-            return redirect(url_for('dashboard'))
+            
+            # Check if there's a redirect destination
+            redirect_to = request.args.get('redirect', 'dashboard')
+            if redirect_to == 'upload':
+                return redirect(url_for('upload_page'))
+            elif redirect_to == 'search':
+                return redirect(url_for('fetch_page'))
+            elif redirect_to == 'clients':
+                return redirect(url_for('list_clients'))
+            else:
+                return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password.', 'error')
             log_activity("LOGIN_FAILED", f"Failed login attempt: {username}")
@@ -971,11 +979,13 @@ def fetch_data():
 def list_clients():
     """List all clients with sorting and filtering"""
     try:
-        try:
-            print("🔄 Syncing clients from Google Drive...")
-            sync_drive_to_database()
-        except (Exception, SystemExit) as sync_error:
-            print(f"⚠ Sync failed: {sync_error}")
+        # Sync only if explicitly needed (silent sync)
+        sync_needed = request.args.get('sync', 'false') == 'true'
+        if sync_needed:
+            print("🔄 Manual sync requested...")
+            synced = sync_drive_to_database()
+            if synced > 0:
+                flash(f'Synced {synced} new documents from Google Drive', 'success')
         
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
