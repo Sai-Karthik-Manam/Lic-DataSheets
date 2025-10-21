@@ -186,16 +186,37 @@ def sync_drive_to_database():
         return 0
     
     try:
+        print("🔄 Starting Google Drive sync...")
         synced_count = 0
         
         query = f"'{ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        print(f"🔍 Querying Google Drive with: {query}")
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
 
         print(f"📁 Found {len(folder_list)} folders in Google Drive")
         
         if len(folder_list) == 0:
-            print("⚠️  No folders found in Google Drive")
-            return 0
+            print("⚠️  No folders found! This could mean:")
+            print(f"   - The folder ID '{ROOT_FOLDER_ID}' is incorrect")
+            print("   - The folder is empty")
+            print("   - The folder doesn't exist or is not accessible")
+            print("   - The Google Drive API permissions are insufficient")
+
+            # Try to verify root folder exists
+            try:
+                test_file = drive.CreateFile({'id': ROOT_FOLDER_ID})
+                test_file.FetchMetadata()
+                print(f"✓ Root folder exists: '{test_file['title']}' (ID: {ROOT_FOLDER_ID})")
+                print("  The folder exists but contains no subfolders.")
+            except Exception as e:
+                print(f"✗ Root folder verification failed: {str(e)}")
+                print("  This suggests the GOOGLE_DRIVE_FOLDER_ID is incorrect!")
+        else:
+            print("📂 Folders found:")
+            for folder in folder_list[:5]:
+                print(f"   - {folder['title']} (ID: {folder['id']})")
+            if len(folder_list) > 5:
+                print(f"   ... and {len(folder_list) - 5} more")
         
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
@@ -274,6 +295,8 @@ def sync_drive_to_database():
         
         if synced_count > 0:
             print(f"✓ Sync complete! Added {synced_count} new documents")
+        else:
+            print(f"✓ Sync complete! All documents already in database")
         return synced_count
     
     except Exception as e:
@@ -681,10 +704,10 @@ def change_password():
     return render_template('change_password.html')
 
 # ==================== MAIN PAGES ====================
-@app.route('/')
+@app.route('/upload_page')
 @login_required
-def home():
-    """Upload page - redirect to upload"""
+def upload_page():
+    """Upload page"""
     return render_template('upload.html')
 
 @app.route('/dashboard')
@@ -979,13 +1002,16 @@ def fetch_data():
 def list_clients():
     """List all clients with sorting and filtering"""
     try:
-        # Sync only if explicitly needed (silent sync)
-        sync_needed = request.args.get('sync', 'false') == 'true'
-        if sync_needed:
-            print("🔄 Manual sync requested...")
+        # FIXED: Always sync on clients page load (like working version)
+        try:
+            print("🔄 Syncing clients from Google Drive...")
             synced = sync_drive_to_database()
-            if synced > 0:
+            # Only show flash message if explicitly requested via URL parameter
+            if request.args.get('sync', 'false') == 'true' and synced > 0:
                 flash(f'Synced {synced} new documents from Google Drive', 'success')
+        except Exception as sync_error:
+            print(f"⚠ Sync failed (non-critical): {sync_error}")
+            # Don't show error to user, just log it
         
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
@@ -1293,7 +1319,7 @@ def not_found(e):
 def server_error(e):
     """Handle 500 errors"""
     flash("Internal server error. Please try again.", "error")
-    return redirect(url_for('home')), 500
+    return redirect(url_for('index')), 500
 
 # ==================== APPLICATION STARTUP ====================
 if __name__ == '__main__':
