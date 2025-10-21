@@ -179,63 +179,55 @@ def init_db():
 init_db()
 
 # ==================== GOOGLE DRIVE SYNC FUNCTIONS ====================
+import time
+from googleapiclient.errors import HttpError
+
 def sync_drive_to_database():
-    """Sync all clients and documents from Google Drive to database"""
+    """Sync all clients and documents from Google Drive to database (optimized for Render)"""
     if not drive:
         print("⚠ Google Drive not initialized, skipping sync")
         return 0
-    
+
     try:
         print("🔄 Starting Google Drive sync...")
         synced_count = 0
-        
+
         query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
         print(f"🔍 Querying Google Drive with: {query}")
-        folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
-        folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
+        try:
+            folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
+        except Exception as e:
+            print(f"⚠ First Drive query failed: {e}")
+            time.sleep(1)
+            folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
+
         if not folder_list:
-            print("⚠️ No folders found, retrying without mimeType filter...")
+            print("⚠ No folders found, retrying with relaxed query...")
             query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
-            folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
+            folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
 
-        print(f"📁 Found {len(folder_list)} folders in Google Drive")
-            
+        print(f"📁 Found {len(folder_list)} folders/items in Google Drive")
+
         if len(folder_list) == 0:
-            print("⚠️  No folders found! This could mean:")
-            print(f"   - The folder ID '{ROOT_FOLDER_ID}' is incorrect")
-            print("   - The folder is empty")
-            print("   - The folder doesn't exist or is not accessible")
-            print("   - The Google Drive API permissions are insufficient")
+            print("⚠ No folders found! Possible reasons:")
+            print("   - Wrong GOOGLE_DRIVE_FOLDER_ID")
+            print("   - Folder empty or inaccessible")
+            print("   - API permissions issue")
+            return 0
 
-            # Try to verify root folder exists
-            try:
-                test_file = drive.CreateFile({'id': ROOT_FOLDER_ID})
-                test_file.FetchMetadata()
-                print(f"✓ Root folder exists: '{test_file['title']}' (ID: {ROOT_FOLDER_ID})")
-                print("  The folder exists but contains no subfolders.")
-            except Exception as e:
-                print(f"✗ Root folder verification failed: {str(e)}")
-                print("  This suggests the GOOGLE_DRIVE_FOLDER_ID is incorrect!")
-        else:
-            print("📂 Folders found:")
-            for folder in folder_list[:5]:
-                print(f"   - {folder['title']} (ID: {folder['id']})")
-            if len(folder_list) > 5:
-                print(f"   ... and {len(folder_list) - 5} more")
-        
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
-            
+
             for folder in folder_list:
-                folder_name = folder['title']
-                folder_id = folder['id']
-                created_date = folder.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' ')
-                modified_date = folder.get('modifiedDate', datetime.now().isoformat())[:19].replace('T', ' ')
-                
                 try:
+                    folder_name = folder['title']
+                    folder_id = folder['id']
+                    created_date = folder.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' ')
+                    modified_date = folder.get('modifiedDate', datetime.now().isoformat())[:19].replace('T', ' ')
+
                     cur.execute("SELECT id FROM clients WHERE name = ?", (folder_name,))
                     existing_client = cur.fetchone()
-                    
+
                     if existing_client:
                         client_id = existing_client[0]
                         cur.execute(
@@ -249,19 +241,139 @@ def sync_drive_to_database():
                         )
                         client_id = cur.lastrowid
                         print(f"  ✓ Added new client: {folder_name}")
-                    
+
+                    # Get files inside folder safely
                     files_query = f"'{folder_id}' in parents and trashed=false"
-                    files_list = drive.ListFile({'q': files_query}).GetList()
-                    
+                    retries = 0
+                    while retries < 2:
+                        try:
+                            files_list = drive.ListFile({'q': files_query, 'maxResults': 50}).GetList()
+                            break
+                        except HttpError as e:
+                            retries += 1
+                            print(f"⚠ Retrying folder {folder_name} (attempt {retries}) due to: {e}")
+                            time.sleep(1)
+                            files_list = []
+                        except Exception as e:
+                            retries += 1
+                            print(f"⚠ Folder fetch failed ({folder_name}): {e}")
+                            time.sleep(1)
+                            files_list = []
+                    else:
+                        print(f"✗ Skipping folder {folder_name} after multiple failures")
+                        continue
+
                     for file in files_list:
-                        file_id = file['id']
-                        file_name = file['title']
-                        file_size = int(file.get('fileSize', 0))
-                        mime_type = file.get('mimeType', 'application/octet-stream')
-                        upload_time = file.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' ')
-                        file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-                        
-                        file_lower = file_name.lower()
+                        try:
+                            file_id = file['id']
+                            file_name = file['title']
+                            file_size = int(file.get('fileSize', 0))
+                            mime_type = file.get('mimeType', 'application/octet-stream')
+                            upload_time = file.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' ')
+                            file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+                            file_lower = file_name.lower()
+                            if 'datasheet' in file_lower:
+                                doc_type = 'datasheet'
+                            elif 'aadhaar' in file_lower or 'aadhar' in file_lower:
+                                doc_type = 'aadhaar'
+                            elif 'pan' in file_lower:
+                                doc_type = 'pan'
+                            elif 'bank' in file_lower or 'account' in file_lower:
+                                doc_type = 'bank_account'
+                            else:
+                                doc_type = 'datasheet'
+
+                            cur.execute("SELECT COUNT(*) FROM documents WHERE file_id = ?", (file_id,))
+                            if cur.fetchone()[0] == 0:
+                                cur.execute(
+                                    """INSERT INTO documents 
+                                       (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                                    (client_id, doc_type, file_id, file_name, file_url, file_size, mime_type, upload_time)
+                                )
+                                synced_count += 1
+                                print(f"  ✓ Synced: {folder_name} → {doc_type}")
+
+                        except Exception as inner_e:
+                            print(f"    ⚠ Skipping file in {folder_name} due to error: {inner_e}")
+                            continue
+
+                    conn.commit()
+                    del files_list  # free memory
+                    time.sleep(0.5)  # prevent API overload
+
+                except Exception as e:
+                    print(f"  ✗ Error syncing folder '{folder.get('title', '?')}': {str(e)}")
+                    continue
+
+        print(f"✓ Sync complete! {synced_count} new documents added.")
+        return synced_count
+
+    except Exception as e:
+        print(f"✗ Google Drive sync fatal error: {str(e)}")
+        traceback.print_exc()
+        return 0
+
+
+def sync_single_client(client_name):
+    """Sync a specific client folder from Google Drive (safe & retry version)"""
+    if not drive:
+        return False
+
+    try:
+        with sqlite3.connect("database.db") as conn:
+            cur = conn.cursor()
+
+            query = f"'{ROOT_FOLDER_ID}' in parents and title='{client_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            try:
+                folder_list = drive.ListFile({'q': query, 'maxResults': 10}).GetList()
+            except Exception as e:
+                print(f"⚠ Initial folder fetch failed for {client_name}: {e}")
+                time.sleep(1)
+                folder_list = drive.ListFile({'q': query, 'maxResults': 10}).GetList()
+
+            if not folder_list:
+                print(f"⚠ Client folder '{client_name}' not found on Drive.")
+                return False
+
+            folder = folder_list[0]
+            folder_id = folder['id']
+
+            cur.execute("SELECT id FROM clients WHERE name = ?", (client_name,))
+            existing = cur.fetchone()
+
+            if not existing:
+                cur.execute(
+                    "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                    (client_name, folder_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                )
+
+            client_id = existing[0] if existing else cur.lastrowid
+
+            # Get files with retry
+            files_query = f"'{folder_id}' in parents and trashed=false"
+            retries = 0
+            while retries < 2:
+                try:
+                    files_list = drive.ListFile({'q': files_query, 'maxResults': 20}).GetList()
+                    break
+                except Exception as e:
+                    retries += 1
+                    print(f"⚠ Retry {retries} fetching files for {client_name}: {e}")
+                    time.sleep(1)
+                    files_list = []
+            else:
+                print(f"✗ Skipping {client_name}: repeated fetch failures")
+                return False
+
+            for file in files_list:
+                try:
+                    file_id = file['id']
+                    cur.execute("SELECT COUNT(*) FROM documents WHERE file_id = ?", (file_id,))
+                    if cur.fetchone()[0] == 0:
+                        file_lower = file['title'].lower()
                         if 'datasheet' in file_lower:
                             doc_type = 'datasheet'
                         elif 'aadhaar' in file_lower or 'aadhar' in file_lower:
@@ -272,107 +384,26 @@ def sync_drive_to_database():
                             doc_type = 'bank_account'
                         else:
                             doc_type = 'datasheet'
-                        
-                        cur.execute(
-                            "SELECT COUNT(*) FROM documents WHERE file_id = ?",
-                            (file_id,)
-                        )
-                        
-                        if cur.fetchone()[0] == 0:
-                            try:
-                                cur.execute(
-                                    """INSERT INTO documents 
-                                       (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
-                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                                    (client_id, doc_type, file_id, file_name, file_url, file_size, mime_type, upload_time)
-                                )
-                                synced_count += 1
-                                print(f"  ✓ Synced: {folder_name} → {doc_type}")
-                            except sqlite3.IntegrityError:
-                                # Silently skip duplicates - already in database
-                                pass
-                    
-                    conn.commit()
-                
-                except Exception as e:
-                    print(f"  ✗ Error syncing folder '{folder_name}': {str(e)}")
-                    continue
-        
-        if synced_count > 0:
-            print(f"✓ Sync complete! Added {synced_count} new documents")
-        else:
-            print(f"✓ Sync complete! All documents already in database")
-        return synced_count
-    
-    except Exception as e:
-        print(f"✗ Google Drive sync error: {str(e)}")
-        traceback.print_exc()
-        return 0
 
-def sync_single_client(client_name):
-    """Sync a specific client folder from Google Drive"""
-    if not drive:
-        return False
-    
-    try:
-        with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            
-            query = f"'{ROOT_FOLDER_ID}' in parents and title='{client_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
-            folder_list = drive.ListFile({'q': query}).GetList()
-            
-            if not folder_list:
-                return False
-            
-            folder = folder_list[0]
-            folder_id = folder['id']
-            
-            cur.execute("SELECT id FROM clients WHERE name = ?", (client_name,))
-            existing = cur.fetchone()
-            
-            if not existing:
-                cur.execute(
-                    "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                    (client_name, folder_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                )
-            
-            client_id = existing[0] if existing else cur.lastrowid
-            
-            files_query = f"'{folder_id}' in parents and trashed=false"
-            files_list = drive.ListFile({'q': files_query}).GetList()
-            
-            for file in files_list:
-                file_id = file['id']
-                
-                cur.execute("SELECT COUNT(*) FROM documents WHERE file_id = ?", (file_id,))
-                if cur.fetchone()[0] == 0:
-                    file_lower = file['title'].lower()
-                    if 'datasheet' in file_lower:
-                        doc_type = 'datasheet'
-                    elif 'aadhaar' in file_lower or 'aadhar' in file_lower:
-                        doc_type = 'aadhaar'
-                    elif 'pan' in file_lower:
-                        doc_type = 'pan'
-                    else:
-                        doc_type = 'datasheet'
-                    
-                    cur.execute(
-                        """INSERT INTO documents 
-                           (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (client_id, doc_type, file_id, file['title'],
-                         f"https://drive.google.com/uc?export=download&id={file_id}",
-                         int(file.get('fileSize', 0)),
-                         file.get('mimeType', 'application/octet-stream'),
-                         file.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' '))
-                    )
-            
+                        cur.execute(
+                            """INSERT INTO documents 
+                               (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (client_id, doc_type, file_id, file['title'],
+                             f"https://drive.google.com/uc?export=download&id={file_id}",
+                             int(file.get('fileSize', 0)),
+                             file.get('mimeType', 'application/octet-stream'),
+                             file.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' '))
+                        )
+                except Exception as e:
+                    print(f"⚠ Skipping file in {client_name}: {e}")
+                    continue
+
             conn.commit()
         return True
-    
+
     except Exception as e:
-        print(f"Error syncing single client: {str(e)}")
+        print(f"✗ Error syncing single client '{client_name}': {str(e)}")
         return False
 
 # ==================== HELPER FUNCTIONS ====================
