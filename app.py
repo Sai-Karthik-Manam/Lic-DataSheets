@@ -189,12 +189,17 @@ def sync_drive_to_database():
         print("🔄 Starting Google Drive sync...")
         synced_count = 0
         
-        query = f"'{ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
         print(f"🔍 Querying Google Drive with: {query}")
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
+        folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
+        if not folder_list:
+            print("⚠️ No folders found, retrying without mimeType filter...")
+            query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
+            folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
 
         print(f"📁 Found {len(folder_list)} folders in Google Drive")
-        
+            
         if len(folder_list) == 0:
             print("⚠️  No folders found! This could mean:")
             print(f"   - The folder ID '{ROOT_FOLDER_ID}' is incorrect")
