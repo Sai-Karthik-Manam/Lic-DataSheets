@@ -392,40 +392,50 @@ def login():
             cur = conn.cursor()
             
             if USE_POSTGRESQL:
+                from psycopg2.extras import DictCursor
+                cur = conn.cursor(cursor_factory=DictCursor)
                 cur.execute(
                     "SELECT id, username, password, role, failed_login_attempts, locked_until FROM users WHERE username = %s",
                     (username,)
                 )
+                user_row = cur.fetchone()
+                user_dict = dict(user_row) if user_row else None
             else:
                 cur.execute(
                     "SELECT id, username, password, role, failed_login_attempts, locked_until FROM users WHERE username = ?",
                     (username,)
                 )
+                user_row = cur.fetchone()
+                user_dict = {
+                    'id': user_row[0], 'username': user_row[1], 'password': user_row[2],
+                    'role': user_row[3], 'failed_login_attempts': user_row[4], 'locked_until': user_row[5]
+                } if user_row else None
             
-            user = cur.fetchone()
-            
-            if user:
-                user_dict = dict(user) if USE_POSTGRESQL else {
-                    'id': user[0], 'username': user[1], 'password': user[2],
-                    'role': user[3], 'failed_login_attempts': user[4], 'locked_until': user[5]
-                }
-                
+            if user_dict:
+                # Check if account is locked
                 if user_dict['locked_until']:
                     try:
-                        lock_time = datetime.fromisoformat(str(user_dict['locked_until'])) if USE_POSTGRESQL else datetime.strptime(str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
-                        if lock_time > datetime.now():
+                        if USE_POSTGRESQL:
+                            lock_time = user_dict['locked_until']
+                        else:
+                            lock_time = datetime.strptime(str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
+                        
+                        if lock_time and lock_time > datetime.now():
                             flash('Account locked. Try again later.', 'error')
                             cur.close()
                             conn.close()
                             return render_template('login.html')
-                    except:
-                        pass
+                    except Exception as e:
+                        print(f"Lock check error: {e}")
                 
+                # Check password
                 if check_password_hash(user_dict['password'], password):
+                    # Successful login
                     session['user_id'] = user_dict['id']
                     session['username'] = user_dict['username']
                     session['role'] = user_dict['role']
                     
+                    # Reset failed attempts
                     if USE_POSTGRESQL:
                         cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = %s", (user_dict['id'],))
                     else:
@@ -439,6 +449,7 @@ def login():
                     flash(f'Welcome back, {username}!', 'success')
                     return redirect(url_for('dashboard'))
                 else:
+                    # Failed password - increment counter
                     failed_attempts = user_dict['failed_login_attempts'] + 1
                     lock_time = None
                     
@@ -463,6 +474,7 @@ def login():
             conn.close()
         except Exception as e:
             print(f"Login error: {str(e)}")
+            traceback.print_exc()
             flash('An error occurred. Please try again.', 'error')
     
     return render_template('login.html')
