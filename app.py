@@ -302,6 +302,110 @@ except Exception as e:
     print(f"Google Drive initialization failed: {str(e)}")
     drive = None
 
+def sync_drive_to_database():
+    """
+    Sync files from the configured ROOT_FOLDER_ID on Google Drive into the local
+    documents table; safely no-ops and returns 0 if Drive isn't configured or on errors.
+    Returns number of documents added.
+    """
+    if drive is None or not ROOT_FOLDER_ID:
+        return 0
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        added = 0
+
+        # Query files directly under the ROOT_FOLDER_ID (non-recursive).
+        query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
+        file_list = drive.ListFile({'q': query}).GetList()
+
+        for f in file_list:
+            file_id = f.get('id')
+            file_name = f.get('title') or f.get('name') or 'unnamed'
+            mime_type = f.get('mimeType')
+            file_size = int(f.get('fileSize') or 0)
+            url = f.get('alternateLink') or f.get('webContentLink') or ''
+
+            # Determine parent folder (client folder) id if available
+            parents = f.get('parents', [])
+            parent_id = parents[0]['id'] if parents else None
+            if not parent_id:
+                # Skip files without a parent folder mapping to a client
+                continue
+
+            # Find client by folder_id
+            if USE_POSTGRESQL:
+                cur.execute("SELECT id FROM clients WHERE folder_id = %s", (parent_id,))
+                row = cur.fetchone()
+                client_id = row[0] if row else None
+            else:
+                cur.execute("SELECT id FROM clients WHERE folder_id = ?", (parent_id,))
+                row = cur.fetchone()
+                client_id = row[0] if row else None
+
+            # If client not present, try to fetch folder title and create a client entry
+            if client_id is None:
+                try:
+                    folder_meta = drive.CreateFile({'id': parent_id})
+                    folder_meta.FetchMetadata(fields='title')
+                    folder_name = folder_meta.get('title') or folder_meta.get('name') or f'client_{parent_id}'
+                except Exception:
+                    folder_name = f'client_{parent_id}'
+
+                created_at = datetime.now()
+                if USE_POSTGRESQL:
+                    cur.execute(
+                        "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (%s, %s, %s, %s) RETURNING id",
+                        (folder_name, parent_id, created_at, created_at)
+                    )
+                    client_id = cur.fetchone()[0]
+                else:
+                    cur.execute(
+                        "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                        (folder_name, parent_id, created_at.strftime("%Y-%m-%d %H:%M:%S"), created_at.strftime("%Y-%m-%d %H:%M:%S"))
+                    )
+                    client_id = cur.lastrowid
+
+            # Skip if document already exists
+            if USE_POSTGRESQL:
+                cur.execute("SELECT id FROM documents WHERE file_id = %s", (file_id,))
+                if cur.fetchone():
+                    continue
+
+                cur.execute(
+                    "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (client_id, 'unknown', file_id, file_name, url, file_size, mime_type, datetime.now(), None)
+                )
+            else:
+                cur.execute("SELECT id FROM documents WHERE file_id = ?", (file_id,))
+                if cur.fetchone():
+                    continue
+
+                cur.execute(
+                    "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (client_id, 'unknown', file_id, file_name, url, file_size, mime_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), None)
+                )
+
+            added += 1
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return added
+    except Exception as e:
+        print(f"Drive sync error: {str(e)}")
+        traceback.print_exc()
+        try:
+            cur.close()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return 0
+
 # ==================== VALIDATION HELPERS ====================
 def validate_client_name(name):
     """Validate client names"""
@@ -544,7 +648,29 @@ def fetch_page():
 @app.route('/clients')
 @login_required
 def list_clients():
+    """List all clients - with automatic Google Drive sync"""
     try:
+        # Automatically sync Google Drive data on first visit
+        try:
+            print("Attempting Google Drive sync...")
+            synced = sync_drive_to_database()
+            if synced > 0:
+                print(f"✅ Synced {synced} new documents")
+                flash(f'✅ Synced {synced} new documents from Google Drive', 'success')
+        except Exception as sync_error:
+            print(f"⚠️ Sync warning (non-critical): {sync_error}")
+            # Don't fail the page if sync has issues, just continue
+        
+        sort_by = request.args.get('sort', 'updated_at')
+        order = request.args.get('order', 'desc')
+        search_query = request.args.get('search', '')
+        
+        order = 'ASC' if order == 'asc' else 'DESC'
+        valid_sorts = ['name', 'created_at', 'updated_at']
+        
+        if sort_by not in valid_sorts:
+            sort_by = 'updated_at'
+        
         conn = get_db_connection()
         cur = conn.cursor()
         
@@ -569,9 +695,21 @@ def list_clients():
         cur.close()
         conn.close()
         
-        return render_template('clients.html', clients=clients, sort_by='updated_at', order='desc', search_query='')
+        # Convert to list of tuples/dicts for template
+        if USE_POSTGRESQL:
+            clients_list = [tuple(client) for client in clients]
+        else:
+            clients_list = clients
+        
+        return render_template('clients.html', 
+                             clients=clients_list, 
+                             sort_by=sort_by, 
+                             order=order.lower(), 
+                             search_query=search_query)
     except Exception as e:
         print(f"List clients error: {str(e)}")
+        traceback.print_exc()
+        flash(f"Error: {str(e)}", "error")
         return render_template('clients.html', clients=[])
 
 @app.errorhandler(404)
