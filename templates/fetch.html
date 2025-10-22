@@ -167,6 +167,10 @@
         <span id="btnText">🔍 Search Documents</span>
       </button>
     </form>
+    <form action="/fetch_data" method="post" id="fetchForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <!-- rest of form -->
+    </form>
 
     {% if client %}
       <div class="client-info-card">

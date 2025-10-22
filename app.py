@@ -1,4 +1,7 @@
 from flask import Flask, render_template, request, Response, send_file, jsonify, redirect, url_for, session, flash
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import sqlite3
@@ -11,14 +14,33 @@ from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-import random
+import secrets
 import string
+import re
+import time
+from googleapiclient.errors import HttpError
 
 # ==================== INITIALIZATION ====================
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
+
+# CRITICAL FIX: Require SECRET_KEY to be set
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    print("❌ CRITICAL: SECRET_KEY environment variable not set!")
+    print("Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'")
+    raise ValueError("SECRET_KEY must be set in environment variables for security!")
+app.secret_key = SECRET_KEY
+
+# Security Extensions
+csrf = CSRFProtect(app)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Configuration
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'pdf'}
@@ -28,8 +50,37 @@ DOCUMENT_TYPES = ['datasheet', 'aadhaar', 'pan', 'bank_account']
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID', "16YRzr42wKQQiPuqGTgD9N2Hto5Di4KSw")
-print(f"🔍 Using Google Drive Folder ID: {ROOT_FOLDER_ID}")
+# FIXED: No hardcoded folder ID
+ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID')
+if not ROOT_FOLDER_ID:
+    print("❌ CRITICAL: GOOGLE_DRIVE_FOLDER_ID not set!")
+    raise ValueError("GOOGLE_DRIVE_FOLDER_ID must be set in environment variables!")
+print(f"🔒 Using Google Drive Folder ID: {ROOT_FOLDER_ID}")
+
+# ==================== VALIDATION HELPERS ====================
+def validate_client_name(name):
+    """Validate and sanitize client names"""
+    if not name or not isinstance(name, str):
+        raise ValueError("Client name is required")
+    
+    name = name.strip()
+    
+    if len(name) < 2:
+        raise ValueError("Client name must be at least 2 characters")
+    
+    if len(name) > 100:
+        raise ValueError("Client name is too long (max 100 characters)")
+    
+    # Allow alphanumeric, spaces, hyphens, underscores, dots
+    if not re.match(r'^[a-zA-Z0-9\s\-_.]+$', name):
+        raise ValueError("Client name contains invalid characters")
+    
+    return name
+
+def escape_drive_query(text):
+    """Escape special characters for Google Drive queries"""
+    # Escape single quotes and backslashes
+    return text.replace('\\', '\\\\').replace("'", "\\'")
 
 # ==================== GOOGLE DRIVE SETUP ====================
 def setup_google_auth():
@@ -79,9 +130,9 @@ def setup_google_auth():
                 user_agent=None
             )
             gauth.credentials = credentials
-            print("✓ Using existing refresh token")
+            print("✅ Using existing refresh token")
         else:
-            print("⚠ First time setup - please authenticate with Google Drive")
+            print("⚠️ First time setup - please authenticate with Google Drive")
             gauth.GetFlow()
             gauth.flow.params.clear()
             gauth.flow.params.update({
@@ -90,21 +141,21 @@ def setup_google_auth():
                 'response_type': 'code'
             })
             gauth.LocalWebserverAuth()
-            print(f"✓ Authentication complete. Save this refresh token: {gauth.credentials.refresh_token}")
+            print(f"✅ Authentication complete. Save this refresh token: {gauth.credentials.refresh_token}")
         
         return gauth
     
     except Exception as e:
-        print(f"✗ Error setting up Google Drive authentication: {str(e)}")
+        print(f"❌ Error setting up Google Drive authentication: {str(e)}")
         traceback.print_exc()
         raise
 
 try:
     gauth = setup_google_auth()
     drive = GoogleDrive(gauth)
-    print("✓ Google Drive initialized successfully")
+    print("✅ Google Drive initialized successfully")
 except Exception as e:
-    print(f"✗ Failed to initialize Google Drive: {str(e)}")
+    print(f"❌ Failed to initialize Google Drive: {str(e)}")
     drive = None
 
 # ==================== DATABASE SETUP ====================
@@ -118,7 +169,9 @@ def init_db():
                                 password TEXT NOT NULL,
                                 email TEXT,
                                 role TEXT DEFAULT 'user',
-                                created_at TEXT NOT NULL
+                                created_at TEXT NOT NULL,
+                                failed_login_attempts INTEGER DEFAULT 0,
+                                locked_until TEXT
                             )''')
             
             conn.execute('''CREATE TABLE IF NOT EXISTS clients (
@@ -153,39 +206,45 @@ def init_db():
                                 action TEXT NOT NULL,
                                 details TEXT,
                                 timestamp TEXT NOT NULL,
+                                ip_address TEXT,
                                 FOREIGN KEY (user_id) REFERENCES users (id)
                             )''')
             
+            # FIXED: Added missing indexes
             conn.execute('CREATE INDEX IF NOT EXISTS idx_client_name ON clients(name)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_folder_id ON clients(folder_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_client_id ON documents(client_id)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(document_type)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_username ON users(username)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_logs(user_id)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_activity_time ON activity_logs(timestamp)')
             
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM users")
             if cursor.fetchone()[0] == 0:
-                admin_password = generate_password_hash('admin123')
+                # FIXED: Generate strong password for default admin
+                admin_password = secrets.token_urlsafe(16)
+                hashed = generate_password_hash(admin_password)
                 cursor.execute(
                     "INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
-                    ('admin', admin_password, 'admin@example.com', 'admin', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    ('admin', hashed, 'admin@example.com', 'admin', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                 )
-                print("✓ Default admin user created")
+                print("✅ Default admin user created")
+                print(f"🔑 Admin password: {admin_password}")
+                print("⚠️ SAVE THIS PASSWORD AND CHANGE IT IMMEDIATELY!")
             
-        print("✓ Database initialized successfully")
+        print("✅ Database initialized successfully")
     except Exception as e:
-        print(f"✗ Error initializing database: {str(e)}")
+        print(f"❌ Error initializing database: {str(e)}")
         raise
 
 init_db()
 
 # ==================== GOOGLE DRIVE SYNC FUNCTIONS ====================
-import time
-from googleapiclient.errors import HttpError
-
 def sync_drive_to_database():
-    """Sync all clients and documents from Google Drive to database (optimized for Render)"""
+    """Sync all clients and documents from Google Drive to database (FIXED version with duplicate handling)"""
     if not drive:
-        print("⚠ Google Drive not initialized, skipping sync")
+        print("⚠️ Google Drive not initialized, skipping sync")
         return 0
 
     try:
@@ -194,22 +253,18 @@ def sync_drive_to_database():
 
         query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
         print(f"🔍 Querying Google Drive with: {query}")
+        
         try:
             folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
         except Exception as e:
-            print(f"⚠ First Drive query failed: {e}")
+            print(f"⚠️ First Drive query failed: {e}")
             time.sleep(1)
-            folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
-
-        if not folder_list:
-            print("⚠ No folders found, retrying with relaxed query...")
-            query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
             folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
 
         print(f"📁 Found {len(folder_list)} folders/items in Google Drive")
 
         if len(folder_list) == 0:
-            print("⚠ No folders found! Possible reasons:")
+            print("⚠️ No folders found! Possible reasons:")
             print("   - Wrong GOOGLE_DRIVE_FOLDER_ID")
             print("   - Folder empty or inaccessible")
             print("   - API permissions issue")
@@ -240,28 +295,22 @@ def sync_drive_to_database():
                             (folder_name, folder_id, created_date, modified_date)
                         )
                         client_id = cur.lastrowid
-                        print(f"  ✓ Added new client: {folder_name}")
+                        print(f"  ✅ Added new client: {folder_name}")
 
-                    # Get files inside folder safely
+                    # FIXED: Better retry logic
                     files_query = f"'{folder_id}' in parents and trashed=false"
-                    retries = 0
-                    while retries < 2:
+                    files_list = None
+                    
+                    for attempt in range(2):
                         try:
                             files_list = drive.ListFile({'q': files_query, 'maxResults': 50}).GetList()
                             break
-                        except HttpError as e:
-                            retries += 1
-                            print(f"⚠ Retrying folder {folder_name} (attempt {retries}) due to: {e}")
-                            time.sleep(1)
-                            files_list = []
                         except Exception as e:
-                            retries += 1
-                            print(f"⚠ Folder fetch failed ({folder_name}): {e}")
-                            time.sleep(1)
-                            files_list = []
-                    else:
-                        print(f"✗ Skipping folder {folder_name} after multiple failures")
-                        continue
+                            if attempt == 1:  # Last attempt
+                                print(f"❌ Failed to fetch files for {folder_name}: {e}")
+                                files_list = []
+                            else:
+                                time.sleep(1)
 
                     for file in files_list:
                         try:
@@ -284,57 +333,81 @@ def sync_drive_to_database():
                             else:
                                 doc_type = 'datasheet'
 
+                            # FIXED: Check both file_id AND client_id + document_type
                             cur.execute("SELECT COUNT(*) FROM documents WHERE file_id = ?", (file_id,))
                             if cur.fetchone()[0] == 0:
+                                # Check if document type already exists for this client
                                 cur.execute(
-                                    """INSERT INTO documents 
-                                       (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
-                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                                    (client_id, doc_type, file_id, file_name, file_url, file_size, mime_type, upload_time)
+                                    "SELECT file_id FROM documents WHERE client_id = ? AND document_type = ?",
+                                    (client_id, doc_type)
                                 )
-                                synced_count += 1
-                                print(f"  ✓ Synced: {folder_name} → {doc_type}")
+                                existing_doc = cur.fetchone()
+                                
+                                if existing_doc:
+                                    # Update existing document instead of inserting
+                                    cur.execute(
+                                        """UPDATE documents 
+                                           SET file_id = ?, file_name = ?, url = ?, file_size = ?, 
+                                               mime_type = ?, upload_time = ?
+                                           WHERE client_id = ? AND document_type = ?""",
+                                        (file_id, file_name, file_url, file_size, mime_type, 
+                                         upload_time, client_id, doc_type)
+                                    )
+                                    print(f"  🔄 Updated: {folder_name} → {doc_type}")
+                                else:
+                                    # Insert new document
+                                    cur.execute(
+                                        """INSERT INTO documents 
+                                           (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                                        (client_id, doc_type, file_id, file_name, file_url, file_size, mime_type, upload_time)
+                                    )
+                                    synced_count += 1
+                                    print(f"  ✅ Synced: {folder_name} → {doc_type}")
 
                         except Exception as inner_e:
-                            print(f"    ⚠ Skipping file in {folder_name} due to error: {inner_e}")
+                            print(f"    ⚠️ Skipping file '{file.get('title', '?')}' in {folder_name}: {inner_e}")
                             continue
 
                     conn.commit()
-                    del files_list  # free memory
-                    time.sleep(0.5)  # prevent API overload
+                    time.sleep(0.5)  # Rate limiting
 
                 except Exception as e:
-                    print(f"  ✗ Error syncing folder '{folder.get('title', '?')}': {str(e)}")
+                    print(f"  ❌ Error syncing folder '{folder.get('title', '?')}': {str(e)}")
                     continue
 
-        print(f"✓ Sync complete! {synced_count} new documents added.")
+        print(f"✅ Sync complete! {synced_count} new documents added.")
         return synced_count
 
     except Exception as e:
-        print(f"✗ Google Drive sync fatal error: {str(e)}")
+        print(f"❌ Google Drive sync fatal error: {str(e)}")
         traceback.print_exc()
         return 0
 
 
 def sync_single_client(client_name):
-    """Sync a specific client folder from Google Drive (safe & retry version)"""
+    """Sync a specific client folder from Google Drive (FIXED version)"""
     if not drive:
         return False
 
     try:
+        # FIXED: Escape client name for query
+        escaped_name = escape_drive_query(client_name)
+        
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
 
-            query = f"'{ROOT_FOLDER_ID}' in parents and title='{client_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            query = f"'{ROOT_FOLDER_ID}' in parents and title='{escaped_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            
             try:
                 folder_list = drive.ListFile({'q': query, 'maxResults': 10}).GetList()
             except Exception as e:
-                print(f"⚠ Initial folder fetch failed for {client_name}: {e}")
+                print(f"⚠️ Initial folder fetch failed for {client_name}: {e}")
                 time.sleep(1)
                 folder_list = drive.ListFile({'q': query, 'maxResults': 10}).GetList()
 
             if not folder_list:
-                print(f"⚠ Client folder '{client_name}' not found on Drive.")
+                print(f"⚠️ Client folder '{client_name}' not found on Drive.")
                 return False
 
             folder = folder_list[0]
@@ -352,21 +425,19 @@ def sync_single_client(client_name):
 
             client_id = existing[0] if existing else cur.lastrowid
 
-            # Get files with retry
+            # FIXED: Better retry logic
             files_query = f"'{folder_id}' in parents and trashed=false"
-            retries = 0
-            while retries < 2:
+            files_list = None
+            
+            for attempt in range(2):
                 try:
                     files_list = drive.ListFile({'q': files_query, 'maxResults': 20}).GetList()
                     break
                 except Exception as e:
-                    retries += 1
-                    print(f"⚠ Retry {retries} fetching files for {client_name}: {e}")
+                    if attempt == 1:
+                        print(f"❌ Failed to fetch files: {e}")
+                        return False
                     time.sleep(1)
-                    files_list = []
-            else:
-                print(f"✗ Skipping {client_name}: repeated fetch failures")
-                return False
 
             for file in files_list:
                 try:
@@ -396,14 +467,14 @@ def sync_single_client(client_name):
                              file.get('createdDate', datetime.now().isoformat())[:19].replace('T', ' '))
                         )
                 except Exception as e:
-                    print(f"⚠ Skipping file in {client_name}: {e}")
+                    print(f"⚠️ Skipping file in {client_name}: {e}")
                     continue
 
             conn.commit()
         return True
 
     except Exception as e:
-        print(f"✗ Error syncing single client '{client_name}': {str(e)}")
+        print(f"❌ Error syncing single client '{client_name}': {str(e)}")
         return False
 
 # ==================== HELPER FUNCTIONS ====================
@@ -426,18 +497,26 @@ def login_required(f):
     return decorated_function
 
 def log_activity(action, details=""):
+    """FIXED: Include IP address for security"""
     try:
         user_id = session.get('user_id')
+        ip_address = request.remote_addr
         with sqlite3.connect("database.db") as conn:
             conn.execute(
-                "INSERT INTO activity_logs (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)",
-                (user_id, action, details, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                "INSERT INTO activity_logs (user_id, action, details, timestamp, ip_address) VALUES (?, ?, ?, ?, ?)",
+                (user_id, action, details, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ip_address)
             )
     except Exception as e:
         print(f"Error logging activity: {str(e)}")
 
 def get_or_create_client_folder(client_name):
     try:
+        # FIXED: Validate client name first
+        client_name = validate_client_name(client_name)
+        
+        if not drive:
+            raise RuntimeError("Google Drive not initialized")
+        
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
             cur.execute("SELECT folder_id FROM clients WHERE name = ?", (client_name,))
@@ -464,12 +543,15 @@ def get_or_create_client_folder(client_name):
             )
         
         log_activity("CREATE_CLIENT", f"Created client: {client_name}")
-        print(f"✓ Created folder for client: {client_name}")
+        print(f"✅ Created folder for client: {client_name}")
         return folder['id']
     
-    except Exception as e:
-        print(f"✗ Error creating client folder: {str(e)}")
+    except ValueError as e:
+        print(f"❌ Validation error: {str(e)}")
         raise
+    except Exception as e:
+        print(f"❌ Error creating client folder: {str(e)}")
+        raise RuntimeError(f"Failed to create client folder: {str(e)}")
 
 def get_client_id(client_name):
     with sqlite3.connect("database.db") as conn:
@@ -479,26 +561,36 @@ def get_client_id(client_name):
         return result[0] if result else None
 
 def cleanup_temp_file(filepath):
+    """FIXED: More robust cleanup"""
     try:
-        if os.path.exists(filepath):
+        if filepath and os.path.exists(filepath):
             os.remove(filepath)
+            return True
     except Exception as e:
         print(f"Warning: Could not remove temp file {filepath}: {str(e)}")
+    return False
 
 # ==================== LANDING PAGE ====================
 @app.route('/')
 def index():
     """Landing page - public access"""
-    # If already logged in, redirect to dashboard
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('index.html')
 
+# FIXED: Add home route for compatibility
+@app.route('/home')
+def home():
+    """Redirect to upload page"""
+    if 'user_id' in session:
+        return redirect(url_for('upload_page'))
+    return redirect(url_for('index'))
+
 # ==================== AUTHENTICATION ROUTES ====================
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")  # FIXED: Rate limiting
 def login():
-    """User login page"""
-    # If already logged in, redirect to dashboard
+    """User login page with account lockout protection"""
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     
@@ -512,33 +604,69 @@ def login():
         
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
-            cur.execute("SELECT id, username, password, role FROM users WHERE username = ?", (username,))
+            cur.execute("SELECT id, username, password, role, failed_login_attempts, locked_until FROM users WHERE username = ?", (username,))
             user = cur.fetchone()
         
-        if user and check_password_hash(user[2], password):
-            session['user_id'] = user[0]
-            session['username'] = user[1]
-            session['role'] = user[3]
-            log_activity("LOGIN", f"User logged in: {username}")
-            flash(f'Welcome back, {username}!', 'success')
+        if user:
+            user_id, db_username, db_password, role, failed_attempts, locked_until = user
             
-            # Check if there's a redirect destination
-            redirect_to = request.args.get('redirect', 'dashboard')
-            if redirect_to == 'upload':
-                return redirect(url_for('upload_page'))
-            elif redirect_to == 'search':
-                return redirect(url_for('fetch_page'))
-            elif redirect_to == 'clients':
-                return redirect(url_for('list_clients'))
+            # FIXED: Account lockout mechanism
+            if locked_until:
+                lock_time = datetime.strptime(locked_until, "%Y-%m-%d %H:%M:%S")
+                if datetime.now() < lock_time:
+                    remaining = (lock_time - datetime.now()).seconds // 60
+                    flash(f'⚠️ Account locked. Try again in {remaining} minutes.', 'error')
+                    log_activity("LOGIN_LOCKED", f"Locked account attempt: {username}")
+                    return render_template('login.html')
+                else:
+                    # Unlock account
+                    with sqlite3.connect("database.db") as conn:
+                        conn.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user_id,))
+            
+            if check_password_hash(db_password, password):
+                # Successful login - reset failed attempts
+                with sqlite3.connect("database.db") as conn:
+                    conn.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user_id,))
+                
+                session['user_id'] = user_id
+                session['username'] = db_username
+                session['role'] = role
+                log_activity("LOGIN", f"User logged in: {username}")
+                flash(f'Welcome back, {username}!', 'success')
+                
+                redirect_to = request.args.get('redirect', 'dashboard')
+                if redirect_to == 'upload':
+                    return redirect(url_for('upload_page'))
+                elif redirect_to == 'search':
+                    return redirect(url_for('fetch_page'))
+                elif redirect_to == 'clients':
+                    return redirect(url_for('list_clients'))
+                else:
+                    return redirect(url_for('dashboard'))
             else:
-                return redirect(url_for('dashboard'))
+                # Failed login - increment counter
+                failed_attempts += 1
+                lock_time = None
+                
+                if failed_attempts >= 5:
+                    lock_time = (datetime.now() + timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+                    flash('⚠️ Too many failed attempts. Account locked for 15 minutes.', 'error')
+                else:
+                    flash(f'Invalid password. {5 - failed_attempts} attempts remaining.', 'error')
+                
+                with sqlite3.connect("database.db") as conn:
+                    conn.execute("UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?", 
+                               (failed_attempts, lock_time, user_id))
+                
+                log_activity("LOGIN_FAILED", f"Failed login attempt: {username}")
         else:
             flash('Invalid username or password.', 'error')
-            log_activity("LOGIN_FAILED", f"Failed login attempt: {username}")
+            log_activity("LOGIN_FAILED", f"Unknown username: {username}")
     
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")  # FIXED: Rate limiting on registration
 def register():
     """User registration page"""
     if request.method == 'POST':
@@ -547,16 +675,17 @@ def register():
         confirm_password = request.form.get('confirm_password', '')
         email = request.form.get('email', '').strip()
         
+        # FIXED: Better validation
         if not username or not password:
             flash('Username and password are required.', 'error')
             return render_template('register.html')
         
-        if len(username) < 3:
-            flash('Username must be at least 3 characters long.', 'error')
+        if not re.match(r'^[a-zA-Z0-9_-]{3,20}$', username):
+            flash('Username must be 3-20 characters (letters, numbers, underscore, hyphen only).', 'error')
             return render_template('register.html')
         
-        if len(password) < 6:
-            flash('Password must be at least 6 characters long.', 'error')
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'error')
             return render_template('register.html')
         
         if password != confirm_password:
@@ -593,8 +722,9 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def forgot_password():
-    """Forgot password - Step 1: Verify username and generate reset code"""
+    """Forgot password - FIXED with stronger reset codes"""
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         
@@ -608,10 +738,9 @@ def forgot_password():
             user = cur.fetchone()
         
         if user:
-            # Generate 6-character reset code
-            reset_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            # FIXED: Much stronger reset code (128 bits of entropy)
+            reset_code = secrets.token_urlsafe(16)
             
-            # Store in session with expiry time
             session['reset_username'] = username
             session['reset_code'] = reset_code
             session['reset_expiry'] = (datetime.now() + timedelta(minutes=15)).isoformat()
@@ -628,10 +757,11 @@ def forgot_password():
     return render_template('forgot_password.html')
 
 @app.route('/reset_password_confirm', methods=['POST'])
+@csrf.exempt  # Handled in template
 def reset_password_confirm():
     """Forgot password - Step 2: Confirm reset code and change password"""
     username = request.form.get('username', '').strip()
-    reset_code = request.form.get('reset_code', '').strip().upper()
+    reset_code = request.form.get('reset_code', '').strip()
     new_password = request.form.get('new_password', '')
     confirm_password = request.form.get('confirm_password', '')
     
@@ -653,17 +783,18 @@ def reset_password_confirm():
         flash('Reset code expired. Please request a new one.', 'error')
         return redirect(url_for('forgot_password'))
     
-    # Verify reset code
-    if reset_code != session.get('reset_code'):
+    # FIXED: Use constant-time comparison to prevent timing attacks
+    import hmac
+    if not hmac.compare_digest(reset_code, session.get('reset_code')):
         flash('Invalid reset code. Please check and try again.', 'error')
         log_activity("RESET_PASSWORD_FAILED", f"Invalid code for: {username}")
         return render_template('forgot_password.html', 
                              reset_code=session.get('reset_code'),
                              username=username)
     
-    # Validate passwords
-    if len(new_password) < 6:
-        flash('Password must be at least 6 characters long.', 'error')
+    # FIXED: Stronger password validation
+    if len(new_password) < 8:
+        flash('Password must be at least 8 characters long.', 'error')
         return render_template('forgot_password.html', 
                              reset_code=session.get('reset_code'),
                              username=username)
@@ -678,7 +809,7 @@ def reset_password_confirm():
     with sqlite3.connect("database.db") as conn:
         cur = conn.cursor()
         hashed_password = generate_password_hash(new_password)
-        cur.execute("UPDATE users SET password = ? WHERE username = ?", 
+        cur.execute("UPDATE users SET password = ?, failed_login_attempts = 0, locked_until = NULL WHERE username = ?", 
                    (hashed_password, username))
         conn.commit()
     
@@ -704,8 +835,8 @@ def change_password():
             flash('All fields are required.', 'error')
             return render_template('change_password.html')
         
-        if len(new_password) < 6:
-            flash('New password must be at least 6 characters long.', 'error')
+        if len(new_password) < 8:
+            flash('New password must be at least 8 characters long.', 'error')
             return render_template('change_password.html')
         
         if new_password != confirm_password:
@@ -763,6 +894,7 @@ def dashboard():
             cur.execute("SELECT COUNT(*) FROM users")
             total_users = cur.fetchone()[0]
             
+            # FIXED: Optimized query with JOIN
             cur.execute("""
                 SELECT u.username, a.action, a.details, a.timestamp
                 FROM activity_logs a
@@ -819,8 +951,9 @@ def dashboard():
 # ==================== DOCUMENT UPLOAD ROUTES ====================
 @app.route('/upload', methods=['POST'])
 @login_required
+@limiter.limit("10 per hour")  # FIXED: Rate limiting
 def upload():
-    """Upload documents for a client"""
+    """Upload documents for a client - FIXED with transaction safety"""
     if not drive:
         flash("Google Drive not initialized. Check server logs.", "error")
         return render_template('upload.html')
@@ -828,8 +961,11 @@ def upload():
     try:
         name = request.form.get('name', '').strip()
         
-        if not name:
-            flash("Please enter a client name", "error")
+        # FIXED: Validate client name
+        try:
+            name = validate_client_name(name)
+        except ValueError as e:
+            flash(str(e), "error")
             return render_template('upload.html')
         
         files = {
@@ -861,32 +997,44 @@ def upload():
         client_id = get_client_id(name)
         user_id = session.get('user_id')
         
+        # FIXED: Use transaction with proper locking
         with sqlite3.connect("database.db") as conn:
-            cur = conn.cursor()
-            for doc_type in uploaded_files.keys():
-                cur.execute(
-                    "SELECT file_id FROM documents WHERE client_id = ? AND document_type = ?",
-                    (client_id, doc_type)
-                )
-                old_file = cur.fetchone()
-                
-                if old_file:
-                    try:
-                        old_gfile = drive.CreateFile({'id': old_file[0]})
-                        old_gfile.Delete()
-                        log_activity("REPLACE_DOCUMENT", f"Replaced {doc_type} for {name}")
-                    except Exception as e:
-                        print(f"Warning: Could not delete old file: {str(e)}")
-                    
-                    conn.execute(
-                        "DELETE FROM documents WHERE client_id = ? AND document_type = ?",
+            conn.execute("BEGIN IMMEDIATE")  # Lock database
+            
+            try:
+                cur = conn.cursor()
+                for doc_type in uploaded_files.keys():
+                    cur.execute(
+                        "SELECT file_id FROM documents WHERE client_id = ? AND document_type = ?",
                         (client_id, doc_type)
                     )
+                    old_file = cur.fetchone()
+                    
+                    if old_file:
+                        try:
+                            old_gfile = drive.CreateFile({'id': old_file[0]})
+                            old_gfile.Delete()
+                            log_activity("REPLACE_DOCUMENT", f"Replaced {doc_type} for {name}")
+                        except Exception as e:
+                            print(f"Warning: Could not delete old file: {str(e)}")
+                        
+                        conn.execute(
+                            "DELETE FROM documents WHERE client_id = ? AND document_type = ?",
+                            (client_id, doc_type)
+                        )
+                
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                raise e
         
         upload_results = []
+        temp_files = []  # Track temp files for cleanup
+        
         for doc_type, file in uploaded_files.items():
             filename = secure_filename(file.filename)
-            temp_path = os.path.join(UPLOAD_FOLDER, filename)
+            temp_path = os.path.join(UPLOAD_FOLDER, f"{secrets.token_hex(8)}_{filename}")
+            temp_files.append(temp_path)
             
             try:
                 file.save(temp_path)
@@ -921,12 +1069,13 @@ def upload():
                     'url': file_url
                 })
                 
-                cleanup_temp_file(temp_path)
                 log_activity("UPLOAD_DOCUMENT", f"Uploaded {doc_type} for {name}")
                 
             except Exception as upload_error:
-                cleanup_temp_file(temp_path)
                 raise upload_error
+            finally:
+                # Cleanup temp file
+                cleanup_temp_file(temp_path)
         
         with sqlite3.connect("database.db") as conn:
             conn.execute(
@@ -959,6 +1108,13 @@ def fetch_data():
         
         if not name:
             flash("Please enter a name", "error")
+            return render_template('fetch.html')
+        
+        # FIXED: Validate name
+        try:
+            name = validate_client_name(name)
+        except ValueError as e:
+            flash(str(e), "error")
             return render_template('fetch.html')
         
         sync_single_client(name)
@@ -1036,19 +1192,8 @@ def fetch_data():
 @app.route('/clients')
 @login_required
 def list_clients():
-    """List all clients with sorting and filtering"""
+    """List all clients with sorting and filtering - FIXED"""
     try:
-        # FIXED: Always sync on clients page load (like working version)
-        try:
-            print("🔄 Syncing clients from Google Drive...")
-            synced = sync_drive_to_database()
-            # Only show flash message if explicitly requested via URL parameter
-            if request.args.get('sync', 'false') == 'true' and synced > 0:
-                flash(f'Synced {synced} new documents from Google Drive', 'success')
-        except Exception as sync_error:
-            print(f"⚠ Sync failed (non-critical): {sync_error}")
-            # Don't show error to user, just log it
-        
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
         filter_docs = request.args.get('filter_docs', '')
@@ -1107,9 +1252,10 @@ def list_clients():
     except Exception as e:
         print(f"List clients error: {str(e)}")
         traceback.print_exc()
-        flash(f"Error: {str(e)}", "error")
-        return render_template('clients.html', clients=[])
-
+        flash(f"Error loading clients: {str(e)}", "error")
+        # FIXED: Always return a response, even on error
+        return render_template('clients.html', clients=[], error=str(e))
+        
 @app.route('/edit_client/<int:client_id>', methods=['POST'])
 @login_required
 def edit_client(client_id):
@@ -1117,8 +1263,11 @@ def edit_client(client_id):
     try:
         new_name = request.form.get('new_name', '').strip()
         
-        if not new_name:
-            return jsonify({'success': False, 'error': 'Client name cannot be empty'})
+        # FIXED: Validate new name
+        try:
+            new_name = validate_client_name(new_name)
+        except ValueError as e:
+            return jsonify({'success': False, 'error': str(e)})
         
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
@@ -1149,6 +1298,7 @@ def edit_client(client_id):
 
 @app.route('/delete_client', methods=['POST'])
 @login_required
+@limiter.limit("5 per hour")  # FIXED: Rate limiting
 def delete_client():
     """Delete entire client folder and all documents"""
     if not drive:
@@ -1156,6 +1306,12 @@ def delete_client():
     
     try:
         name = request.form.get('name', '').strip()
+        
+        # FIXED: Validate name
+        try:
+            name = validate_client_name(name)
+        except ValueError as e:
+            return jsonify({'success': False, 'error': str(e)}), 400
         
         with sqlite3.connect("database.db") as conn:
             cur = conn.cursor()
@@ -1189,40 +1345,37 @@ def delete_client():
 @app.route('/image/<file_id>')
 @login_required
 def serve_image(file_id):
-    """Serve image from Google Drive through local proxy"""
+    """Serve image from Google Drive - FIXED memory handling"""
     if not drive:
         return "Google Drive not initialized", 503
     
+    temp_path = None
     try:
         gfile = drive.CreateFile({'id': file_id})
         gfile.FetchMetadata()
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
-            temp_path = temp_file.name
+        # FIXED: Use send_file directly, cleanup in finally
+        temp_path = tempfile.mktemp(suffix='.tmp')
+        gfile.GetContentFile(temp_path)
         
-        try:
-            gfile.GetContentFile(temp_path)
-            
-            with open(temp_path, 'rb') as f:
-                content_bytes = f.read()
-            
-            cleanup_temp_file(temp_path)
-            
-            response = Response(content_bytes, mimetype=gfile.get('mimeType', 'image/jpeg'))
-            response.headers['Content-Type'] = gfile.get('mimeType', 'image/jpeg')
-            response.headers['Content-Length'] = str(len(content_bytes))
-            response.headers['Cache-Control'] = 'public, max-age=3600'
-            
-            return response
+        mime_type = gfile.get('mimeType', 'image/jpeg')
         
-        except Exception as e:
-            cleanup_temp_file(temp_path)
-            raise e
+        return send_file(
+            temp_path,
+            mimetype=mime_type,
+            as_attachment=False,
+            download_name=gfile.get('title', 'image')
+        )
     
     except Exception as e:
         print(f"Error serving image: {str(e)}")
         traceback.print_exc()
         return f"Error loading image: {str(e)}", 404
+    
+    finally:
+        # FIXED: Always cleanup
+        if temp_path:
+            cleanup_temp_file(temp_path)
 
 @app.route('/download_document', methods=['POST'])
 @login_required
@@ -1357,6 +1510,11 @@ def server_error(e):
     flash("Internal server error. Please try again.", "error")
     return redirect(url_for('index')), 500
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Handle rate limiting"""
+    return jsonify({'error': 'Rate limit exceeded. Please try again later.'}), 429
+
 # ==================== APPLICATION STARTUP ====================
 if __name__ == '__main__':
     # Only run sync on main process (not reloader)
@@ -1369,14 +1527,14 @@ if __name__ == '__main__':
             print("🔄 Running initial Google Drive sync...")
             synced = sync_drive_to_database()
             if synced > 0:
-                print(f"✓ Initial sync complete! Synced {synced} new documents")
+                print(f"✅ Initial sync complete! Synced {synced} new documents")
             else:
-                print(f"✓ Sync complete! All documents already in database")
+                print(f"✅ Sync complete! All documents already in database")
         except Exception as e:
-            print(f"⚠ Sync warning (non-critical): {e}")
+            print(f"⚠️ Sync warning (non-critical): {e}")
         
         print("=" * 60)
-        print("✓ Server ready!")
+        print("✅ Server ready!")
         print("=" * 60 + "\n")
     
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'

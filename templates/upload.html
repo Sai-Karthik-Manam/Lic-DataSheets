@@ -442,7 +442,12 @@
       document.getElementById('clientName').value = '';
       document.getElementById('clientName').readOnly = false;
       document.getElementById('clientName').focus();
-      document.querySelector('.success').remove();
+      
+      // Safely remove success message
+      const successMsg = document.querySelector('.success');
+      if (successMsg) {
+        successMsg.remove();
+      }
     }
   </script>
 </body>

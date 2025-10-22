@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>All Clients | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
@@ -258,17 +259,6 @@
       font-weight: 500;
     }
 
-    /* IMPORTANT: Remove max-height that was limiting display */
-    .clients-table-container {
-      max-height: none !important;
-      overflow: visible !important;
-    }
-    
-    .clients-table tbody {
-      max-height: none !important;
-      overflow: visible !important;
-    }
-
     @media (max-width: 768px) {
       .clients-table-container {
         overflow-x: auto;
@@ -401,7 +391,7 @@
               <th>👤 Client Name</th>
               <th>📄 Documents</th>
               <th>📅 Created</th>
-              <th>🔄 Updated</th>
+              <th>📝 Updated</th>
               <th>⚡ Actions</th>
             </tr>
           </thead>
@@ -410,7 +400,7 @@
             <tr>
               <td>{{ loop.index }}</td>
               <td>
-                <span class="client-name-cell" onclick="viewClient('{{ client[1] }}')">
+                <span class="client-name-cell" onclick="viewClientData('{{ client[1] }}')">
                   {{ client[1] }}
                 </span>
               </td>
@@ -421,10 +411,10 @@
               <td class="date-cell">{{ client[3][:10] }}</td>
               <td>
                 <div class="action-cell">
-                  <button class="btn-edit" onclick="editClient('{{ client[0] }}', '{{ client[1] }}')">
+                  <button class="btn-edit" onclick="editClientModal('{{ client[0] }}', '{{ client[1] }}')">
                     ✏️ Edit
                   </button>
-                  <button class="btn-view" onclick="viewClient('{{ client[1] }}')">
+                  <button class="btn-view" onclick="viewClientData('{{ client[1] }}')">
                     👁️ View
                   </button>
                 </div>
@@ -435,7 +425,6 @@
         </table>
       </div>
 
-      <!-- DEBUG INFO -->
       <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 10px; font-size: 12px; color: #666;">
         <strong>Debug Info:</strong><br>
         Total clients in database: {{ clients|length }}<br>
@@ -450,7 +439,7 @@
         <p style="color: #666; margin: 15px 0;">
           Start by uploading documents for your first client!
         </p>
-        <a href="/" class="link" style="display: inline-block; margin-top: 20px;">
+        <a href="/upload_page" class="link" style="display: inline-block; margin-top: 20px;">
           📤 Upload Documents
         </a>
       </div>
@@ -461,29 +450,39 @@
     {% endif %}
 
     <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
-      <a href="/" class="link">📤 Upload Documents</a>
+      <a href="/upload_page" class="link">📤 Upload Documents</a>
       <a href="/fetch" class="link">🔍 Search Client</a>
+      <a href="/dashboard" class="link">📈 Dashboard</a>
     </div>
   </div>
 
   <script>
-    function viewClient(name) {
+    function viewClientData(clientName) {
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
       
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'name';
-      input.value = name;
+      const nameInput = document.createElement('input');
+      nameInput.type = 'hidden';
+      nameInput.name = 'name';
+      nameInput.value = clientName;
+      form.appendChild(nameInput);
       
-      form.appendChild(input);
+      // ADD THIS - Get CSRF token from the page
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+      }
+      
       document.body.appendChild(form);
       form.submit();
     }
-
-    function editClient(clientId, currentName) {
-      const newName = prompt(`Edit client name:\n\nCurrent name: ${currentName}\n\nEnter new name:`, currentName);
+    function editClientModal(clientId, currentName) {
+      const newName = prompt('Edit client name.\n\nCurrent: ' + currentName + '\n\nEnter new name:', currentName);
       
       if (!newName || newName === currentName) {
         return;
@@ -497,21 +496,21 @@
       const formData = new FormData();
       formData.append('new_name', newName.trim());
       
-      fetch(`/edit_client/${clientId}`, {
+      fetch('/edit_client/' + clientId, {
         method: 'POST',
         body: formData
       })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          alert('✅ ' + data.message);
+          alert('Success: ' + data.message);
           location.reload();
         } else {
-          alert('❌ Error: ' + data.error);
+          alert('Error: ' + data.error);
         }
       })
       .catch(error => {
-        alert('❌ Network error: ' + error);
+        alert('Error: ' + error.message);
       });
     }
 
@@ -519,17 +518,13 @@
       const input = document.getElementById('searchInput');
       const filter = input.value.toUpperCase();
       const table = document.getElementById('clientsTable');
-      const tr = table.getElementsByTagName('tr');
+      const rows = table.getElementsByTagName('tr');
 
-      for (let i = 1; i < tr.length; i++) {
-        const td = tr[i].getElementsByTagName('td')[1];
+      for (let i = 1; i < rows.length; i++) {
+        const td = rows[i].getElementsByTagName('td')[1];
         if (td) {
           const txtValue = td.textContent || td.innerText;
-          if (txtValue.toUpperCase().indexOf(filter) > -1) {
-            tr[i].style.display = '';
-          } else {
-            tr[i].style.display = 'none';
-          }
+          rows[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
         }
       }
     }
