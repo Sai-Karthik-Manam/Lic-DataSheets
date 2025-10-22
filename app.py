@@ -303,109 +303,152 @@ except Exception as e:
     drive = None
 
 def sync_drive_to_database():
-    """
-    Sync files from the configured ROOT_FOLDER_ID on Google Drive into the local
-    documents table; safely no-ops and returns 0 if Drive isn't configured or on errors.
-    Returns number of documents added.
-    """
-    if drive is None or not ROOT_FOLDER_ID:
+    """Sync all clients and documents from Google Drive to database"""
+    if not drive:
+        print("Google Drive not initialized")
         return 0
 
     try:
+        print("Starting Google Drive sync...")
+        synced_count = 0
+        
+        query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
+        folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
+        print(f"Found {len(folder_list)} folders in Google Drive")
+        
         conn = get_db_connection()
         cur = conn.cursor()
-        added = 0
-
-        # Query files directly under the ROOT_FOLDER_ID (non-recursive).
-        query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
-        file_list = drive.ListFile({'q': query}).GetList()
-
-        for f in file_list:
-            file_id = f.get('id')
-            file_name = f.get('title') or f.get('name') or 'unnamed'
-            mime_type = f.get('mimeType')
-            file_size = int(f.get('fileSize') or 0)
-            url = f.get('alternateLink') or f.get('webContentLink') or ''
-
-            # Determine parent folder (client folder) id if available
-            parents = f.get('parents', [])
-            parent_id = parents[0]['id'] if parents else None
-            if not parent_id:
-                # Skip files without a parent folder mapping to a client
-                continue
-
-            # Find client by folder_id
-            if USE_POSTGRESQL:
-                cur.execute("SELECT id FROM clients WHERE folder_id = %s", (parent_id,))
-                row = cur.fetchone()
-                client_id = row[0] if row else None
-            else:
-                cur.execute("SELECT id FROM clients WHERE folder_id = ?", (parent_id,))
-                row = cur.fetchone()
-                client_id = row[0] if row else None
-
-            # If client not present, try to fetch folder title and create a client entry
-            if client_id is None:
-                try:
-                    folder_meta = drive.CreateFile({'id': parent_id})
-                    folder_meta.FetchMetadata(fields='title')
-                    folder_name = folder_meta.get('title') or folder_meta.get('name') or f'client_{parent_id}'
-                except Exception:
-                    folder_name = f'client_{parent_id}'
-
-                created_at = datetime.now()
+        
+        for folder in folder_list:
+            try:
+                folder_name = folder['title']
+                folder_id = folder['id']
+                created_date = folder.get('createdDate', datetime.now().isoformat())[:19]
+                modified_date = folder.get('modifiedDate', datetime.now().isoformat())[:19]
+                
                 if USE_POSTGRESQL:
-                    cur.execute(
-                        "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (%s, %s, %s, %s) RETURNING id",
-                        (folder_name, parent_id, created_at, created_at)
-                    )
-                    client_id = cur.fetchone()[0]
+                    cur.execute("SELECT id FROM clients WHERE name = %s", (folder_name,))
                 else:
-                    cur.execute(
-                        "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                        (folder_name, parent_id, created_at.strftime("%Y-%m-%d %H:%M:%S"), created_at.strftime("%Y-%m-%d %H:%M:%S"))
-                    )
-                    client_id = cur.lastrowid
-
-            # Skip if document already exists
-            if USE_POSTGRESQL:
-                cur.execute("SELECT id FROM documents WHERE file_id = %s", (file_id,))
-                if cur.fetchone():
-                    continue
-
-                cur.execute(
-                    "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (client_id, 'unknown', file_id, file_name, url, file_size, mime_type, datetime.now(), None)
-                )
-            else:
-                cur.execute("SELECT id FROM documents WHERE file_id = ?", (file_id,))
-                if cur.fetchone():
-                    continue
-
-                cur.execute(
-                    "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (client_id, 'unknown', file_id, file_name, url, file_size, mime_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), None)
-                )
-
-            added += 1
-
-        conn.commit()
+                    cur.execute("SELECT id FROM clients WHERE name = ?", (folder_name,))
+                
+                existing = cur.fetchone()
+                
+                if existing:
+                    client_id = existing[0]
+                    if USE_POSTGRESQL:
+                        cur.execute(
+                            "UPDATE clients SET folder_id = %s, updated_at = %s WHERE id = %s",
+                            (folder_id, modified_date, client_id)
+                        )
+                    else:
+                        cur.execute(
+                            "UPDATE clients SET folder_id = ?, updated_at = ? WHERE id = ?",
+                            (folder_id, modified_date, client_id)
+                        )
+                else:
+                    if USE_POSTGRESQL:
+                        cur.execute(
+                            "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (%s, %s, %s, %s) RETURNING id",
+                            (folder_name, folder_id, created_date, modified_date)
+                        )
+                        client_id = cur.fetchone()[0]
+                    else:
+                        cur.execute(
+                            "INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                            (folder_name, folder_id, created_date, modified_date)
+                        )
+                        client_id = cur.lastrowid
+                    
+                    print(f"Added client: {folder_name}")
+                
+                # Sync files in folder
+                files_query = f"'{folder_id}' in parents and trashed=false"
+                try:
+                    files_list = drive.ListFile({'q': files_query, 'maxResults': 50}).GetList()
+                except Exception as e:
+                    print(f"⚠️ Could not fetch files for {folder_name}: {e}")
+                    files_list = []
+                
+                for file in files_list:
+                    try:
+                        file_id = file['id']
+                        file_lower = file['title'].lower()
+                        
+                        # Determine document type
+                        if 'datasheet' in file_lower:
+                            doc_type = 'datasheet'
+                        elif 'aadhaar' in file_lower or 'aadhar' in file_lower:
+                            doc_type = 'aadhaar'
+                        elif 'pan' in file_lower:
+                            doc_type = 'pan'
+                        elif 'bank' in file_lower or 'account' in file_lower:
+                            doc_type = 'bank_account'
+                        else:
+                            # Skip files we can't categorize
+                            print(f"  Skipping uncategorized file: {file['title']}")
+                            continue
+                        
+                        file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+                        file_size = int(file.get('fileSize', 0))
+                        mime_type = file.get('mimeType', 'application/octet-stream')
+                        upload_time = file.get('createdDate', datetime.now().isoformat())[:19]
+                        
+                        # Use UPSERT to handle duplicates
+                        if USE_POSTGRESQL:
+                            cur.execute("""
+                                INSERT INTO documents 
+                                (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (client_id, document_type) 
+                                DO UPDATE SET 
+                                    file_id = EXCLUDED.file_id,
+                                    file_name = EXCLUDED.file_name,
+                                    url = EXCLUDED.url,
+                                    file_size = EXCLUDED.file_size,
+                                    mime_type = EXCLUDED.mime_type,
+                                    upload_time = EXCLUDED.upload_time
+                            """, (client_id, doc_type, file_id, file['title'], file_url, file_size, mime_type, upload_time))
+                            synced_count += 1
+                        else:
+                            # SQLite: try insert, ignore if duplicate
+                            try:
+                                cur.execute(
+                                    """INSERT INTO documents 
+                                       (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                                    (client_id, doc_type, file_id, file['title'], file_url, file_size, mime_type, upload_time)
+                                )
+                                synced_count += 1
+                            except:
+                                # Update if duplicate
+                                cur.execute(
+                                    """UPDATE documents 
+                                       SET file_id = ?, file_name = ?, url = ?, file_size = ?, mime_type = ?, upload_time = ?
+                                       WHERE client_id = ? AND document_type = ?""",
+                                    (file_id, file['title'], file_url, file_size, mime_type, upload_time, client_id, doc_type)
+                                )
+                    
+                    except Exception as e:
+                        print(f"  Skipping file {file.get('title', '?')}: {e}")
+                        continue
+                
+                conn.commit()
+                time.sleep(0.5)  # Rate limiting
+                
+            except Exception as e:
+                print(f"Error syncing folder {folder.get('title', '?')}: {str(e)}")
+                conn.rollback()
+                continue
+        
         cur.close()
         conn.close()
-        return added
+        print(f"✅ Sync complete! {synced_count} documents processed")
+        return synced_count
+    
     except Exception as e:
-        print(f"Drive sync error: {str(e)}")
+        print(f"❌ Sync error: {str(e)}")
         traceback.print_exc()
-        try:
-            cur.close()
-        except Exception:
-            pass
-        try:
-            conn.close()
-        except Exception:
-            pass
         return 0
-
 # ==================== VALIDATION HELPERS ====================
 def validate_client_name(name):
     """Validate client names"""
