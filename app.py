@@ -17,6 +17,8 @@ import secrets
 import string
 import re
 import time
+last_sync_time = None
+SYNC_INTERVAL = 3600  # 1 hour
 from datetime import datetime, timedelta
 from googleapiclient.errors import HttpError
 
@@ -691,18 +693,24 @@ def fetch_page():
 @app.route('/clients')
 @login_required
 def list_clients():
-    """List all clients - with automatic Google Drive sync"""
+    """List all clients - with smart background sync"""
+    global last_sync_time
+    
     try:
-        # Automatically sync Google Drive data on first visit
-        try:
-            print("Attempting Google Drive sync...")
-            synced = sync_drive_to_database()
-            if synced > 0:
-                print(f"✅ Synced {synced} new documents")
-                flash(f'✅ Synced {synced} new documents from Google Drive', 'success')
-        except Exception as sync_error:
-            print(f"⚠️ Sync warning (non-critical): {sync_error}")
-            # Don't fail the page if sync has issues, just continue
+        # Only sync if it's been more than an hour since last sync
+        current_time = time.time()
+        if last_sync_time is None or (current_time - last_sync_time) > SYNC_INTERVAL:
+            try:
+                print("⏳ Starting background Google Drive sync (this may take a minute)...")
+                last_sync_time = current_time
+                synced = sync_drive_to_database()
+                if synced > 0:
+                    print(f"✅ Synced {synced} new documents")
+            except Exception as sync_error:
+                print(f"⚠️ Sync error (non-critical): {sync_error}")
+                # Don't fail the page if sync has issues
+        else:
+            print(f"⏭️ Skipping sync (last synced {current_time - last_sync_time:.0f}s ago)")
         
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
