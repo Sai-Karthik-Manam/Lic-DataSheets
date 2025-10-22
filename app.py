@@ -236,8 +236,11 @@ def init_db():
         traceback.print_exc()
         raise
 
-init_db()
-
+try:
+    init_db()
+except Exception as e:
+    print(f"⚠️ Database initialization warning (non-fatal): {e}")
+    print("The app will attempt to initialize on first request")
 # ==================== GOOGLE DRIVE SETUP ====================
 def setup_google_auth():
     """Setup Google Drive authentication"""
