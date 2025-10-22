@@ -17,8 +17,6 @@ import secrets
 import string
 import re
 import time
-last_sync_time = None
-SYNC_INTERVAL = 3600  # 1 hour
 from datetime import datetime, timedelta
 from googleapiclient.errors import HttpError
 
@@ -693,25 +691,8 @@ def fetch_page():
 @app.route('/clients')
 @login_required
 def list_clients():
-    """List all clients - with smart background sync"""
-    global last_sync_time
-    
+    """List all clients - NO sync during page load (prevents timeout)"""
     try:
-        # Only sync if it's been more than an hour since last sync
-        current_time = time.time()
-        if last_sync_time is None or (current_time - last_sync_time) > SYNC_INTERVAL:
-            try:
-                print("⏳ Starting background Google Drive sync (this may take a minute)...")
-                last_sync_time = current_time
-                synced = sync_drive_to_database()
-                if synced > 0:
-                    print(f"✅ Synced {synced} new documents")
-            except Exception as sync_error:
-                print(f"⚠️ Sync error (non-critical): {sync_error}")
-                # Don't fail the page if sync has issues
-        else:
-            print(f"⏭️ Skipping sync (last synced {current_time - last_sync_time:.0f}s ago)")
-        
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
         search_query = request.args.get('search', '')
@@ -746,7 +727,7 @@ def list_clients():
         cur.close()
         conn.close()
         
-        # Convert to list of tuples/dicts for template
+        # Convert to list of tuples for template
         if USE_POSTGRESQL:
             clients_list = [tuple(client) for client in clients]
         else:
@@ -763,6 +744,21 @@ def list_clients():
         flash(f"Error: {str(e)}", "error")
         return render_template('clients.html', clients=[])
 
+
+@app.route('/manual-sync')
+@login_required
+def manual_sync():
+    """Manually trigger Google Drive sync (for admin only)"""
+    try:
+        print("Starting manual Google Drive sync...")
+        synced = sync_drive_to_database()
+        flash(f'✅ Synced {synced} documents from Google Drive', 'success')
+        return redirect(url_for('list_clients'))
+    except Exception as e:
+        print(f"Sync error: {str(e)}")
+        traceback.print_exc()
+        flash(f'Error during sync: {str(e)}', 'error')
+        return redirect(url_for('list_clients'))
 @app.errorhandler(404)
 def not_found(e):
     return render_template('404.html'), 404
