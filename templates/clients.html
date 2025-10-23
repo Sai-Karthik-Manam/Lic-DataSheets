@@ -146,6 +146,15 @@
   <div class="container" style="max-width: 1200px;">
     <div class="clients-header">
       <h1 style="margin: 0;">👥 All Clients</h1>
+      {% if not is_search and clients|length == 20 %}
+        <div style="padding: 15px; background: #e7f3ff; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #0057a0;">
+          📌 Showing 20 most recently updated clients. <strong>Search for a specific client name to see all results.</strong>
+        </div>
+      {% elif is_search %}
+        <div style="padding: 15px; background: #d4edda; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #155724;">
+          🔍 Showing search results for: <strong>"{{ search_query }}"</strong>
+        </div>
+      {% endif %}
       <div class="clients-count">
         📊 Total: {{ clients|length }} Clients
       </div>
