@@ -897,6 +897,526 @@ def reset_password_confirm():
         print(f"Reset password error: {str(e)}")
         flash('An error occurred. Please try again.', 'error')
         return redirect(url_for('forgot_password'))
+    
+# Add these routes to your existing app.py file
+
+@app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
+def register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not username or not password:
+            flash('Username and password are required.', 'error')
+            return render_template('register.html')
+        
+        if len(username) < 3:
+            flash('Username must be at least 3 characters.', 'error')
+            return render_template('register.html')
+        
+        if len(password) < 8:
+            flash('Password must be at least 8 characters.', 'error')
+            return render_template('register.html')
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('register.html')
+        
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            hashed_password = generate_password_hash(password)
+            
+            if USE_POSTGRESQL:
+                cur.execute(
+                    "INSERT INTO users (username, password, email, role, created_at) VALUES (%s, %s, %s, %s, %s)",
+                    (username, hashed_password, email if email else None, 'user', datetime.now())
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+                    (username, hashed_password, email if email else None, 'user', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                )
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            log_activity("USER_REGISTERED", f"New user registered: {username}")
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            print(f"Registration error: {str(e)}")
+            flash('Username already exists. Choose a different one.', 'error')
+            return render_template('register.html')
+    
+    return render_template('register.html')
+
+
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not current_password or not new_password or not confirm_password:
+            flash('All fields are required.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match.', 'error')
+            return render_template('change_password.html')
+        
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters.', 'error')
+            return render_template('change_password.html')
+        
+        if new_password == current_password:
+            flash('New password must be different from current password.', 'error')
+            return render_template('change_password.html')
+        
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            user_id = session.get('user_id')
+            
+            if USE_POSTGRESQL:
+                cur.execute("SELECT password FROM users WHERE id = %s", (user_id,))
+            else:
+                cur.execute("SELECT password FROM users WHERE id = ?", (user_id,))
+            
+            user = cur.fetchone()
+            
+            if not user or not check_password_hash(user[0], current_password):
+                flash('Current password is incorrect.', 'error')
+                cur.close()
+                conn.close()
+                return render_template('change_password.html')
+            
+            hashed_new_password = generate_password_hash(new_password)
+            
+            if USE_POSTGRESQL:
+                cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_new_password, user_id))
+            else:
+                cur.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_new_password, user_id))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+            log_activity("PASSWORD_CHANGED", "User changed password")
+            flash('Password changed successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            print(f"Change password error: {str(e)}")
+            flash('An error occurred. Please try again.', 'error')
+            return render_template('change_password.html')
+    
+    return render_template('change_password.html')
+
+
+@app.route('/upload', methods=['POST'])
+@login_required
+@limiter.limit("10 per hour")
+def upload():
+    client_name = request.form.get('name', '').strip()
+    
+    if not client_name:
+        flash('Client name is required.', 'error')
+        return redirect(url_for('upload_page'))
+    
+    try:
+        client_name = validate_client_name(client_name)
+    except ValueError as e:
+        flash(str(e), 'error')
+        return redirect(url_for('upload_page'))
+    
+    upload_results = []
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("SELECT id, folder_id FROM clients WHERE name = %s", (client_name,))
+        else:
+            cur.execute("SELECT id, folder_id FROM clients WHERE name = ?", (client_name,))
+        
+        client = cur.fetchone()
+        
+        if not client:
+            if not drive:
+                flash('Google Drive not configured. Cannot create new client.', 'error')
+                cur.close()
+                conn.close()
+                return redirect(url_for('upload_page'))
+            
+            try:
+                folder = drive.CreateFile({'title': client_name, 'parents': [{'id': ROOT_FOLDER_ID}], 'mimeType': 'application/vnd.google-apps.folder'})
+                folder.Upload()
+                folder_id = folder['id']
+            except Exception as e:
+                flash(f'Error creating folder: {str(e)}', 'error')
+                cur.close()
+                conn.close()
+                return redirect(url_for('upload_page'))
+            
+            if USE_POSTGRESQL:
+                cur.execute(
+                    "INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (%s, %s, %s, %s, %s)",
+                    (client_name, folder_id, datetime.now(), datetime.now(), session.get('user_id'))
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?)",
+                    (client_name, folder_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id'))
+                )
+            
+            conn.commit()
+            client_id = cur.lastrowid if not USE_POSTGRESQL else cur.fetchone()[0]
+        else:
+            client_id = client[0]
+            folder_id = client[1]
+        
+        for doc_type in DOCUMENT_TYPES:
+            file = request.files.get(doc_type)
+            if file and file.filename:
+                if not allowed_file(file.filename):
+                    flash(f'{doc_type}: Invalid file format.', 'error')
+                    continue
+                
+                if not validate_file_size(file):
+                    flash(f'{doc_type}: File too large (max 10MB).', 'error')
+                    continue
+                
+                try:
+                    gfile = drive.CreateFile({
+                        'title': f"{client_name}_{doc_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
+                        'parents': [{'id': folder_id}]
+                    })
+                    gfile.SetContentFile(file)
+                    gfile.Upload()
+                    
+                    file_url = f"https://drive.google.com/uc?export=download&id={gfile['id']}"
+                    
+                    if USE_POSTGRESQL:
+                        cur.execute("""
+                            INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (client_id, document_type) 
+                            DO UPDATE SET file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, upload_time = EXCLUDED.upload_time
+                        """, (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now(), session.get('user_id')))
+                    else:
+                        cur.execute("""
+                            INSERT OR REPLACE INTO documents 
+                            (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id')))
+                    
+                    upload_results.append({
+                        'type': doc_type,
+                        'filename': gfile['title'],
+                        'url': file_url
+                    })
+                except Exception as e:
+                    flash(f'Error uploading {doc_type}: {str(e)}', 'error')
+        
+        if USE_POSTGRESQL:
+            cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (datetime.now(), client_id))
+        else:
+            cur.execute("UPDATE clients SET updated_at = ? WHERE id = ?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), client_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        log_activity("DOCUMENT_UPLOADED", f"Uploaded {len(upload_results)} documents for {client_name}")
+        flash(f'Successfully uploaded {len(upload_results)} document(s)!', 'success')
+        
+        return render_template('upload.html', success=True, name=client_name, upload_results=upload_results)
+    except Exception as e:
+        print(f"Upload error: {str(e)}")
+        traceback.print_exc()
+        flash(f'Upload error: {str(e)}', 'error')
+        return redirect(url_for('upload_page'))
+
+
+@app.route('/fetch_data', methods=['POST'])
+@login_required
+def fetch_data():
+    client_name = request.form.get('name', '').strip()
+    
+    if not client_name:
+        flash('Client name is required.', 'error')
+        return render_template('fetch.html')
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("""
+                SELECT c.id, c.name, c.created_at, c.updated_at, c.folder_id
+                FROM clients c
+                WHERE c.name ILIKE %s
+            """, (f'%{client_name}%',))
+        else:
+            cur.execute("""
+                SELECT c.id, c.name, c.created_at, c.updated_at, c.folder_id
+                FROM clients c
+                WHERE c.name LIKE ?
+            """, (f'%{client_name}%',))
+        
+        client_row = cur.fetchone()
+        
+        if not client_row:
+            cur.close()
+            conn.close()
+            return render_template('fetch.html', not_found=True, name=client_name)
+        
+        client_id = client_row[0]
+        
+        if USE_POSTGRESQL:
+            cur.execute("""
+                SELECT document_type, file_id, file_name, url, file_size, upload_time
+                FROM documents WHERE client_id = %s
+            """, (client_id,))
+        else:
+            cur.execute("""
+                SELECT document_type, file_id, file_name, url, file_size, upload_time
+                FROM documents WHERE client_id = ?
+            """, (client_id,))
+        
+        docs = cur.fetchall()
+        
+        documents = {}
+        for doc in docs:
+            doc_type = doc[0]
+            documents[doc_type] = {
+                'file_id': doc[1],
+                'file_name': doc[2],
+                'url': doc[3],
+                'file_size': doc[4] or 0,
+                'upload_time': doc[5],
+                'image_url': doc[3]
+            }
+        
+        client = {
+            'id': client_id,
+            'name': client_row[1],
+            'created_at': client_row[2],
+            'updated_at': client_row[3],
+            'folder_id': client_row[4],
+            'documents': documents
+        }
+        
+        cur.close()
+        conn.close()
+        
+        log_activity("DOCUMENTS_VIEWED", f"Viewed documents for {client_row[1]}")
+        return render_template('fetch.html', client=client)
+    except Exception as e:
+        print(f"Fetch data error: {str(e)}")
+        traceback.print_exc()
+        return render_template('fetch.html', error=str(e))
+
+
+@app.route('/download_document', methods=['POST'])
+@login_required
+def download_document():
+    file_id = request.form.get('file_id', '')
+    
+    if not file_id or not drive:
+        return jsonify({'success': False, 'error': 'Invalid file or Google Drive not configured'})
+    
+    try:
+        file = drive.CreateFile({'id': file_id})
+        file.FetchMetadata()
+        
+        temp_path = os.path.join(UPLOAD_FOLDER, secure_filename(file['title']))
+        file.GetContentFile(temp_path)
+        
+        log_activity("DOCUMENT_DOWNLOADED", f"Downloaded file: {file['title']}")
+        
+        response = send_file(temp_path, as_attachment=True, download_name=file['title'])
+        
+        @response.call_on_close
+        def remove_file():
+            cleanup_temp_file(temp_path)
+        
+        return response
+    except Exception as e:
+        print(f"Download error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/delete_document', methods=['POST'])
+@login_required
+def delete_document():
+    file_id = request.form.get('file_id', '')
+    
+    if not file_id or not drive:
+        return jsonify({'success': False, 'error': 'Invalid file or Google Drive not configured'})
+    
+    try:
+        file = drive.CreateFile({'id': file_id})
+        file.Delete()
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("DELETE FROM documents WHERE file_id = %s", (file_id,))
+        else:
+            cur.execute("DELETE FROM documents WHERE file_id = ?", (file_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        log_activity("DOCUMENT_DELETED", f"Deleted file: {file_id}")
+        return jsonify({'success': True, 'message': 'Document deleted successfully'})
+    except Exception as e:
+        print(f"Delete error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/delete_client', methods=['POST'])
+@login_required
+def delete_client():
+    client_name = request.form.get('name', '').strip()
+    
+    if not client_name:
+        return jsonify({'success': False, 'error': 'Client name is required'})
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("SELECT id, folder_id FROM clients WHERE name = %s", (client_name,))
+        else:
+            cur.execute("SELECT id, folder_id FROM clients WHERE name = ?", (client_name,))
+        
+        client = cur.fetchone()
+        
+        if not client:
+            cur.close()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Client not found'})
+        
+        client_id, folder_id = client[0], client[1]
+        
+        if drive and folder_id:
+            try:
+                folder = drive.CreateFile({'id': folder_id})
+                folder.Delete()
+            except:
+                pass
+        
+        if USE_POSTGRESQL:
+            cur.execute("DELETE FROM clients WHERE id = %s", (client_id,))
+        else:
+            cur.execute("DELETE FROM clients WHERE id = ?", (client_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        log_activity("CLIENT_DELETED", f"Deleted client: {client_name}")
+        return jsonify({'success': True, 'message': 'Client and all documents deleted successfully'})
+    except Exception as e:
+        print(f"Delete client error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/edit_client/<int:client_id>', methods=['POST'])
+@login_required
+def edit_client(client_id):
+    new_name = request.form.get('new_name', '').strip()
+    
+    if not new_name:
+        return jsonify({'success': False, 'error': 'New name is required'})
+    
+    try:
+        new_name = validate_client_name(new_name)
+    except ValueError as e:
+        return jsonify({'success': False, 'error': str(e)})
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("UPDATE clients SET name = %s WHERE id = %s", (new_name, client_id))
+        else:
+            cur.execute("UPDATE clients SET name = ? WHERE id = ?", (new_name, client_id))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        log_activity("CLIENT_RENAMED", f"Renamed client to: {new_name}")
+        return jsonify({'success': True, 'message': 'Client name updated successfully'})
+    except Exception as e:
+        print(f"Edit client error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/quick_search', methods=['GET'])
+@login_required
+def api_quick_search():
+    query = request.args.get('q', '').strip()
+    
+    if len(query) < 2:
+        return jsonify({'results': []})
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("""
+                SELECT c.name, c.updated_at, COUNT(d.id) as doc_count
+                FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id
+                WHERE c.name ILIKE %s
+                GROUP BY c.id, c.name, c.updated_at
+                LIMIT 10
+            """, (f'%{query}%',))
+        else:
+            cur.execute("""
+                SELECT c.name, c.updated_at, COUNT(d.id) as doc_count
+                FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id
+                WHERE c.name LIKE ?
+                GROUP BY c.id, c.name
+                LIMIT 10
+            """, (f'%{query}%',))
+        
+        results = []
+        for row in cur.fetchall():
+            results.append({
+                'name': row[0],
+                'updated_at': row[1][:10] if row[1] else '',
+                'doc_count': row[2]
+            })
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'results': results})
+    except Exception as e:
+        print(f"Quick search error: {str(e)}")
+        return jsonify({'results': [], 'error': str(e)})
 
 if __name__ == '__main__':
     try:
