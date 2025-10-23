@@ -183,6 +183,8 @@
     <h1>📤 Upload Client Documents</h1>
     
     <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      
       <input 
         type="text" 
         name="name" 
@@ -193,7 +195,6 @@
       >
       
       <div class="doc-grid">
-        <!-- Datasheet (Required for new clients) -->
         <div class="doc-card required" id="card-datasheet">
           <div class="doc-header">
             <span class="doc-title">📄 Datasheet</span>
@@ -219,7 +220,6 @@
           </small>
         </div>
 
-        <!-- Aadhaar Card (Optional) -->
         <div class="doc-card" id="card-aadhaar">
           <div class="doc-header">
             <span class="doc-title">🆔 Aadhaar Card</span>
@@ -242,7 +242,6 @@
           <img class="preview-small" id="preview-aadhaar" alt="Preview">
         </div>
 
-        <!-- PAN Card (Optional) -->
         <div class="doc-card" id="card-pan">
           <div class="doc-header">
             <span class="doc-title">💳 PAN Card</span>
@@ -265,7 +264,6 @@
           <img class="preview-small" id="preview-pan" alt="Preview">
         </div>
 
-        <!-- Bank Account (Optional) -->
         <div class="doc-card" id="card-bank_account">
           <div class="doc-header">
             <span class="doc-title">🏦 Bank Account</span>
@@ -304,7 +302,7 @@
           ⚠️ <strong>New Clients:</strong> Datasheet is mandatory<br>
           ✨ <strong>Existing Clients:</strong> Upload any document(s) to add or replace<br>
           💡 <strong>Tip:</strong> You can upload documents one at a time or all together<br>
-          🔄 <strong>Update:</strong> Uploading a document again will replace the old one
+          📄 <strong>Update:</strong> Uploading a document again will replace the old one
         </small>
       </div>
     </form>
@@ -349,15 +347,12 @@
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
         
-        // Update label
         label.textContent = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
         
-        // Show file info
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
         info.textContent = `📊 ${sizeMB} MB | ${file.type}`;
         info.style.display = 'block';
         
-        // Validate file size
         if (file.size > 10 * 1024 * 1024) {
           alert(`⚠️ ${docType} file is too large! Maximum size is 10MB.`);
           fileInput.value = '';
@@ -368,10 +363,8 @@
           return;
         }
         
-        // Mark card as filled
         card.classList.add('filled');
         
-        // Show preview for images
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
           reader.onload = function(e) {
@@ -385,7 +378,6 @@
       }
     }
 
-    // Form submission
     const uploadForm = document.getElementById('uploadForm');
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
@@ -397,10 +389,8 @@
       btnText.textContent = '⏳ Uploading...';
       submitBtn.style.opacity = '0.7';
       
-      // Show progress bar
       progressBar.style.display = 'block';
       
-      // Simulate progress
       let progress = 0;
       const interval = setInterval(() => {
         progress += Math.random() * 30;
@@ -411,16 +401,13 @@
       setTimeout(() => clearInterval(interval), 5000);
     });
 
-    // Auto-focus on name input
     document.getElementById('clientName').focus();
 
-    // Check if updating existing client
     const updateClient = sessionStorage.getItem('updateClient');
     if (updateClient) {
       document.getElementById('clientName').value = updateClient;
       document.getElementById('clientName').readOnly = true;
       
-      // Show update message
       const container = document.querySelector('.container');
       const updateAlert = document.createElement('div');
       updateAlert.className = 'success';
@@ -434,7 +421,6 @@
       `;
       container.insertBefore(updateAlert, container.firstChild.nextSibling);
       
-      // Remove from session after showing
       sessionStorage.removeItem('updateClient');
     }
 
@@ -443,7 +429,6 @@
       document.getElementById('clientName').readOnly = false;
       document.getElementById('clientName').focus();
       
-      // Safely remove success message
       const successMsg = document.querySelector('.success');
       if (successMsg) {
         successMsg.remove();
