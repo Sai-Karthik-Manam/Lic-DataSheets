@@ -303,7 +303,7 @@ except Exception as e:
     drive = None
 
 def sync_drive_to_database():
-    """Sync all clients and documents from Google Drive to database"""
+    """Sync all clients and documents from Google Drive to database - OPTIMIZED"""
     if not drive:
         print("Google Drive not initialized")
         return 0
@@ -359,14 +359,14 @@ def sync_drive_to_database():
                         )
                         client_id = cur.lastrowid
                     
-                    print(f"Added client: {folder_name}")
+                    print(f"  Added: {folder_name}")
                 
                 # Sync files in folder
                 files_query = f"'{folder_id}' in parents and trashed=false"
                 try:
                     files_list = drive.ListFile({'q': files_query, 'maxResults': 50}).GetList()
                 except Exception as e:
-                    print(f"⚠️ Could not fetch files for {folder_name}: {e}")
+                    print(f"  Skipping files for {folder_name}: {e}")
                     files_list = []
                 
                 for file in files_list:
@@ -384,9 +384,7 @@ def sync_drive_to_database():
                         elif 'bank' in file_lower or 'account' in file_lower:
                             doc_type = 'bank_account'
                         else:
-                            # Skip files we can't categorize
-                            print(f"  Skipping uncategorized file: {file['title']}")
-                            continue
+                            continue  # Skip uncategorized files
                         
                         file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
                         file_size = int(file.get('fileSize', 0))
@@ -429,20 +427,19 @@ def sync_drive_to_database():
                                 )
                     
                     except Exception as e:
-                        print(f"  Skipping file {file.get('title', '?')}: {e}")
                         continue
                 
+                # REMOVED time.sleep(0.5) - this was causing timeouts
                 conn.commit()
-                time.sleep(0.5)  # Rate limiting
                 
             except Exception as e:
-                print(f"Error syncing folder {folder.get('title', '?')}: {str(e)}")
+                print(f"Error syncing {folder.get('title', '?')}: {e}")
                 conn.rollback()
                 continue
         
         cur.close()
         conn.close()
-        print(f"✅ Sync complete! {synced_count} documents processed")
+        print(f"✅ Sync complete! {synced_count} documents synced")
         return synced_count
     
     except Exception as e:
