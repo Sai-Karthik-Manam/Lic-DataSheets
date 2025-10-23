@@ -313,7 +313,7 @@ def sync_drive_to_database():
         synced_count = 0
         
         query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
-        folder_list = drive.ListFile({'q': query, 'maxResults': 50}).GetList()
+        folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
         print(f"Found {len(folder_list)} folders in Google Drive")
         
         conn = get_db_connection()
@@ -364,7 +364,7 @@ def sync_drive_to_database():
                 # Sync files in folder
                 files_query = f"'{folder_id}' in parents and trashed=false"
                 try:
-                    files_list = drive.ListFile({'q': files_query, 'maxResults': 50}).GetList()
+                    files_list = drive.ListFile({'q': files_query, 'maxResults': 1000}).GetList()
                 except Exception as e:
                     print(f"  Skipping files for {folder_name}: {e}")
                     files_list = []
