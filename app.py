@@ -761,6 +761,13 @@ def not_found(e):
     return render_template('404.html'), 404
 
 if __name__ == '__main__':
+    try:
+        print("Starting initial sync on app startup...")
+        synced = sync_drive_to_database()
+        print(f"Sync complete: {synced} documents synced")
+    except Exception as e:
+        print(f"Sync warning: {e}")
+    
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     port = int(os.getenv('PORT', 5000))
     app.run(debug=debug_mode, host='0.0.0.0', port=port)
