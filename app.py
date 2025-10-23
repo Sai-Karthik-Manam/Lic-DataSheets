@@ -688,11 +688,11 @@ def fetch_page():
 @app.route('/clients')
 @login_required
 def list_clients():
-    """List all clients - NO sync during page load (prevents timeout)"""
+    """List clients - shows 20 most recent by default, all results if searching"""
     try:
         sort_by = request.args.get('sort', 'updated_at')
         order = request.args.get('order', 'desc')
-        search_query = request.args.get('search', '')
+        search_query = request.args.get('search', '').strip()
         
         order = 'ASC' if order == 'asc' else 'DESC'
         valid_sorts = ['name', 'created_at', 'updated_at']
@@ -703,22 +703,30 @@ def list_clients():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        if USE_POSTGRESQL:
-            cur.execute("""
-                SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count
-                FROM clients c
-                LEFT JOIN documents d ON c.id = d.client_id
-                GROUP BY c.id
-                ORDER BY c.updated_at DESC
-            """)
+        # Base query
+        base_query = """
+            SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count
+            FROM clients c
+            LEFT JOIN documents d ON c.id = d.client_id
+        """
+        
+        # If searching, show all matching results
+        # If not searching, limit to 20 most recent
+        if search_query:
+            if USE_POSTGRESQL:
+                query = base_query + " WHERE c.name ILIKE %s GROUP BY c.id ORDER BY c." + sort_by + " " + order
+                cur.execute(query, (f'%{search_query}%',))
+            else:
+                query = base_query + " WHERE c.name LIKE ? GROUP BY c.id ORDER BY c." + sort_by + " " + order
+                cur.execute(query, (f'%{search_query}%',))
         else:
-            cur.execute("""
-                SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count
-                FROM clients c
-                LEFT JOIN documents d ON c.id = d.client_id
-                GROUP BY c.id
-                ORDER BY c.updated_at DESC
-            """)
+            # No search: show 20 most recent (ordered by updated_at DESC)
+            if USE_POSTGRESQL:
+                query = base_query + " GROUP BY c.id ORDER BY c.updated_at DESC LIMIT 20"
+                cur.execute(query)
+            else:
+                query = base_query + " GROUP BY c.id ORDER BY c.updated_at DESC LIMIT 20"
+                cur.execute(query)
         
         clients = cur.fetchall()
         cur.close()
@@ -734,12 +742,13 @@ def list_clients():
                              clients=clients_list, 
                              sort_by=sort_by, 
                              order=order.lower(), 
-                             search_query=search_query)
+                             search_query=search_query,
+                             is_search=bool(search_query))
     except Exception as e:
         print(f"List clients error: {str(e)}")
         traceback.print_exc()
         flash(f"Error: {str(e)}", "error")
-        return render_template('clients.html', clients=[])
+        return render_template('clients.html', clients=[], is_search=False)
 
 
 @app.route('/manual-sync')
