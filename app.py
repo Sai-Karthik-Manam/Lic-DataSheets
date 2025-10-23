@@ -769,6 +769,8 @@ def manual_sync():
 def not_found(e):
     return render_template('404.html'), 404
 
+# Replace the /forgot_password route with this corrected version
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 @limiter.limit("3 per hour")
 def forgot_password():
@@ -794,8 +796,9 @@ def forgot_password():
             conn.close()
             
             if user:
-                # Generate reset code
-                reset_code = secrets.token_urlsafe(16)
+                # Generate a simple alphanumeric reset code (uppercase + numbers only)
+                # This makes it easier to type and matches the form styling
+                reset_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
                 
                 session['reset_username'] = username
                 session['reset_code'] = reset_code
