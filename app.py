@@ -769,6 +769,135 @@ def manual_sync():
 def not_found(e):
     return render_template('404.html'), 404
 
+@app.route('/forgot_password', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
+def forgot_password():
+    """Forgot password - Step 1: Username verification"""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        
+        if not username:
+            flash('Please enter your username.', 'error')
+            return render_template('forgot_password.html')
+        
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            if USE_POSTGRESQL:
+                cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+            else:
+                cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+            
+            user = cur.fetchone()
+            cur.close()
+            conn.close()
+            
+            if user:
+                # Generate reset code
+                reset_code = secrets.token_urlsafe(16)
+                
+                session['reset_username'] = username
+                session['reset_code'] = reset_code
+                session['reset_expiry'] = (datetime.now() + timedelta(minutes=15)).isoformat()
+                
+                log_activity("FORGOT_PASSWORD_INITIATED", f"Password reset requested for: {username}")
+                
+                return render_template('forgot_password.html', 
+                                     reset_code=reset_code, 
+                                     username=username)
+            else:
+                flash('Username not found.', 'error')
+                log_activity("FORGOT_PASSWORD_FAILED", f"Unknown username: {username}")
+        except Exception as e:
+            print(f"Forgot password error: {str(e)}")
+            flash('An error occurred. Please try again.', 'error')
+    
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset_password_confirm', methods=['POST'])
+def reset_password_confirm():
+    """Forgot password - Step 2: Confirm reset code and change password"""
+    username = request.form.get('username', '').strip()
+    reset_code = request.form.get('reset_code', '').strip()
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+    
+    # Verify session data
+    if 'reset_username' not in session or 'reset_code' not in session:
+        flash('Reset session expired. Please start again.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    if username != session.get('reset_username'):
+        flash('Invalid reset request.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    # Check expiry
+    try:
+        expiry_time = datetime.fromisoformat(session.get('reset_expiry'))
+        if datetime.now() > expiry_time:
+            session.pop('reset_username', None)
+            session.pop('reset_code', None)
+            session.pop('reset_expiry', None)
+            flash('Reset code expired. Please request a new one.', 'error')
+            return redirect(url_for('forgot_password'))
+    except:
+        flash('Session error. Please try again.', 'error')
+        return redirect(url_for('forgot_password'))
+    
+    # Verify reset code
+    import hmac
+    if not hmac.compare_digest(reset_code, session.get('reset_code')):
+        flash('Invalid reset code. Please check and try again.', 'error')
+        log_activity("RESET_PASSWORD_FAILED", f"Invalid code for: {username}")
+        return render_template('forgot_password.html', 
+                             reset_code=session.get('reset_code'),
+                             username=username)
+    
+    # Validate passwords
+    if len(new_password) < 8:
+        flash('Password must be at least 8 characters long.', 'error')
+        return render_template('forgot_password.html', 
+                             reset_code=session.get('reset_code'),
+                             username=username)
+    
+    if new_password != confirm_password:
+        flash('Passwords do not match.', 'error')
+        return render_template('forgot_password.html', 
+                             reset_code=session.get('reset_code'),
+                             username=username)
+    
+    # Update password
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        hashed_password = generate_password_hash(new_password)
+        
+        if USE_POSTGRESQL:
+            cur.execute("UPDATE users SET password = ?, failed_login_attempts = 0, locked_until = NULL WHERE username = %s", 
+                       (hashed_password, username))
+        else:
+            cur.execute("UPDATE users SET password = ?, failed_login_attempts = 0, locked_until = NULL WHERE username = ?", 
+                       (hashed_password, username))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Clear session
+        session.pop('reset_username', None)
+        session.pop('reset_code', None)
+        session.pop('reset_expiry', None)
+        
+        log_activity("RESET_PASSWORD_SUCCESS", f"Password reset for: {username}")
+        flash('Password reset successful! Please login with your new password.', 'success')
+        return redirect(url_for('login'))
+    except Exception as e:
+        print(f"Reset password error: {str(e)}")
+        flash('An error occurred. Please try again.', 'error')
+        return redirect(url_for('forgot_password'))
+
 if __name__ == '__main__':
     try:
         print("Starting initial sync on app startup...")
