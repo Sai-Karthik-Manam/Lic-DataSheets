@@ -1049,13 +1049,13 @@ def fetch_data():
             }
         
         client = {
-            'id': client_id,
-            'name': client_row[1],
-            'created_at': client_row[2],
-            'updated_at': client_row[3],
-            'folder_id': client_row[4],
-            'documents': documents
-        }
+                    'id': client_id,
+                    'name': client_row[1],
+                    'created_at': client_row[2].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[2], 'strftime') else client_row[2],
+                    'updated_at': client_row[3].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[3], 'strftime') else client_row[3],
+                    'folder_id': client_row[4],
+                    'documents': documents
+                }
         
         log_activity("DOCUMENTS_VIEWED", f"Viewed documents for {client_row[1]}")
         return render_template('fetch.html', client=client)
