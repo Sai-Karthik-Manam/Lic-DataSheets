@@ -153,10 +153,10 @@
 
     {% if not is_search and clients|length == 20 %}
       <div style="padding: 15px; background: #e7f3ff; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #0057a0;">
-        📌 Showing 20 most recently updated clients. <strong>Search for a specific client name to see all results.</strong>
+        📋 Showing 20 most recently updated clients. <strong>Search for a specific client name to see all results.</strong>
       </div>
     {% elif is_search %}
-      <div style="padding: 15px; background: #d4edda; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #155724;">
+      <div style="padding: 10px; background: #d4edda; border-radius: 5px; margin-bottom: 10px; font-size: 12px; color: #155724;">
         🔍 Showing search results for: <strong>"{{ search_query }}"</strong>
       </div>
     {% endif %}
@@ -184,7 +184,7 @@
               <th>👤 Client Name</th>
               <th>📄 Documents</th>
               <th>📅 Created</th>
-              <th>📝 Updated</th>
+              <th>🔄 Updated</th>
               <th>⚡ Actions</th>
             </tr>
           </thead>
@@ -234,23 +234,31 @@
           Sync your Google Drive to see all your clients.
         </p>
         <a href="/manual-sync" class="link" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
-          🔄 Sync Google Drive Now
+          📄 Sync Google Drive Now
         </a>
       </div>
     {% endif %}
 
     <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
-      <a href="/manual-sync" class="link" style="padding: 10px 20px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">🔄 Manual Sync</a>
+      <a href="/manual-sync" class="link" style="padding: 10px 20px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📄 Manual Sync</a>
       <a href="/upload_page" class="link" style="padding: 10px 20px; background: #28a745; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📤 Upload Documents</a>
       <a href="/dashboard" class="link" style="padding: 10px 20px; background: #17a2b8; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📈 Dashboard</a>
     </div>
   </div>
 
   <script>
+    // ✅ FIXED: Added CSRF token to viewClientData
     function viewClientData(clientName) {
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
+      
+      // ✅ ADD CSRF TOKEN
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrf_token';
+      csrfInput.value = '{{ csrf_token() }}';
+      form.appendChild(csrfInput);
       
       const nameInput = document.createElement('input');
       nameInput.type = 'hidden';
@@ -262,6 +270,7 @@
       form.submit();
     }
 
+    // ✅ FIXED: Added CSRF token to editClientModal
     function editClientModal(clientId, currentName) {
       const newName = prompt('Edit client name.\n\nCurrent: ' + currentName + '\n\nEnter new name:', currentName);
       
@@ -276,6 +285,7 @@
       
       const formData = new FormData();
       formData.append('new_name', newName.trim());
+      formData.append('csrf_token', '{{ csrf_token() }}'); // ✅ ADD CSRF TOKEN
       
       fetch('/edit_client/' + clientId, {
         method: 'POST',
@@ -284,14 +294,14 @@
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          alert('Success: ' + data.message);
+          alert('✅ Success: ' + data.message);
           location.reload();
         } else {
-          alert('Error: ' + data.error);
+          alert('❌ Error: ' + data.error);
         }
       })
       .catch(error => {
-        alert('Error: ' + error.message);
+        alert('❌ Error: ' + error.message);
       });
     }
   </script>

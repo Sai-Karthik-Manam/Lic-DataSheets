@@ -146,8 +146,9 @@
   <div class="container" style="max-width: 1100px;">
     <h1>🔍 Fetch Client Documents</h1>
     
-    <form action="/fetch_data" method="post" id="fetchForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <!-- MAIN SEARCH FORM - CSRF TOKEN AS HIDDEN INPUT -->
+    <form action="/fetch_data" method="POST" id="fetchForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="search-container">
         <input 
           type="text" 
@@ -178,7 +179,7 @@
             <span>{{ client.created_at[:10] }}</span>
           </div>
           <div class="info-badge">
-            <strong>📝 Last Updated</strong>
+            <strong>⏰ Last Updated</strong>
             <span>{{ client.updated_at[:10] }}</span>
           </div>
           <div class="info-badge">
@@ -205,10 +206,10 @@
               </div>
               <div class="doc-meta">📄 {{ client.documents.datasheet.file_name }}</div>
               <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.datasheet.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.datasheet.upload_time }}</div>
+              <div class="doc-meta">⏱ {{ client.documents.datasheet.upload_time }}</div>
               <div class="doc-actions">
-                <form action="/download_document" method="post" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form action="/download_document" method="POST" style="flex: 1;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="file_id" value="{{ client.documents.datasheet.file_id }}">
                   <button type="submit" class="download-btn">⬇️ Download</button>
                 </form>
@@ -237,10 +238,10 @@
               </div>
               <div class="doc-meta">📄 {{ client.documents.aadhaar.file_name }}</div>
               <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.aadhaar.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.aadhaar.upload_time }}</div>
+              <div class="doc-meta">⏱ {{ client.documents.aadhaar.upload_time }}</div>
               <div class="doc-actions">
-                <form action="/download_document" method="post" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form action="/download_document" method="POST" style="flex: 1;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="file_id" value="{{ client.documents.aadhaar.file_id }}">
                   <button type="submit" class="download-btn">⬇️</button>
                 </form>
@@ -270,10 +271,10 @@
               </div>
               <div class="doc-meta">📄 {{ client.documents.pan.file_name }}</div>
               <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.pan.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.pan.upload_time }}</div>
+              <div class="doc-meta">⏱ {{ client.documents.pan.upload_time }}</div>
               <div class="doc-actions">
-                <form action="/download_document" method="post" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form action="/download_document" method="POST" style="flex: 1;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="file_id" value="{{ client.documents.pan.file_id }}">
                   <button type="submit" class="download-btn">⬇️</button>
                 </form>
@@ -303,10 +304,10 @@
               </div>
               <div class="doc-meta">📄 {{ client.documents.bank_account.file_name }}</div>
               <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.bank_account.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏰ {{ client.documents.bank_account.upload_time }}</div>
+              <div class="doc-meta">⏱ {{ client.documents.bank_account.upload_time }}</div>
               <div class="doc-actions">
-                <form action="/download_document" method="post" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form action="/download_document" method="POST" style="flex: 1;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="file_id" value="{{ client.documents.bank_account.file_id }}">
                   <button type="submit" class="download-btn">⬇️</button>
                 </form>
@@ -370,33 +371,33 @@
       fetchBtn.style.opacity = '0.7';
     });
 
+    // ✅ FIXED: Added CSRF token
     function deleteDocument(fileId, docType) {
       if (!confirm(`⚠️ Are you sure you want to delete ${docType}?\n\nThis action cannot be undone!`)) {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('file_id', fileId);
-      formData.append('csrf_token', '{{ csrf_token() }}');
-
-      fetch('/delete_document', {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('✅ ' + data.message);
-          location.reload();
-        } else {
-          alert('❌ Error: ' + data.error);
-        }
-      })
-      .catch(error => {
-        alert('❌ Network error: ' + error);
-      });
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/delete_document';
+      
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrf_token';
+      csrfInput.value = document.querySelector('form').querySelector('input[name="csrf_token"]').value;
+      form.appendChild(csrfInput);
+      
+      const fileInput = document.createElement('input');
+      fileInput.type = 'hidden';
+      fileInput.name = 'file_id';
+      fileInput.value = fileId;
+      form.appendChild(fileInput);
+      
+      document.body.appendChild(form);
+      form.submit();
     }
 
+    // ✅ FIXED: Added CSRF token
     function deleteClient(name) {
       if (!confirm(`⚠️⚠️⚠️ FINAL WARNING ⚠️⚠️⚠️\n\nYou are about to delete ALL documents for "${name}"!\n\nThis will permanently remove:\n• All uploaded documents\n• Client folder\n• All database records\n\nThis action CANNOT be undone!\n\nType the client name to confirm.`)) {
         return;
@@ -408,26 +409,24 @@
         return;
       }
 
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('csrf_token', '{{ csrf_token() }}');
-
-      fetch('/delete_client', {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('✅ ' + data.message);
-          window.location.href = '/fetch';
-        } else {
-          alert('❌ Error: ' + data.error);
-        }
-      })
-      .catch(error => {
-        alert('❌ Network error: ' + error);
-      });
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/delete_client';
+      
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrf_token';
+      csrfInput.value = document.querySelector('form').querySelector('input[name="csrf_token"]').value;
+      form.appendChild(csrfInput);
+      
+      const nameInput = document.createElement('input');
+      nameInput.type = 'hidden';
+      nameInput.name = 'name';
+      nameInput.value = name;
+      form.appendChild(nameInput);
+      
+      document.body.appendChild(form);
+      form.submit();
     }
 
     document.getElementById('clientName').focus();
