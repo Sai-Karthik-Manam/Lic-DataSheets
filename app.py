@@ -1291,6 +1291,204 @@ def api_quick_search():
             except:
                 pass
 
+@app.route('/api/client/<int:client_id>/documents', methods=['GET'])
+@login_required
+def get_client_documents(client_id):
+    """✅ NEW: Get all documents for a client"""
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        if USE_POSTGRESQL:
+            cur.execute("SELECT document_type, file_id, file_name, url, file_size, upload_time FROM documents WHERE client_id = %s", (client_id,))
+        else:
+            cur.execute("SELECT document_type, file_id, file_name, url, file_size, upload_time FROM documents WHERE client_id = ?", (client_id,))
+        
+        docs = cur.fetchall()
+        documents = {}
+        
+        for doc in docs:
+            doc_type = doc[0]
+            documents[doc_type] = {
+                'file_id': doc[1],
+                'file_name': doc[2],
+                'url': doc[3],
+                'file_size': doc[4] or 0,
+                'upload_time': doc[5]
+            }
+        
+        return jsonify({
+            'success': True,
+            'documents': documents
+        })
+    except Exception as e:
+        print(f"❌ Get documents error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+    finally:
+        if cur:
+            try:
+                cur.close()
+            except:
+                pass
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+@app.route('/api/client/<int:client_id>/update-documents', methods=['POST'])
+@login_required
+def update_client_documents(client_id):
+    """✅ NEW: Update/replace documents for existing client"""
+    conn = None
+    cur = None
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verify client exists
+        if USE_POSTGRESQL:
+            cur.execute("SELECT id, folder_id FROM clients WHERE id = %s", (client_id,))
+        else:
+            cur.execute("SELECT id, folder_id FROM clients WHERE id = ?", (client_id,))
+        
+        client = cur.fetchone()
+        if not client:
+            return jsonify({'success': False, 'error': 'Client not found'})
+        
+        folder_id = client[1]
+        updated_docs = []
+        
+        # Handle each document type
+        for doc_type in DOCUMENT_TYPES:
+            # Check if document should be deleted
+            if request.form.get(f'delete_{doc_type}') == 'true':
+                try:
+                    # Get file_id to delete from Google Drive
+                    if USE_POSTGRESQL:
+                        cur.execute("SELECT file_id FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
+                    else:
+                        cur.execute("SELECT file_id FROM documents WHERE client_id = ? AND document_type = ?", (client_id, doc_type))
+                    
+                    doc_row = cur.fetchone()
+                    if doc_row and drive:
+                        try:
+                            file = drive.CreateFile({'id': doc_row[0]})
+                            file.Delete()
+                        except:
+                            pass
+                    
+                    # Delete from database
+                    if USE_POSTGRESQL:
+                        cur.execute("DELETE FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
+                    else:
+                        cur.execute("DELETE FROM documents WHERE client_id = ? AND document_type = ?", (client_id, doc_type))
+                    
+                    conn.commit()
+                    print(f"✅ Deleted {doc_type} for client {client_id}")
+                except Exception as e:
+                    print(f"❌ Error deleting {doc_type}: {str(e)}")
+            
+            # Check if new file uploaded
+            file = request.files.get(doc_type)
+            if file and file.filename:
+                if not allowed_file(file.filename):
+                    continue
+                if not validate_file_size(file):
+                    continue
+                
+                try:
+                    # Delete old file if exists
+                    if USE_POSTGRESQL:
+                        cur.execute("SELECT file_id FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
+                    else:
+                        cur.execute("SELECT file_id FROM documents WHERE client_id = ? AND document_type = ?", (client_id, doc_type))
+                    
+                    old_doc = cur.fetchone()
+                    if old_doc and drive:
+                        try:
+                            old_file = drive.CreateFile({'id': old_doc[0]})
+                            old_file.Delete()
+                        except:
+                            pass
+                    
+                    # Upload new file
+                    gfile = drive.CreateFile({
+                        'title': f"{client_id}_{doc_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
+                        'parents': [{'id': folder_id}]
+                    })
+                    gfile.SetContentFile(file)
+                    gfile.Upload()
+                    
+                    file_url = f"https://drive.google.com/uc?export=download&id={gfile['id']}"
+                    
+                    # Update or insert document
+                    if USE_POSTGRESQL:
+                        cur.execute(
+                            "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) "
+                            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                            "ON CONFLICT (client_id, document_type) DO UPDATE SET "
+                            "file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, upload_time = EXCLUDED.upload_time",
+                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now(), session.get('user_id'))
+                        )
+                    else:
+                        cur.execute(
+                            "INSERT OR REPLACE INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) "
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id'))
+                        )
+                    
+                    conn.commit()
+                    updated_docs.append(doc_type)
+                    print(f"✅ Updated {doc_type} for client {client_id}")
+                except Exception as e:
+                    print(f"❌ Error uploading {doc_type}: {str(e)}")
+        
+        # Update client's updated_at timestamp
+        if USE_POSTGRESQL:
+            cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (datetime.now(), client_id))
+        else:
+            cur.execute("UPDATE clients SET updated_at = ? WHERE id = ?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), client_id))
+        
+        conn.commit()
+        log_activity("DOCUMENTS_UPDATED", f"Updated {len(updated_docs)} documents for client {client_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'✅ Successfully updated {len(updated_docs)} document(s)!',
+            'updated': updated_docs
+        })
+    
+    except Exception as e:
+        print(f"❌ Update documents error: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+    finally:
+        if cur:
+            try:
+                cur.close()
+            except:
+                pass
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
+
+@app.route('/view-document/<path:file_url>')
+@login_required
+def view_document(file_url):
+    """✅ NEW: View document in browser instead of download"""
+    try:
+        # Redirect to Google Drive viewer
+        return redirect(file_url)
+    except Exception as e:
+        print(f"❌ View document error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():

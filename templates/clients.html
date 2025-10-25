@@ -140,6 +140,218 @@
         flex-direction: column;
       }
     }
+
+    /* EDIT MODAL STYLES - Minimal & Clean */
+    .edit-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .edit-modal-overlay.active {
+      display: flex;
+    }
+
+    .edit-modal-box {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .edit-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 15px;
+    }
+
+    .edit-modal-header h2 {
+      margin: 0;
+      color: #333;
+      font-size: 22px;
+    }
+
+    .edit-modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .edit-modal-close:hover {
+      color: #dc3545;
+    }
+
+    .doc-types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .doc-type-card {
+      padding: 15px;
+      background: #f8f9fa;
+      border: 2px solid #dee2e6;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .doc-type-card:hover {
+      border-color: #667eea;
+      background: #f0f2ff;
+    }
+
+    .doc-type-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .doc-type-status {
+      font-size: 12px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .status-exists {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-empty {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-ready {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      display: none;
+    }
+
+    .btn-upload-file {
+      width: 100%;
+      padding: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-upload-file:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-remove-file {
+      width: 100%;
+      padding: 6px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      display: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-remove-file.show {
+      display: block;
+    }
+
+    .btn-remove-file:hover {
+      background: #c82333;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+      border-top: 1px solid #dee2e6;
+      padding-top: 15px;
+    }
+
+    .btn-modal-save {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-modal-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-modal-cancel {
+      padding: 10px 20px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-modal-cancel:hover {
+      background: #5a6268;
+    }
+
+    .success-msg {
+      display: none;
+      padding: 12px;
+      background: #d4edda;
+      color: #155724;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 13px;
+    }
+
+    .success-msg.show {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -212,8 +424,8 @@
               </td>
               <td>
                 <div class="action-cell">
-                  <button class="btn-edit" onclick="editClientModal('{{ client[0] }}', '{{ client[1] }}')">
-                    ✏️ Edit
+                  <button class="btn-edit" onclick="openEditModal('{{ client[0] }}', '{{ client[1] }}')">
+                    ✏️ Edit Docs
                   </button>
                   <button class="btn-view" onclick="viewClientData('{{ client[1] }}')">
                     👁️ View
@@ -246,14 +458,196 @@
     </div>
   </div>
 
+  <!-- EDIT MODAL -->
+  <div class="edit-modal-overlay" id="editModal">
+    <div class="edit-modal-box">
+      <div class="edit-modal-header">
+        <h2>✏️ Edit Client Documents</h2>
+        <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
+      </div>
+
+      <div class="success-msg" id="successMsg">✅ Documents updated successfully!</div>
+
+      <form id="editDocForm" onsubmit="saveDocuments(event)">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="client_id" id="clientIdField">
+
+        <div class="doc-types-grid" id="docTypesGrid">
+          <!-- Will be populated by JavaScript -->
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn-modal-save">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    // ✅ FIXED: Added CSRF token to viewClientData
+    let selectedFiles = {};
+
+    function openEditModal(clientId, clientName) {
+      document.getElementById('clientIdField').value = clientId;
+      selectedFiles = {};
+      
+      // Fetch client documents
+      fetch(`/api/client/${clientId}/documents`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            renderDocumentTypes(data.documents);
+            document.getElementById('editModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+          } else {
+            alert('❌ Error: ' + data.error);
+          }
+        })
+        .catch(error => {
+          alert('❌ Error loading documents: ' + error.message);
+          console.error(error);
+        });
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+      document.body.style.overflow = '';
+      selectedFiles = {};
+      document.getElementById('editDocForm').reset();
+    }
+
+    function renderDocumentTypes(documents) {
+      const grid = document.getElementById('docTypesGrid');
+      grid.innerHTML = '';
+
+      const docTypes = [
+        { key: 'datasheet', icon: '📊', name: 'Datasheet' },
+        { key: 'aadhaar', icon: '🪪', name: 'Aadhaar' },
+        { key: 'pan', icon: '💳', name: 'PAN' },
+        { key: 'bank_account', icon: '🏦', name: 'Bank Account' }
+      ];
+
+      docTypes.forEach(doc => {
+        const existing = documents[doc.key];
+        const hasDoc = existing ? true : false;
+
+        const card = document.createElement('div');
+        card.className = 'doc-type-card';
+        card.innerHTML = `
+          <div class="doc-type-name">${doc.icon} ${doc.name}</div>
+          <div class="doc-type-status ${hasDoc ? 'status-exists' : 'status-empty'}">
+            ${hasDoc ? '✅ Exists' : '⚠️ Empty'}
+          </div>
+          <div class="file-input-wrapper">
+            <input type="file" id="file_${doc.key}" accept="image/*,application/pdf" 
+                   onchange="selectFile('${doc.key}', this)">
+            <button type="button" class="btn-upload-file" onclick="document.getElementById('file_${doc.key}').click()">
+              📤 ${hasDoc ? 'Replace' : 'Upload'}
+            </button>
+          </div>
+          ${hasDoc ? `<button type="button" class="btn-remove-file show" onclick="removeFile('${doc.key}')">🗑️ Remove</button>` : ''}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function selectFile(docType, input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        if (file.size > 10 * 1024 * 1024) {
+          alert('❌ File too large! Max 10MB.');
+          input.value = '';
+          return;
+        }
+
+        selectedFiles[docType] = file;
+        
+        const card = input.closest('.doc-type-card');
+        const status = card.querySelector('.doc-type-status');
+        status.textContent = '🔄 Ready to upload';
+        status.className = 'doc-type-status status-ready';
+      }
+    }
+
+    function removeFile(docType) {
+      if (confirm('Remove this document?')) {
+        selectedFiles[docType] = 'DELETE';
+        const cards = document.querySelectorAll('.doc-type-card');
+        cards.forEach(card => {
+          if (card.querySelector(`#file_${docType}`)) {
+            const status = card.querySelector('.doc-type-status');
+            status.textContent = '🗑️ Will remove';
+            status.className = 'doc-type-status status-empty';
+          }
+        });
+      }
+    }
+
+    async function saveDocuments(e) {
+      e.preventDefault();
+
+      if (Object.keys(selectedFiles).length === 0) {
+        alert('⚠️ Select at least one document.');
+        return;
+      }
+
+      const saveBtn = e.target.querySelector('[type="submit"]');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '⏳ Saving...';
+
+      const clientId = document.getElementById('clientIdField').value;
+      const formData = new FormData();
+      formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+      Object.keys(selectedFiles).forEach(docType => {
+        if (selectedFiles[docType] === 'DELETE') {
+          formData.append(`delete_${docType}`, 'true');
+        } else if (selectedFiles[docType] instanceof File) {
+          formData.append(docType, selectedFiles[docType]);
+        }
+      });
+
+      try {
+        const response = await fetch(`/api/client/${clientId}/update-documents`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          document.getElementById('successMsg').classList.add('show');
+          setTimeout(() => {
+            closeEditModal();
+            location.reload();
+          }, 1500);
+        } else {
+          alert('❌ Error: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
+      }
+    }
+
+    // Close on escape or outside click
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeEditModal();
+    });
+
+    document.getElementById('editModal').addEventListener('click', e => {
+      if (e.target.id === 'editModal') closeEditModal();
+    });
+
+    // ✅ View client data
     function viewClientData(clientName) {
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
       
-      // ✅ ADD CSRF TOKEN
       const csrfInput = document.createElement('input');
       csrfInput.type = 'hidden';
       csrfInput.name = 'csrf_token';
@@ -269,41 +663,7 @@
       document.body.appendChild(form);
       form.submit();
     }
-
-    // ✅ FIXED: Added CSRF token to editClientModal
-    function editClientModal(clientId, currentName) {
-      const newName = prompt('Edit client name.\n\nCurrent: ' + currentName + '\n\nEnter new name:', currentName);
-      
-      if (!newName || newName === currentName) {
-        return;
-      }
-      
-      if (newName.trim().length < 2) {
-        alert('Client name must be at least 2 characters long');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('new_name', newName.trim());
-      formData.append('csrf_token', '{{ csrf_token() }}'); // ✅ ADD CSRF TOKEN
-      
-      fetch('/edit_client/' + clientId, {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('✅ Success: ' + data.message);
-          location.reload();
-        } else {
-          alert('❌ Error: ' + data.error);
-        }
-      })
-      .catch(error => {
-        alert('❌ Error: ' + error.message);
-      });
-    }
   </script>
+
 </body>
 </html>

@@ -176,11 +176,11 @@
           </div>
           <div class="info-badge">
             <strong>📅 Created On</strong>
-            <span>{{ client.created_at[:10] }}</span>
+            <span>{% if client.created_at.__class__.__name__ == 'datetime' %}{{ client.created_at.strftime('%Y-%m-%d') }}{% else %}{{ client.created_at[:10] }}{% endif %}</span>
           </div>
           <div class="info-badge">
             <strong>⏰ Last Updated</strong>
-            <span>{{ client.updated_at[:10] }}</span>
+            <span>{% if client.updated_at.__class__.__name__ == 'datetime' %}{{ client.updated_at.strftime('%Y-%m-%d') }}{% else %}{{ client.updated_at[:10] }}{% endif %}</span>
           </div>
           <div class="info-badge">
             <strong>🆔 Folder ID</strong>
@@ -198,7 +198,8 @@
             <img src="{{ client.documents.datasheet.image_url }}" 
                  alt="Datasheet" 
                  class="doc-image"
-                 onclick="window.open(this.src, '_blank')">
+                 onclick="viewDocument('{{ client.documents.datasheet.url }}', '{{ client.documents.datasheet.file_name }}')"
+                 title="Click to view in new tab">
             <div class="doc-content">
               <div class="doc-type-header">
                 <span class="doc-type-title">📊 Datasheet</span>
