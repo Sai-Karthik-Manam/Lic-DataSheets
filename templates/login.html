@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Login | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
@@ -32,6 +32,21 @@
       font-weight: 600;
       font-size: 14px;
     }
+
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
     
     .password-input-wrapper {
       position: relative;
@@ -42,11 +57,10 @@
     .password-input-wrapper input[type="password"],
     .password-input-wrapper input[type="text"] {
       width: 100%;
-      padding: 12px 15px;
-      padding-right: 45px;
+      padding: 12px 45px 12px 15px;
       border: 2px solid #e0e0e0;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 16px;
       transition: all 0.3s ease;
     }
     
@@ -58,17 +72,19 @@
     
     .password-toggle-btn {
       position: absolute;
-      right: 15px;
+      right: 12px;
       background: none;
       border: none;
       cursor: pointer;
       font-size: 20px;
       color: #999;
       transition: all 0.3s ease;
-      padding: 5px;
+      padding: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
     }
     
     .password-toggle-btn:hover {
@@ -91,11 +107,16 @@
       cursor: pointer;
       transition: all 0.3s ease;
       margin-top: 10px;
+      min-height: 50px;
     }
     
     .btn-login:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
     }
     
     .divider {
@@ -131,10 +152,100 @@
       color: #667eea;
       text-decoration: none;
       font-weight: 600;
+      display: inline-block;
+      padding: 8px;
+      min-height: 44px;
+      line-height: 28px;
     }
     
     .register-link a:hover {
       text-decoration: underline;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      .login-container {
+        padding: 20px;
+      }
+
+      .login-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        font-size: 24px !important;
+      }
+
+      .login-header p {
+        font-size: 14px;
+      }
+
+      .form-group {
+        margin-bottom: 18px;
+      }
+
+      .form-group label {
+        font-size: 13px;
+      }
+
+      .form-group input[type="text"],
+      .password-input-wrapper input {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        padding: 14px 15px;
+      }
+
+      .password-input-wrapper input {
+        padding-right: 50px;
+      }
+
+      .btn-login {
+        padding: 16px;
+        font-size: 15px;
+        min-height: 52px;
+      }
+
+      .divider {
+        margin: 20px 0;
+      }
+
+      .register-link {
+        font-size: 14px;
+      }
+
+      .register-link p {
+        margin: 10px 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+
+      .login-container {
+        padding: 15px;
+      }
+
+      .login-icon {
+        font-size: 40px;
+      }
+
+      h1 {
+        font-size: 20px !important;
+      }
+    }
+
+    /* Prevent zoom on input focus for iOS */
+    @supports (-webkit-touch-callout: none) {
+      input[type="text"],
+      input[type="password"] {
+        font-size: 16px !important;
+      }
     }
   </style>
 </head>
@@ -168,6 +279,7 @@
           placeholder="Enter your username"
           required
           autofocus
+          autocomplete="username"
         >
       </div>
 
@@ -180,8 +292,9 @@
             name="password" 
             placeholder="Enter your password"
             required
+            autocomplete="current-password"
           >
-          <button type="button" class="password-toggle-btn">👁️</button>
+          <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
         </div>
       </div>
 

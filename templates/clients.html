@@ -27,14 +27,17 @@
     .clients-table-container {
       background: white;
       border-radius: 20px;
-      overflow: visible;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       width: 100%;
+      position: relative;
     }
     
     .clients-table {
       width: 100%;
       border-collapse: collapse;
+      min-width: 800px;
     }
     
     .clients-table thead {
@@ -49,6 +52,7 @@
       font-size: 14px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
     
     .clients-table td {
@@ -66,6 +70,10 @@
       font-weight: 600;
       color: #667eea;
       cursor: pointer;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
     .client-name-cell:hover {
@@ -80,16 +88,19 @@
       border-radius: 20px;
       font-size: 13px;
       font-weight: 600;
+      white-space: nowrap;
     }
     
     .date-cell {
       color: #666;
       font-size: 14px;
+      white-space: nowrap;
     }
     
     .action-cell {
       display: flex;
       gap: 8px;
+      flex-wrap: nowrap;
     }
     
     .btn-view {
@@ -102,6 +113,7 @@
       font-size: 13px;
       font-weight: 600;
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
     
     .btn-view:hover {
@@ -119,6 +131,7 @@
       font-size: 13px;
       font-weight: 600;
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
     
     .btn-edit:hover {
@@ -131,17 +144,104 @@
       padding: 60px 20px;
     }
 
+    /* Scroll hint for mobile */
+    .scroll-hint {
+      display: none;
+      position: sticky;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(102, 126, 234, 0.9);
+      color: white;
+      padding: 8px 15px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 10;
+    }
+
     @media (max-width: 768px) {
+      .clients-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .clients-count {
+        width: 100%;
+        text-align: center;
+        font-size: 16px;
+        padding: 12px 20px;
+      }
+      
       .clients-table-container {
-        overflow-x: auto;
+        margin: 0 -20px;
+        border-radius: 0;
+        width: calc(100% + 40px);
+      }
+
+      .scroll-hint {
+        display: block;
+      }
+
+      .clients-table {
+        min-width: 700px;
+        font-size: 13px;
+      }
+
+      .clients-table th,
+      .clients-table td {
+        padding: 12px 10px;
+        font-size: 12px;
+      }
+
+      .client-name-cell {
+        max-width: 120px;
       }
       
       .action-cell {
         flex-direction: column;
+        gap: 5px;
+      }
+
+      .btn-view,
+      .btn-edit {
+        width: 100%;
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+
+      h1 {
+        font-size: 24px !important;
+      }
+
+      .doc-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+
+      /* Search button mobile fix */
+      form[action="/clients"] button[type="submit"] {
+        position: static !important;
+        transform: none !important;
+        width: 100%;
+        margin-top: 10px;
+        padding: 12px 20px !important;
+        font-size: 15px !important;
+      }
+
+      form[action="/clients"] input[name="search"] {
+        padding: 15px 20px !important;
+        margin-bottom: 0;
       }
     }
 
-    /* EDIT MODAL STYLES - Minimal & Clean */
+    @media (max-width: 480px) {
+      .clients-table {
+        min-width: 650px;
+      }
+    }
+
+    /* EDIT MODAL STYLES */
     .edit-modal-overlay {
       display: none;
       position: fixed;
@@ -154,6 +254,7 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
+      overflow-y: auto;
     }
 
     .edit-modal-overlay.active {
@@ -352,6 +453,30 @@
     .success-msg.show {
       display: block;
     }
+
+    @media (max-width: 768px) {
+      .edit-modal-box {
+        padding: 20px;
+        margin: 10px;
+      }
+
+      .edit-modal-header h2 {
+        font-size: 18px;
+      }
+
+      .doc-types-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .btn-modal-save,
+      .btn-modal-cancel {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -374,16 +499,18 @@
     {% endif %}
 
     <!-- Search Box -->
-    <div style="margin: 20px 0; position: relative;">
-      <form method="GET" action="/clients">
+    <div style="margin: 20px 0;">
+      <form method="GET" action="/clients" style="display: flex; gap: 10px; align-items: stretch;">
         <input 
           type="text" 
           name="search" 
           placeholder="🔎 Search client by name..." 
           value="{{ search_query }}"
-          style="width: 100%; padding: 15px 30px 15px 20px; border: 2px solid #e0e0e0; border-radius: 15px; font-size: 16px;"
+          style="flex: 1; padding: 15px 20px; border: 2px solid #e0e0e0; border-radius: 15px; font-size: 16px;"
         >
-        <button type="submit" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 20px; cursor: pointer; color: #999;">🔍</button>
+        <button type="submit" style="padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 15px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;">
+          🔍 Search
+        </button>
       </form>
     </div>
 
@@ -425,7 +552,7 @@
               <td>
                 <div class="action-cell">
                   <button class="btn-edit" onclick="openEditModal('{{ client[0] }}', '{{ client[1] }}')">
-                    ✏️ Edit Docs
+                    ✏️ Edit
                   </button>
                   <button class="btn-view" onclick="viewClientData('{{ client[1] }}')">
                     👁️ View
@@ -436,6 +563,7 @@
             {% endfor %}
           </tbody>
         </table>
+        <div class="scroll-hint">← Swipe left/right to see more →</div>
       </div>
 
     {% else %}
@@ -446,13 +574,13 @@
           Sync your Google Drive to see all your clients.
         </p>
         <a href="/manual-sync" class="link" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
-          📄 Sync Google Drive Now
+          🔄 Sync Google Drive Now
         </a>
       </div>
     {% endif %}
 
     <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
-      <a href="/manual-sync" class="link" style="padding: 10px 20px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📄 Manual Sync</a>
+      <a href="/manual-sync" class="link" style="padding: 10px 20px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">🔄 Manual Sync</a>
       <a href="/upload_page" class="link" style="padding: 10px 20px; background: #28a745; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📤 Upload Documents</a>
       <a href="/dashboard" class="link" style="padding: 10px 20px; background: #17a2b8; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📈 Dashboard</a>
     </div>
@@ -491,7 +619,6 @@
       document.getElementById('clientIdField').value = clientId;
       selectedFiles = {};
       
-      // Fetch client documents
       fetch(`/api/client/${clientId}/documents`)
         .then(response => response.json())
         .then(data => {
@@ -565,7 +692,7 @@
         
         const card = input.closest('.doc-type-card');
         const status = card.querySelector('.doc-type-status');
-        status.textContent = '🔄 Ready to upload';
+        status.textContent = '📄 Ready to upload';
         status.className = 'doc-type-status status-ready';
       }
     }
@@ -633,7 +760,6 @@
       }
     }
 
-    // Close on escape or outside click
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') closeEditModal();
     });
@@ -642,7 +768,6 @@
       if (e.target.id === 'editModal') closeEditModal();
     });
 
-    // ✅ View client data
     function viewClientData(clientName) {
       const form = document.createElement('form');
       form.method = 'POST';
