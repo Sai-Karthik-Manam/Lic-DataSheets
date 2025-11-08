@@ -55,6 +55,50 @@
       font-size: 12px;
     }
     
+    /* ✅ FIXED: Show/Hide button outside the input box */
+    .password-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .password-wrapper input {
+      flex: 1;
+      width: auto;
+    }
+    
+    .password-toggle {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border: 2px solid #667eea;
+      color: #667eea;
+      cursor: pointer;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      min-width: 70px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    
+    .password-toggle:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .password-toggle:active {
+      transform: translateY(0);
+    }
+    
+    .password-toggle.active {
+      background: #667eea;
+      color: white;
+    }
+    
     .btn-register {
       width: 100%;
       padding: 15px;
@@ -180,14 +224,24 @@
 
       <div class="form-group">
         <label for="password">🔒 Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          placeholder="Create a strong password"
-          required
-          minlength="8"
-        >
+        <div class="password-wrapper">
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="Create a strong password"
+            required
+            minlength="8"
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            id="togglePassword"
+            aria-label="Toggle password visibility"
+          >
+            Show
+          </button>
+        </div>
         <div class="password-strength" id="passwordStrength">
           <div class="password-strength-bar" id="strengthBar"></div>
         </div>
@@ -196,13 +250,23 @@
 
       <div class="form-group">
         <label for="confirm_password">🔒 Confirm Password</label>
-        <input 
-          type="password" 
-          id="confirm_password" 
-          name="confirm_password" 
-          placeholder="Re-enter your password"
-          required
-        >
+        <div class="password-wrapper">
+          <input 
+            type="password" 
+            id="confirm_password" 
+            name="confirm_password" 
+            placeholder="Re-enter your password"
+            required
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            id="toggleConfirmPassword"
+            aria-label="Toggle password visibility"
+          >
+            Show
+          </button>
+        </div>
       </div>
 
       <button type="submit" class="btn-register">
@@ -220,7 +284,47 @@
   </div>
 
   <script>
+    // ✅ FIXED: Password toggle for main password
     const passwordInput = document.getElementById('password');
+    const togglePassword = document.getElementById('togglePassword');
+    
+    togglePassword.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        togglePassword.textContent = 'Hide';
+        togglePassword.style.color = '#667eea';
+      } else {
+        passwordInput.type = 'password';
+        togglePassword.textContent = 'Show';
+        togglePassword.style.color = '#999';
+      }
+      
+      passwordInput.focus();
+    });
+    
+    // ✅ FIXED: Password toggle for confirm password
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+    
+    toggleConfirmPassword.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      if (confirmPasswordInput.type === 'password') {
+        confirmPasswordInput.type = 'text';
+        toggleConfirmPassword.textContent = 'Hide';
+        toggleConfirmPassword.style.color = '#667eea';
+      } else {
+        confirmPasswordInput.type = 'password';
+        toggleConfirmPassword.textContent = 'Show';
+        toggleConfirmPassword.style.color = '#999';
+      }
+      
+      confirmPasswordInput.focus();
+    });
+
+    // Password strength indicator
     const strengthIndicator = document.getElementById('passwordStrength');
     const strengthBar = document.getElementById('strengthBar');
 
@@ -252,6 +356,7 @@
       }
     });
 
+    // Form validation
     const form = document.getElementById('registerForm');
     form.addEventListener('submit', function(e) {
       const password = document.getElementById('password').value;

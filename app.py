@@ -94,8 +94,8 @@ def init_db():
             else:
                 cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)", ('admin', hashed, 'admin@example.com', 'admin', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
             print("✅ Admin user created")
-            print(f"⚠️  Admin password: {admin_password}")
-            print("⚠️  SAVE THIS PASSWORD AND CHANGE IT IMMEDIATELY!")
+            print(f"⚠️ Admin password: {admin_password}")
+            print("⚠️ SAVE THIS PASSWORD AND CHANGE IT IMMEDIATELY!")
         
         conn.commit()
         print("✅ Database initialized successfully")
@@ -117,7 +117,7 @@ def init_db():
 try:
     init_db()
 except Exception as e:
-    print(f"⚠️  Database initialization warning: {e}")
+    print(f"⚠️ Database initialization warning: {e}")
 
 def setup_google_auth():
     try:
@@ -126,7 +126,7 @@ def setup_google_auth():
         refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN')
         
         if not all([client_id, client_secret, refresh_token]):
-            print("⚠️  Warning: Google Drive credentials not configured")
+            print("⚠️ Warning: Google Drive credentials not configured")
             return None
         
         client_config = {
@@ -189,7 +189,7 @@ def sync_drive_to_database():
         synced_count = 0
         query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
-        print(f"📁 Found {len(folder_list)} folders in Google Drive")
+        print(f"📂 Found {len(folder_list)} folders in Google Drive")
         
         conn = get_db_connection()
         cur = conn.cursor()
@@ -227,7 +227,7 @@ def sync_drive_to_database():
                 try:
                     files_list = drive.ListFile({'q': files_query, 'maxResults': 1000}).GetList()
                 except Exception as e:
-                    print(f"  ⚠️  Skipping files for {folder_name}: {e}")
+                    print(f"  ⚠️ Skipping files for {folder_name}: {e}")
                     files_list = []
                 
                 for file in files_list:
@@ -350,7 +350,7 @@ def cleanup_temp_file(filepath):
             os.remove(filepath)
             return True
     except Exception as e:
-        print(f"⚠️  Warning: Could not remove temp file: {str(e)}")
+        print(f"⚠️ Warning: Could not remove temp file: {str(e)}")
     return False
 
 def role_required(required_role):
@@ -448,7 +448,7 @@ def login():
                             flash('❌ Account locked. Try again later.', 'error')
                             return render_template('login.html')
                     except Exception as e:
-                        print(f"⚠️  Lock check error: {e}")
+                        print(f"⚠️ Lock check error: {e}")
                 
                 if check_password_hash(user_dict['password'], password):
                     session['user_id'] = user_dict['id']
@@ -636,27 +636,26 @@ def list_clients():
         order = request.args.get('order', 'desc')
         search_query = request.args.get('search', '').strip()
         
-        order = 'ASC' if order == 'asc' else 'DESC'
+        # ✅ FIX: Whitelist valid sort columns to prevent SQL injection
+        valid_sorts = ['name', 'created_at', 'updated_at']
+        if sort_by not in valid_sorts:
+            sort_by = 'updated_at'
         
-        # ✅ FIXED: Prevent SQL injection in ORDER BY
-        valid_sorts = {
-            'name': 'c.name',
-            'created_at': 'c.created_at',
-            'updated_at': 'c.updated_at'
-        }
-        sort_column = valid_sorts.get(sort_by, 'c.updated_at')
+        # ✅ FIX: Validate order direction
+        order = 'ASC' if order == 'asc' else 'DESC'
         
         conn = get_db_connection()
         cur = conn.cursor()
         
-        base_query = "SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count FROM clients c LEFT JOIN documents d ON c.id = d.client_id"
+        # Build safe query with whitelisted column
+        base_query = f"SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count FROM clients c LEFT JOIN documents d ON c.id = d.client_id"
         
         if search_query:
             if USE_POSTGRESQL:
-                query = base_query + f" WHERE c.name ILIKE %s GROUP BY c.id ORDER BY {sort_column} {order}"
+                query = base_query + f" WHERE c.name ILIKE %s GROUP BY c.id ORDER BY c.{sort_by} {order}"
                 cur.execute(query, (f'%{search_query}%',))
             else:
-                query = base_query + f" WHERE c.name LIKE ? GROUP BY c.id ORDER BY {sort_column} {order}"
+                query = base_query + f" WHERE c.name LIKE ? GROUP BY c.id ORDER BY c.{sort_by} {order}"
                 cur.execute(query, (f'%{search_query}%',))
         else:
             query = base_query + f" GROUP BY c.id ORDER BY c.updated_at DESC LIMIT 20"
@@ -938,12 +937,13 @@ def upload():
                 return redirect(url_for('upload_page'))
             
             if USE_POSTGRESQL:
-                cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (%s, %s, %s, %s, %s)", (client_name, folder_id, datetime.now(), datetime.now(), session.get('user_id')))
+                cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (%s, %s, %s, %s, %s) RETURNING id", (client_name, folder_id, datetime.now(), datetime.now(), session.get('user_id')))
+                client_id = cur.fetchone()[0]
             else:
                 cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?)", (client_name, folder_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id')))
+                client_id = cur.lastrowid
             
             conn.commit()
-            client_id = cur.lastrowid if not USE_POSTGRESQL else cur.fetchone()[0]
         else:
             client_id = client[0]
             folder_id = client[1]
@@ -1006,7 +1006,6 @@ def upload():
 @app.route('/fetch_data', methods=['POST'])
 @login_required
 def fetch_data():
-    """✅ FIXED: Fetch client documents with CSRF protection enabled"""
     client_name = request.form.get('name', '').strip()
     if not client_name:
         flash('Client name is required.', 'error')
@@ -1049,13 +1048,13 @@ def fetch_data():
             }
         
         client = {
-                    'id': client_id,
-                    'name': client_row[1],
-                    'created_at': client_row[2].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[2], 'strftime') else client_row[2],
-                    'updated_at': client_row[3].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[3], 'strftime') else client_row[3],
-                    'folder_id': client_row[4],
-                    'documents': documents
-                }
+            'id': client_id,
+            'name': client_row[1],
+            'created_at': client_row[2].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[2], 'strftime') else client_row[2],
+            'updated_at': client_row[3].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[3], 'strftime') else client_row[3],
+            'folder_id': client_row[4],
+            'documents': documents
+        }
         
         log_activity("DOCUMENTS_VIEWED", f"Viewed documents for {client_row[1]}")
         return render_template('fetch.html', client=client)
@@ -1108,7 +1107,6 @@ def download_document():
 @app.route('/delete_document', methods=['POST'])
 @login_required
 def delete_document():
-    """✅ FIXED: Delete document with proper error handling"""
     file_id = request.form.get('file_id', '')
     
     if not file_id:
@@ -1152,7 +1150,6 @@ def delete_document():
 @app.route('/delete_client', methods=['POST'])
 @login_required
 def delete_client():
-    """✅ FIXED: Delete client with proper error handling"""
     client_name = request.form.get('name', '').strip()
     
     if not client_name:
@@ -1208,7 +1205,6 @@ def delete_client():
 @app.route('/edit_client/<int:client_id>', methods=['POST'])
 @login_required
 def edit_client(client_id):
-    """✅ FIXED: Edit client with proper error handling"""
     new_name = request.form.get('new_name', '').strip()
     
     if not new_name:
@@ -1294,7 +1290,6 @@ def api_quick_search():
 @app.route('/api/client/<int:client_id>/documents', methods=['GET'])
 @login_required
 def get_client_documents(client_id):
-    """✅ NEW: Get all documents for a client"""
     conn = None
     cur = None
     try:
@@ -1341,7 +1336,6 @@ def get_client_documents(client_id):
 @app.route('/api/client/<int:client_id>/update-documents', methods=['POST'])
 @login_required
 def update_client_documents(client_id):
-    """✅ NEW: Update/replace documents for existing client"""
     conn = None
     cur = None
     
@@ -1349,7 +1343,6 @@ def update_client_documents(client_id):
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Verify client exists
         if USE_POSTGRESQL:
             cur.execute("SELECT id, folder_id FROM clients WHERE id = %s", (client_id,))
         else:
@@ -1362,12 +1355,9 @@ def update_client_documents(client_id):
         folder_id = client[1]
         updated_docs = []
         
-        # Handle each document type
         for doc_type in DOCUMENT_TYPES:
-            # Check if document should be deleted
             if request.form.get(f'delete_{doc_type}') == 'true':
                 try:
-                    # Get file_id to delete from Google Drive
                     if USE_POSTGRESQL:
                         cur.execute("SELECT file_id FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
                     else:
@@ -1381,7 +1371,6 @@ def update_client_documents(client_id):
                         except:
                             pass
                     
-                    # Delete from database
                     if USE_POSTGRESQL:
                         cur.execute("DELETE FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
                     else:
@@ -1392,7 +1381,6 @@ def update_client_documents(client_id):
                 except Exception as e:
                     print(f"❌ Error deleting {doc_type}: {str(e)}")
             
-            # Check if new file uploaded
             file = request.files.get(doc_type)
             if file and file.filename:
                 if not allowed_file(file.filename):
@@ -1401,7 +1389,6 @@ def update_client_documents(client_id):
                     continue
                 
                 try:
-                    # Delete old file if exists
                     if USE_POSTGRESQL:
                         cur.execute("SELECT file_id FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
                     else:
@@ -1415,7 +1402,6 @@ def update_client_documents(client_id):
                         except:
                             pass
                     
-                    # Upload new file
                     gfile = drive.CreateFile({
                         'title': f"{client_id}_{doc_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
                         'parents': [{'id': folder_id}]
@@ -1425,7 +1411,6 @@ def update_client_documents(client_id):
                     
                     file_url = f"https://drive.google.com/uc?export=download&id={gfile['id']}"
                     
-                    # Update or insert document
                     if USE_POSTGRESQL:
                         cur.execute(
                             "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) "
@@ -1447,7 +1432,6 @@ def update_client_documents(client_id):
                 except Exception as e:
                     print(f"❌ Error uploading {doc_type}: {str(e)}")
         
-        # Update client's updated_at timestamp
         if USE_POSTGRESQL:
             cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (datetime.now(), client_id))
         else:
@@ -1481,9 +1465,7 @@ def update_client_documents(client_id):
 @app.route('/view-document/<path:file_url>')
 @login_required
 def view_document(file_url):
-    """✅ NEW: View document in browser instead of download"""
     try:
-        # Redirect to Google Drive viewer
         return redirect(file_url)
     except Exception as e:
         print(f"❌ View document error: {str(e)}")
@@ -1584,7 +1566,6 @@ def manage_users():
 @app.route('/admin/user/<int:user_id>/role', methods=['POST'])
 @admin_required
 def change_user_role(user_id):
-    """✅ FIXED: Change user role with proper error handling"""
     new_role = request.form.get('role', '').strip()
     
     if new_role not in ['user', 'admin']:
@@ -1625,7 +1606,6 @@ def change_user_role(user_id):
 @app.route('/admin/user/<int:user_id>/unlock', methods=['POST'])
 @admin_required
 def unlock_user(user_id):
-    """✅ FIXED: Unlock user with proper error handling"""
     conn = None
     cur = None
     try:
@@ -1658,7 +1638,6 @@ def unlock_user(user_id):
 @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
 @admin_required
 def delete_user(user_id):
-    """✅ FIXED: Delete user with proper error handling"""
     if user_id == session.get('user_id'):
         return jsonify({'success': False, 'error': 'Cannot delete your own account'})
     
@@ -1702,7 +1681,6 @@ def delete_user(user_id):
 @app.route('/admin/user/<int:user_id>/activity')
 @admin_required
 def user_activity(user_id):
-    """✅ FIXED: View user activity with proper error handling"""
     conn = None
     cur = None
     try:
@@ -1735,7 +1713,6 @@ def user_activity(user_id):
 @app.route('/api/user/role')
 @login_required
 def get_user_role():
-    """Get current user role"""
     return jsonify({
         'role': session.get('role', 'user'),
         'username': session.get('username')

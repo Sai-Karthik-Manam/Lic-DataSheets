@@ -146,7 +146,6 @@
   <div class="container" style="max-width: 1100px;">
     <h1>🔍 Fetch Client Documents</h1>
     
-    <!-- MAIN SEARCH FORM - CSRF TOKEN AS HIDDEN INPUT -->
     <form action="/fetch_data" method="POST" id="fetchForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="search-container">
@@ -198,7 +197,7 @@
             <img src="{{ client.documents.datasheet.image_url }}" 
                  alt="Datasheet" 
                  class="doc-image"
-                 onclick="viewDocument('{{ client.documents.datasheet.url }}', '{{ client.documents.datasheet.file_name }}')"
+                 onclick="window.open(this.src, '_blank')"
                  title="Click to view in new tab">
             <div class="doc-content">
               <div class="doc-type-header">
@@ -340,7 +339,7 @@
     {% elif not_found %}
       <div class="error">
         <div style="text-align: center; padding: 40px 20px;">
-          <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.5;">🔍</div>
+          <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.5;">📂</div>
           <h3>No Client Found</h3>
           <p>We couldn't find a client named '<strong>{{ name }}</strong>'</p>
           <p style="margin-top: 15px; color: #666;">
@@ -372,7 +371,6 @@
       fetchBtn.style.opacity = '0.7';
     });
 
-    // ✅ FIXED: Added CSRF token
     function deleteDocument(fileId, docType) {
       if (!confirm(`⚠️ Are you sure you want to delete ${docType}?\n\nThis action cannot be undone!`)) {
         return;
@@ -385,7 +383,7 @@
       const csrfInput = document.createElement('input');
       csrfInput.type = 'hidden';
       csrfInput.name = 'csrf_token';
-      csrfInput.value = document.querySelector('form').querySelector('input[name="csrf_token"]').value;
+      csrfInput.value = '{{ csrf_token() }}';
       form.appendChild(csrfInput);
       
       const fileInput = document.createElement('input');
@@ -398,7 +396,6 @@
       form.submit();
     }
 
-    // ✅ FIXED: Added CSRF token
     function deleteClient(name) {
       if (!confirm(`⚠️⚠️⚠️ FINAL WARNING ⚠️⚠️⚠️\n\nYou are about to delete ALL documents for "${name}"!\n\nThis will permanently remove:\n• All uploaded documents\n• Client folder\n• All database records\n\nThis action CANNOT be undone!\n\nType the client name to confirm.`)) {
         return;
@@ -417,7 +414,7 @@
       const csrfInput = document.createElement('input');
       csrfInput.type = 'hidden';
       csrfInput.name = 'csrf_token';
-      csrfInput.value = document.querySelector('form').querySelector('input[name="csrf_token"]').value;
+      csrfInput.value = '{{ csrf_token() }}';
       form.appendChild(csrfInput);
       
       const nameInput = document.createElement('input');

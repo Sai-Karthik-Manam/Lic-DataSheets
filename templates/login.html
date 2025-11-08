@@ -33,7 +33,8 @@
       font-size: 14px;
     }
 
-    .form-group input[type="text"] {
+    .form-group input[type="text"],
+    .form-group input[type="password"] {
       width: 100%;
       padding: 12px 15px;
       border: 2px solid #e0e0e0;
@@ -42,57 +43,54 @@
       transition: all 0.3s ease;
     }
 
-    .form-group input[type="text"]:focus {
+    .form-group input:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
-    .password-input-wrapper {
-      position: relative;
+    /* ✅ FIXED: Show/Hide button outside the input box */
+    .password-wrapper {
       display: flex;
+      gap: 10px;
       align-items: center;
-    }
-    
-    .password-input-wrapper input[type="password"],
-    .password-input-wrapper input[type="text"] {
       width: 100%;
-      padding: 12px 45px 12px 15px;
-      border: 2px solid #e0e0e0;
-      border-radius: 10px;
-      font-size: 16px;
-      transition: all 0.3s ease;
     }
     
-    .password-input-wrapper input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    .password-wrapper input {
+      flex: 1;
+      width: auto;
     }
     
-    .password-toggle-btn {
-      position: absolute;
-      right: 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 20px;
-      color: #999;
-      transition: all 0.3s ease;
-      padding: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 44px;
-      min-height: 44px;
-    }
-    
-    .password-toggle-btn:hover {
+    .password-toggle {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border: 2px solid #667eea;
       color: #667eea;
+      cursor: pointer;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      min-width: 70px;
+      white-space: nowrap;
+      user-select: none;
     }
     
-    .password-toggle-btn:active {
-      transform: scale(0.95);
+    .password-toggle:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .password-toggle:active {
+      transform: translateY(0);
+    }
+    
+    .password-toggle.active {
+      background: #667eea;
+      color: white;
     }
     
     .btn-login {
@@ -194,13 +192,13 @@
       }
 
       .form-group input[type="text"],
-      .password-input-wrapper input {
-        font-size: 16px !important; /* Prevents zoom on iOS */
+      .form-group input[type="password"] {
+        font-size: 16px !important;
         padding: 14px 15px;
       }
 
-      .password-input-wrapper input {
-        padding-right: 50px;
+      .password-wrapper input {
+        padding-right: 55px !important;
       }
 
       .btn-login {
@@ -285,7 +283,7 @@
 
       <div class="form-group">
         <label for="password">🔒 Password</label>
-        <div class="password-input-wrapper">
+        <div class="password-wrapper">
           <input 
             type="password" 
             id="password" 
@@ -294,7 +292,14 @@
             required
             autocomplete="current-password"
           >
-          <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+          <button 
+            type="button" 
+            class="password-toggle" 
+            id="togglePassword"
+            aria-label="Toggle password visibility"
+          >
+            Show
+          </button>
         </div>
       </div>
 
@@ -314,30 +319,29 @@
   </div>
 
   <script>
-    function togglePasswordVisibility(input, button) {
-      const isPassword = input.type === 'password';
-      
-      input.type = isPassword ? 'text' : 'password';
-      button.textContent = isPassword ? '🙈' : '👁️';
-      button.style.color = isPassword ? '#667eea' : '#999';
-    }
+    // ✅ FIXED: Improved password toggle functionality
+    const passwordInput = document.getElementById('password');
+    const toggleButton = document.getElementById('togglePassword');
     
-    document.addEventListener('DOMContentLoaded', function() {
-      const passwordWrappers = document.querySelectorAll('.password-input-wrapper');
+    toggleButton.addEventListener('click', function(e) {
+      e.preventDefault();
       
-      passwordWrappers.forEach(wrapper => {
-        const input = wrapper.querySelector('input');
-        const toggleBtn = wrapper.querySelector('.password-toggle-btn');
-        
-        if (input && toggleBtn) {
-          toggleBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            togglePasswordVisibility(input, toggleBtn);
-          });
-        }
-      });
+      // Toggle password visibility
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleButton.textContent = 'Hide';
+        toggleButton.style.color = '#667eea';
+      } else {
+        passwordInput.type = 'password';
+        toggleButton.textContent = 'Show';
+        toggleButton.style.color = '#999';
+      }
+      
+      // Keep focus on password input
+      passwordInput.focus();
     });
     
+    // Focus username input on page load
     document.getElementById('username').focus();
   </script>
 </body>
