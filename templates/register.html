@@ -175,6 +175,79 @@
     .strength-weak { background: #dc3545; width: 33%; }
     .strength-medium { background: #ffc107; width: 66%; }
     .strength-strong { background: #28a745; width: 100%; }
+    
+    /* ✅ FIXED: Mobile responsive styles */
+    @media (max-width: 768px) {
+      .register-container {
+        padding: 20px;
+      }
+      
+      .register-icon {
+        font-size: 48px;
+      }
+      
+      h1 {
+        font-size: 24px !important;
+      }
+      
+      .form-group {
+        margin-bottom: 18px;
+      }
+      
+      .form-group label {
+        font-size: 13px;
+      }
+      
+      .form-group input {
+        font-size: 16px !important;
+        padding: 14px 15px;
+      }
+      
+      /* ✅ FIXED: Better mobile layout for password wrapper */
+      .password-wrapper {
+        gap: 8px;
+      }
+      
+      .password-wrapper input {
+        flex: 1;
+        min-width: 0;
+      }
+      
+      .password-toggle {
+        min-width: 55px;
+        max-width: 55px;
+        padding: 12px 8px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      
+      .btn-register {
+        padding: 16px;
+        font-size: 15px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .register-container {
+        padding: 15px;
+      }
+      
+      .register-icon {
+        font-size: 40px;
+      }
+      
+      h1 {
+        font-size: 20px !important;
+      }
+      
+      /* ✅ FIXED: Even smaller button on very small screens */
+      .password-toggle {
+        min-width: 50px;
+        max-width: 50px;
+        padding: 12px 6px;
+        font-size: 11px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -294,11 +367,11 @@
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         togglePassword.textContent = 'Hide';
-        togglePassword.style.color = '#667eea';
+        togglePassword.classList.add('active');
       } else {
         passwordInput.type = 'password';
         togglePassword.textContent = 'Show';
-        togglePassword.style.color = '#999';
+        togglePassword.classList.remove('active');
       }
       
       passwordInput.focus();
@@ -314,11 +387,11 @@
       if (confirmPasswordInput.type === 'password') {
         confirmPasswordInput.type = 'text';
         toggleConfirmPassword.textContent = 'Hide';
-        toggleConfirmPassword.style.color = '#667eea';
+        toggleConfirmPassword.classList.add('active');
       } else {
         confirmPasswordInput.type = 'password';
         toggleConfirmPassword.textContent = 'Show';
-        toggleConfirmPassword.style.color = '#999';
+        toggleConfirmPassword.classList.remove('active');
       }
       
       confirmPasswordInput.focus();

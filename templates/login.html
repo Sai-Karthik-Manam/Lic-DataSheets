@@ -197,8 +197,22 @@
         padding: 14px 15px;
       }
 
+      /* ✅ FIXED: Better mobile layout for password wrapper */
+      .password-wrapper {
+        gap: 8px;
+      }
+      
       .password-wrapper input {
-        padding-right: 55px !important;
+        flex: 1;
+        min-width: 0; /* Allow input to shrink */
+      }
+      
+      .password-toggle {
+        min-width: 55px; /* Smaller button on mobile */
+        max-width: 55px;
+        padding: 12px 8px;
+        font-size: 12px;
+        flex-shrink: 0; /* Don't shrink button */
       }
 
       .btn-login {
@@ -235,6 +249,14 @@
 
       h1 {
         font-size: 20px !important;
+      }
+      
+      /* ✅ FIXED: Even smaller button on very small screens */
+      .password-toggle {
+        min-width: 50px;
+        max-width: 50px;
+        padding: 12px 6px;
+        font-size: 11px;
       }
     }
 
@@ -330,11 +352,11 @@
       if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
         toggleButton.textContent = 'Hide';
-        toggleButton.style.color = '#667eea';
+        toggleButton.classList.add('active');
       } else {
         passwordInput.type = 'password';
         toggleButton.textContent = 'Show';
-        toggleButton.style.color = '#999';
+        toggleButton.classList.remove('active');
       }
       
       // Keep focus on password input
