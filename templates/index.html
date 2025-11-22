@@ -15,31 +15,12 @@
       overflow-x: hidden;
     }
 
-    /* Animated Background */
-    body::before {
-      content: '';
-      position: fixed;
-      width: 200%;
-      height: 200%;
-      top: -50%;
-      left: -50%;
-      z-index: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-      animation: rotate 20s linear infinite;
-    }
-
-    @keyframes rotate {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Navigation */
     .top-nav {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      padding: 20px 40px;
+      padding: 16px 30px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -50,21 +31,21 @@
     }
 
     .logo {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       color: white;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .nav-buttons {
       display: flex;
-      gap: 15px;
+      gap: 12px;
     }
 
     .nav-btn {
-      padding: 10px 25px;
+      padding: 10px 22px;
       border-radius: 25px;
       font-weight: 600;
       text-decoration: none;
@@ -94,86 +75,69 @@
       color: white;
     }
 
-    /* Main Container */
     .landing-container {
       position: relative;
       z-index: 1;
-      max-width: 1200px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 120px 20px 60px;
+      padding: 100px 20px 50px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    /* Hero Section */
     .hero {
       text-align: center;
-      margin-bottom: 80px;
+      margin-bottom: 60px;
       animation: fadeInUp 0.8s ease;
     }
 
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .hero h1 {
-      font-size: 56px;
+      font-size: 48px;
       color: white;
-      margin: 0 0 20px;
+      margin: 0 0 16px;
       font-weight: 800;
       text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
     }
 
     .hero p {
-      font-size: 22px;
+      font-size: 20px;
       color: rgba(255, 255, 255, 0.9);
-      margin: 0 0 40px;
-      font-weight: 400;
+      margin: 0 0 30px;
     }
 
     .hero-tagline {
-      font-size: 16px;
+      font-size: 15px;
       color: rgba(255, 255, 255, 0.8);
-      margin-top: 10px;
+      line-height: 1.6;
     }
 
-    /* Features Grid */
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
       width: 100%;
-      max-width: 1000px;
-      margin-bottom: 60px;
+      max-width: 950px;
+      margin-bottom: 50px;
     }
 
     .feature-card {
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 40px 30px;
+      border-radius: 18px;
+      padding: 35px 25px;
       text-align: center;
       transition: all 0.4s ease;
       cursor: pointer;
       border: 2px solid transparent;
       position: relative;
       overflow: hidden;
-      animation: fadeInUp 0.8s ease;
     }
-
-    .feature-card:nth-child(1) { animation-delay: 0.1s; }
-    .feature-card:nth-child(2) { animation-delay: 0.2s; }
-    .feature-card:nth-child(3) { animation-delay: 0.3s; }
-    .feature-card:nth-child(4) { animation-delay: 0.4s; }
 
     .feature-card::before {
       content: '';
@@ -181,7 +145,7 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 5px;
+      height: 4px;
       background: linear-gradient(90deg, #667eea, #764ba2);
       transform: scaleX(0);
       transition: transform 0.4s ease;
@@ -192,44 +156,27 @@
     }
 
     .feature-card:hover {
-      transform: translateY(-10px);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      border-color: rgba(102, 126, 234, 0.3);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
     }
 
     .feature-icon {
-      font-size: 64px;
-      margin-bottom: 20px;
-      display: inline-block;
-      animation: bounce 2s infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
-    .feature-card:hover .feature-icon {
-      animation: pulse 0.6s ease;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      font-size: 55px;
+      margin-bottom: 18px;
     }
 
     .feature-title {
-      font-size: 24px;
+      font-size: 20px;
       color: #333;
-      margin: 0 0 15px;
+      margin: 0 0 12px;
       font-weight: 700;
     }
 
     .feature-description {
-      font-size: 15px;
+      font-size: 14px;
       color: #666;
       line-height: 1.6;
-      margin: 0 0 20px;
+      margin: 0 0 18px;
     }
 
     .feature-action {
@@ -238,7 +185,7 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.3s ease;
@@ -251,102 +198,95 @@
 
     .lock-icon {
       position: absolute;
-      top: 15px;
-      right: 15px;
-      font-size: 20px;
+      top: 12px;
+      right: 12px;
+      font-size: 18px;
       opacity: 0.3;
     }
 
-    /* Stats Section */
     .stats-section {
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 40px;
-      margin-top: 40px;
+      border-radius: 18px;
+      padding: 35px;
+      margin-top: 30px;
       width: 100%;
-      max-width: 1000px;
+      max-width: 950px;
     }
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 25px;
       text-align: center;
     }
 
     .stat-item {
-      padding: 20px;
+      padding: 15px;
     }
 
     .stat-number {
-      font-size: 48px;
+      font-size: 42px;
       font-weight: 700;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .stat-label {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
       font-weight: 600;
     }
 
-    /* Footer */
     .landing-footer {
-      margin-top: 60px;
+      margin-top: 50px;
       text-align: center;
       color: rgba(255, 255, 255, 0.8);
-      font-size: 14px;
+      font-size: 13px;
     }
 
-    /* Mobile Responsive */
     @media (max-width: 768px) {
       .top-nav {
-        padding: 15px 20px;
+        padding: 12px 18px;
       }
 
-      .logo {
-        font-size: 20px;
-      }
+      .logo { font-size: 18px; }
 
       .nav-btn {
-        padding: 8px 15px;
+        padding: 8px 16px;
         font-size: 12px;
       }
 
-      .hero h1 {
-        font-size: 36px;
-      }
-
-      .hero p {
-        font-size: 18px;
-      }
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 17px; }
 
       .features-grid {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 18px;
       }
+
+      .feature-card { padding: 28px 20px; }
+      .feature-icon { font-size: 45px; }
+      .feature-title { font-size: 18px; }
 
       .landing-container {
-        padding: 100px 15px 40px;
+        padding: 90px 15px 40px;
       }
 
-      .stats-section {
-        padding: 30px 20px;
-      }
+      .stats-section { padding: 25px 20px; }
+      .stat-number { font-size: 32px; }
+    }
 
-      .stat-number {
-        font-size: 36px;
-      }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 26px; }
+      .hero p { font-size: 15px; }
+      .stat-number { font-size: 28px; }
     }
   </style>
 </head>
 <body>
-  <!-- Top Navigation -->
   <nav class="top-nav">
     <div class="logo">
       <span>📊</span>
@@ -358,21 +298,17 @@
     </div>
   </nav>
 
-  <!-- Main Landing Container -->
   <div class="landing-container">
-    <!-- Hero Section -->
     <div class="hero">
       <h1>📊 LIC Document Manager</h1>
       <p>Secure • Organized • Efficient</p>
       <p class="hero-tagline">
-        Professional document management system for LIC agents<br>
+        Professional document management for LIC agents<br>
         Manage all your client documents in one secure place
       </p>
     </div>
 
-    <!-- Features Grid -->
     <div class="features-grid">
-      <!-- Upload Documents -->
       <div class="feature-card" onclick="handleFeatureClick('upload')">
         <div class="lock-icon">🔒</div>
         <div class="feature-icon">📤</div>
@@ -383,43 +319,39 @@
         <span class="feature-action">Get Started →</span>
       </div>
 
-      <!-- Search Clients -->
       <div class="feature-card" onclick="handleFeatureClick('search')">
         <div class="lock-icon">🔒</div>
         <div class="feature-icon">🔍</div>
         <h3 class="feature-title">Search Documents</h3>
         <p class="feature-description">
-          Instantly find any client's documents. Fast search with real-time results and document preview.
+          Instantly find any client's documents. Fast search with real-time results and preview.
         </p>
         <span class="feature-action">Start Searching →</span>
       </div>
 
-      <!-- View All Clients -->
       <div class="feature-card" onclick="handleFeatureClick('clients')">
         <div class="lock-icon">🔒</div>
         <div class="feature-icon">👥</div>
         <h3 class="feature-title">Manage Clients</h3>
         <p class="feature-description">
-          View all clients, sort by date or name, filter by document count, and manage client information.
+          View all clients, sort by date or name, and manage client information easily.
         </p>
         <span class="feature-action">View Clients →</span>
       </div>
 
-      <!-- Dashboard -->
       <div class="feature-card" onclick="handleFeatureClick('dashboard')">
         <div class="lock-icon">🔒</div>
         <div class="feature-icon">📈</div>
         <h3 class="feature-title">Dashboard</h3>
         <p class="feature-description">
-          Get insights with statistics, recent activity, document distribution, and performance metrics.
+          Get insights with statistics, recent activity, and performance metrics.
         </p>
         <span class="feature-action">View Stats →</span>
       </div>
     </div>
 
-    <!-- Stats Section -->
     <div class="stats-section">
-      <h2 style="text-align: center; color: #333; margin-bottom: 30px;">✨ Why Choose LIC Manager?</h2>
+      <h2 style="text-align: center; color: #333; margin-bottom: 25px;">✨ Why Choose LIC Manager?</h2>
       <div class="stats-grid">
         <div class="stat-item">
           <div class="stat-number">⚡</div>
@@ -440,28 +372,18 @@
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="landing-footer">
       <p>© 2025 LIC Manager. Powered by Google Drive • Secure • Reliable</p>
-      <p style="margin-top: 10px; font-size: 12px;">
-        All your documents are safely stored on Google Drive with enterprise-grade security
+      <p style="margin-top: 8px; font-size: 11px; opacity: 0.8;">
+        All documents safely stored on Google Drive with enterprise-grade security
       </p>
     </div>
   </div>
 
   <script>
     function handleFeatureClick(feature) {
-      // Map features to routes
-      const routeMap = {
-        'upload': '/login?redirect=upload',
-        'search': '/login?redirect=search',
-        'clients': '/login?redirect=clients',
-        'dashboard': '/login?redirect=dashboard'
-      };
-      
-      // Show login message and redirect
-      if (confirm('🔐 You need to login first to access this feature.\n\nClick OK to go to the login page.')) {
-        window.location.href = routeMap[feature] || '/login';
+      if (confirm('🔐 You need to login to access this feature.\n\nClick OK to go to the login page.')) {
+        window.location.href = '/login';
       }
     }
   </script>

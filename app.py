@@ -40,18 +40,25 @@ if not ROOT_FOLDER_ID:
 USE_POSTGRESQL = os.getenv('DB_HOST') is not None
 
 if USE_POSTGRESQL:
-    print("✅ Using PostgreSQL database")
+    print("Using PostgreSQL database")
     import psycopg2
     from psycopg2.extras import DictCursor
     def get_db_connection():
-        return psycopg2.connect(host=os.getenv('DB_HOST'), database=os.getenv('DB_NAME'), user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), port=os.getenv('DB_PORT', 5432))
+        return psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            database=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            port=os.getenv('DB_PORT', 5432)
+        )
 else:
-    print("✅ Using SQLite database")
+    print("Using SQLite database")
     import sqlite3
     def get_db_connection():
         conn = sqlite3.connect("database.db")
         conn.row_factory = sqlite3.Row
         return conn
+
 
 def init_db():
     conn = None
@@ -61,26 +68,56 @@ def init_db():
         cur = conn.cursor()
         
         if USE_POSTGRESQL:
-            cur.execute('''CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, username VARCHAR(255) UNIQUE NOT NULL, password TEXT NOT NULL, email VARCHAR(255), role VARCHAR(50) DEFAULT 'user', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, failed_login_attempts INTEGER DEFAULT 0, locked_until TIMESTAMP)''')
-            cur.execute('''CREATE TABLE IF NOT EXISTS clients (id SERIAL PRIMARY KEY, name VARCHAR(255) UNIQUE NOT NULL, folder_id VARCHAR(255) UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, created_by INTEGER REFERENCES users(id))''')
-            cur.execute('''CREATE TABLE IF NOT EXISTS documents (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE, document_type VARCHAR(50) NOT NULL, file_id VARCHAR(255) UNIQUE NOT NULL, file_name TEXT NOT NULL, url TEXT NOT NULL, file_size BIGINT, mime_type VARCHAR(100), upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP, uploaded_by INTEGER REFERENCES users(id), UNIQUE(client_id, document_type))''')
-            cur.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), action VARCHAR(255) NOT NULL, details TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, ip_address VARCHAR(50))''')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_client_name ON clients(name)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_folder_id ON clients(folder_id)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_client_id ON documents(client_id)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(document_type)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_username ON users(username)')
+            cur.execute('''CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY, username VARCHAR(255) UNIQUE NOT NULL,
+                password TEXT NOT NULL, email VARCHAR(255), role VARCHAR(50) DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                failed_login_attempts INTEGER DEFAULT 0, locked_until TIMESTAMP)''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS clients (
+                id SERIAL PRIMARY KEY, name VARCHAR(255) UNIQUE NOT NULL,
+                folder_id VARCHAR(255) UNIQUE NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_by INTEGER REFERENCES users(id))''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS documents (
+                id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+                document_type VARCHAR(50) NOT NULL, file_id VARCHAR(255) UNIQUE NOT NULL,
+                file_name TEXT NOT NULL, url TEXT NOT NULL, file_size BIGINT,
+                mime_type VARCHAR(100), upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                uploaded_by INTEGER REFERENCES users(id), UNIQUE(client_id, document_type))''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS activity_logs (
+                id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id),
+                action VARCHAR(255) NOT NULL, details TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, ip_address VARCHAR(50))''')
         else:
-            cur.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, email TEXT, role TEXT DEFAULT 'user', created_at TEXT NOT NULL, failed_login_attempts INTEGER DEFAULT 0, locked_until TEXT)''')
-            cur.execute('''CREATE TABLE IF NOT EXISTS clients (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, folder_id TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, created_by INTEGER, FOREIGN KEY (created_by) REFERENCES users (id))''')
-            cur.execute('''CREATE TABLE IF NOT EXISTS documents (id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL, document_type TEXT NOT NULL, file_id TEXT NOT NULL UNIQUE, file_name TEXT NOT NULL, url TEXT NOT NULL, file_size INTEGER, mime_type TEXT, upload_time TEXT NOT NULL, uploaded_by INTEGER, FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE, FOREIGN KEY (uploaded_by) REFERENCES users (id), UNIQUE(client_id, document_type))''')
-            cur.execute('''CREATE TABLE IF NOT EXISTS activity_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT NOT NULL, details TEXT, timestamp TEXT NOT NULL, ip_address TEXT, FOREIGN KEY (user_id) REFERENCES users (id))''')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_client_name ON clients(name)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_folder_id ON clients(folder_id)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_client_id ON documents(client_id)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(document_type)')
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_username ON users(username)')
+            cur.execute('''CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL, email TEXT, role TEXT DEFAULT 'user',
+                created_at TEXT NOT NULL, failed_login_attempts INTEGER DEFAULT 0, locked_until TEXT)''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS clients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE,
+                folder_id TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+                created_by INTEGER, FOREIGN KEY (created_by) REFERENCES users (id))''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER NOT NULL,
+                document_type TEXT NOT NULL, file_id TEXT NOT NULL UNIQUE,
+                file_name TEXT NOT NULL, url TEXT NOT NULL, file_size INTEGER, mime_type TEXT,
+                upload_time TEXT NOT NULL, uploaded_by INTEGER,
+                FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+                FOREIGN KEY (uploaded_by) REFERENCES users (id), UNIQUE(client_id, document_type))''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS activity_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER,
+                action TEXT NOT NULL, details TEXT, timestamp TEXT NOT NULL, ip_address TEXT,
+                FOREIGN KEY (user_id) REFERENCES users (id))''')
         
+        # Create indexes
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_client_name ON clients(name)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_folder_id ON clients(folder_id)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_client_id ON documents(client_id)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(document_type)')
+        cur.execute('CREATE INDEX IF NOT EXISTS idx_username ON users(username)')
+        
+        # Create admin user if not exists
         if USE_POSTGRESQL:
             cur.execute("SELECT COUNT(*) FROM users WHERE username = %s", ('admin',))
         else:
@@ -89,35 +126,36 @@ def init_db():
         if cur.fetchone()[0] == 0:
             admin_password = secrets.token_urlsafe(16)
             hashed = generate_password_hash(admin_password)
+            now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if USE_POSTGRESQL:
-                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (%s, %s, %s, %s, %s)", ('admin', hashed, 'admin@example.com', 'admin', datetime.now()))
+                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (%s, %s, %s, %s, %s)",
+                    ('admin', hashed, 'admin@example.com', 'admin', now))
             else:
-                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)", ('admin', hashed, 'admin@example.com', 'admin', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            print("✅ Admin user created")
-            print(f"⚠️ Admin password: {admin_password}")
-            print("⚠️ SAVE THIS PASSWORD AND CHANGE IT IMMEDIATELY!")
+                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+                    ('admin', hashed, 'admin@example.com', 'admin', now))
+            print(f"Admin user created. Password: {admin_password}")
+            print("SAVE THIS PASSWORD AND CHANGE IT IMMEDIATELY!")
         
         conn.commit()
-        print("✅ Database initialized successfully")
+        print("Database initialized successfully")
     except Exception as e:
-        print(f"❌ Database initialization error: {str(e)}")
+        print(f"Database initialization error: {str(e)}")
         traceback.print_exc()
+        if conn:
+            conn.rollback()
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
 
 try:
     init_db()
 except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
+    print(f"Database initialization warning: {e}")
+
 
 def setup_google_auth():
     try:
@@ -126,70 +164,62 @@ def setup_google_auth():
         refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN')
         
         if not all([client_id, client_secret, refresh_token]):
-            print("⚠️ Warning: Google Drive credentials not configured")
+            print("Warning: Google Drive credentials not configured")
             return None
         
-        client_config = {
-            "installed": {
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "redirect_uris": ["http://localhost"]
-            }
-        }
+        client_config = {"installed": {
+            "client_id": client_id, "client_secret": client_secret,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "redirect_uris": ["http://localhost"]
+        }}
         
         client_secrets_file = os.path.join(tempfile.gettempdir(), 'client_secrets.json')
         with open(client_secrets_file, 'w') as f:
             json.dump(client_config, f)
         
         gauth = GoogleAuth(settings={
-            'client_config_backend': 'file',
-            'client_config_file': client_secrets_file,
-            'save_credentials': False,
-            'get_refresh_token': False
+            'client_config_backend': 'file', 'client_config_file': client_secrets_file,
+            'save_credentials': False, 'get_refresh_token': False
         })
         
         from oauth2client.client import OAuth2Credentials
         credentials = OAuth2Credentials(
-            access_token=None,
-            client_id=client_id,
-            client_secret=client_secret,
-            refresh_token=refresh_token,
-            token_expiry=None,
-            token_uri="https://oauth2.googleapis.com/token",
-            user_agent=None
+            access_token=None, client_id=client_id, client_secret=client_secret,
+            refresh_token=refresh_token, token_expiry=None,
+            token_uri="https://oauth2.googleapis.com/token", user_agent=None
         )
         gauth.credentials = credentials
         gauth.Refresh()
-        print("✅ Google Drive authentication successful")
+        print("Google Drive authentication successful")
         return gauth
     except Exception as e:
-        print(f"❌ Google Drive auth error: {str(e)}")
+        print(f"Google Drive auth error: {str(e)}")
         return None
 
 try:
     gauth = setup_google_auth()
     drive = GoogleDrive(gauth) if gauth else None
-    print("✅ Google Drive initialized")
+    print("Google Drive initialized")
 except Exception as e:
-    print(f"❌ Google Drive initialization failed: {str(e)}")
+    print(f"Google Drive initialization failed: {str(e)}")
     drive = None
+
 
 def sync_drive_to_database():
     if not drive:
-        print("❌ Google Drive not initialized")
+        print("Google Drive not initialized")
         return 0
     
     conn = None
     cur = None
     try:
-        print("🔄 Starting Google Drive sync...")
+        print("Starting Google Drive sync...")
         synced_count = 0
         query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
-        print(f"📂 Found {len(folder_list)} folders in Google Drive")
+        print(f"Found {len(folder_list)} folders in Google Drive")
         
         conn = get_db_connection()
         cur = conn.cursor()
@@ -211,23 +241,27 @@ def sync_drive_to_database():
                 if existing:
                     client_id = existing[0]
                     if USE_POSTGRESQL:
-                        cur.execute("UPDATE clients SET folder_id = %s, updated_at = %s WHERE id = %s", (folder_id, modified_date, client_id))
+                        cur.execute("UPDATE clients SET folder_id = %s, updated_at = %s WHERE id = %s",
+                            (folder_id, modified_date, client_id))
                     else:
-                        cur.execute("UPDATE clients SET folder_id = ?, updated_at = ? WHERE id = ?", (folder_id, modified_date, client_id))
+                        cur.execute("UPDATE clients SET folder_id = ?, updated_at = ? WHERE id = ?",
+                            (folder_id, modified_date, client_id))
                 else:
                     if USE_POSTGRESQL:
-                        cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (%s, %s, %s, %s) RETURNING id", (folder_name, folder_id, created_date, modified_date))
+                        cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (%s, %s, %s, %s) RETURNING id",
+                            (folder_name, folder_id, created_date, modified_date))
                         client_id = cur.fetchone()[0]
                     else:
-                        cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)", (folder_name, folder_id, created_date, modified_date))
+                        cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                            (folder_name, folder_id, created_date, modified_date))
                         client_id = cur.lastrowid
-                    print(f"  ✅ Added: {folder_name}")
+                    print(f"  Added: {folder_name}")
                 
                 files_query = f"'{folder_id}' in parents and trashed=false"
                 try:
                     files_list = drive.ListFile({'q': files_query, 'maxResults': 1000}).GetList()
                 except Exception as e:
-                    print(f"  ⚠️ Skipping files for {folder_name}: {e}")
+                    print(f"  Skipping files for {folder_name}: {e}")
                     files_list = []
                 
                 for file in files_list:
@@ -235,16 +269,11 @@ def sync_drive_to_database():
                         file_id = file['id']
                         file_lower = file['title'].lower()
                         
-                        if 'datasheet' in file_lower:
-                            doc_type = 'datasheet'
-                        elif 'aadhaar' in file_lower or 'aadhar' in file_lower:
-                            doc_type = 'aadhaar'
-                        elif 'pan' in file_lower:
-                            doc_type = 'pan'
-                        elif 'bank' in file_lower or 'account' in file_lower:
-                            doc_type = 'bank_account'
-                        else:
-                            continue
+                        if 'datasheet' in file_lower: doc_type = 'datasheet'
+                        elif 'aadhaar' in file_lower or 'aadhar' in file_lower: doc_type = 'aadhaar'
+                        elif 'pan' in file_lower: doc_type = 'pan'
+                        elif 'bank' in file_lower or 'account' in file_lower: doc_type = 'bank_account'
+                        else: continue
                         
                         file_url = f"https://drive.google.com/uc?export=download&id={file_id}"
                         file_size = int(file.get('fileSize', 0))
@@ -252,40 +281,44 @@ def sync_drive_to_database():
                         upload_time = file.get('createdDate', datetime.now().isoformat())[:19]
                         
                         if USE_POSTGRESQL:
-                            cur.execute("INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (client_id, document_type) DO UPDATE SET file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, file_size = EXCLUDED.file_size, mime_type = EXCLUDED.mime_type, upload_time = EXCLUDED.upload_time", (client_id, doc_type, file_id, file['title'], file_url, file_size, mime_type, upload_time))
+                            cur.execute("""INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (client_id, document_type) DO UPDATE SET
+                                file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url,
+                                file_size = EXCLUDED.file_size, mime_type = EXCLUDED.mime_type, upload_time = EXCLUDED.upload_time""",
+                                (client_id, doc_type, file_id, file['title'], file_url, file_size, mime_type, upload_time))
                             synced_count += 1
                         else:
                             try:
-                                cur.execute("INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (client_id, doc_type, file_id, file['title'], file_url, file_size, mime_type, upload_time))
+                                cur.execute("""INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                                    (client_id, doc_type, file_id, file['title'], file_url, file_size, mime_type, upload_time))
                                 synced_count += 1
                             except:
-                                cur.execute("UPDATE documents SET file_id = ?, file_name = ?, url = ?, file_size = ?, mime_type = ?, upload_time = ? WHERE client_id = ? AND document_type = ?", (file_id, file['title'], file_url, file_size, mime_type, upload_time, client_id, doc_type))
-                    except:
-                        continue
-                
+                                cur.execute("""UPDATE documents SET file_id = ?, file_name = ?, url = ?, file_size = ?, mime_type = ?, upload_time = ?
+                                    WHERE client_id = ? AND document_type = ?""",
+                                    (file_id, file['title'], file_url, file_size, mime_type, upload_time, client_id, doc_type))
+                    except: continue
                 conn.commit()
             except Exception as e:
-                print(f"❌ Error syncing {folder.get('title', '?')}: {e}")
+                print(f"Error syncing {folder.get('title', '?')}: {e}")
                 conn.rollback()
                 continue
         
-        print(f"✅ Sync complete! {synced_count} documents synced")
+        print(f"Sync complete! {synced_count} documents synced")
         return synced_count
     except Exception as e:
-        print(f"❌ Sync error: {str(e)}")
+        print(f"Sync error: {str(e)}")
         traceback.print_exc()
         return 0
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 def validate_client_name(name):
     if not name or not isinstance(name, str):
@@ -299,14 +332,17 @@ def validate_client_name(name):
         raise ValueError("Client name contains invalid characters")
     return name
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def validate_file_size(file):
     file.seek(0, os.SEEK_END)
     size = file.tell()
     file.seek(0)
     return size <= MAX_FILE_SIZE
+
 
 def login_required(f):
     @wraps(f)
@@ -317,6 +353,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 def log_activity(action, details=""):
     conn = None
     cur = None
@@ -325,24 +362,24 @@ def log_activity(action, details=""):
         ip_address = request.remote_addr
         conn = get_db_connection()
         cur = conn.cursor()
+        now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if USE_POSTGRESQL:
-            cur.execute("INSERT INTO activity_logs (user_id, action, details, timestamp, ip_address) VALUES (%s, %s, %s, %s, %s)", (user_id, action, details, datetime.now(), ip_address))
+            cur.execute("INSERT INTO activity_logs (user_id, action, details, timestamp, ip_address) VALUES (%s, %s, %s, %s, %s)",
+                (user_id, action, details, now, ip_address))
         else:
-            cur.execute("INSERT INTO activity_logs (user_id, action, details, timestamp, ip_address) VALUES (?, ?, ?, ?, ?)", (user_id, action, details, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), ip_address))
+            cur.execute("INSERT INTO activity_logs (user_id, action, details, timestamp, ip_address) VALUES (?, ?, ?, ?, ?)",
+                (user_id, action, details, now, ip_address))
         conn.commit()
     except Exception as e:
-        print(f"❌ Error logging activity: {str(e)}")
+        print(f"Error logging activity: {str(e)}")
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 def cleanup_temp_file(filepath):
     try:
@@ -350,8 +387,9 @@ def cleanup_temp_file(filepath):
             os.remove(filepath)
             return True
     except Exception as e:
-        print(f"⚠️ Warning: Could not remove temp file: {str(e)}")
+        print(f"Warning: Could not remove temp file: {str(e)}")
     return False
+
 
 def role_required(required_role):
     def decorator(f):
@@ -376,27 +414,25 @@ def role_required(required_role):
                     flash('You do not have permission to access this page.', 'error')
                     return redirect(url_for('dashboard'))
             except Exception as e:
-                print(f"❌ Role check error: {str(e)}")
+                print(f"Role check error: {str(e)}")
                 flash('Error checking permissions.', 'error')
                 return redirect(url_for('dashboard'))
             finally:
                 if cur:
-                    try:
-                        cur.close()
-                    except:
-                        pass
+                    try: cur.close()
+                    except: pass
                 if conn:
-                    try:
-                        conn.close()
-                    except:
-                        pass
+                    try: conn.close()
+                    except: pass
             
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
+
 def admin_required(f):
     return role_required('admin')(f)
+
 
 # ============= ROUTES =============
 
@@ -405,6 +441,7 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('index.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
@@ -434,21 +471,18 @@ def login():
             else:
                 cur.execute("SELECT id, username, password, role, failed_login_attempts, locked_until FROM users WHERE username = ?", (username,))
                 user_row = cur.fetchone()
-                user_dict = {'id': user_row[0], 'username': user_row[1], 'password': user_row[2], 'role': user_row[3], 'failed_login_attempts': user_row[4], 'locked_until': user_row[5]} if user_row else None
+                user_dict = {'id': user_row[0], 'username': user_row[1], 'password': user_row[2], 'role': user_row[3],
+                    'failed_login_attempts': user_row[4], 'locked_until': user_row[5]} if user_row else None
             
             if user_dict:
                 if user_dict['locked_until']:
                     try:
-                        if USE_POSTGRESQL:
-                            lock_time = user_dict['locked_until']
-                        else:
-                            lock_time = datetime.strptime(str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
-                        
+                        lock_time = user_dict['locked_until'] if USE_POSTGRESQL else datetime.strptime(str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
                         if lock_time and lock_time > datetime.now():
-                            flash('❌ Account locked. Try again later.', 'error')
+                            flash('Account locked. Try again later.', 'error')
                             return render_template('login.html')
                     except Exception as e:
-                        print(f"⚠️ Lock check error: {e}")
+                        print(f"Lock check error: {e}")
                 
                 if check_password_hash(user_dict['password'], password):
                     session['user_id'] = user_dict['id']
@@ -462,43 +496,41 @@ def login():
                     
                     conn.commit()
                     log_activity("LOGIN", f"User logged in: {username}")
-                    flash(f'✅ Welcome back, {username}!', 'success')
+                    flash(f'Welcome back, {username}!', 'success')
                     return redirect(url_for('dashboard'))
                 else:
                     failed_attempts = user_dict['failed_login_attempts'] + 1
                     lock_time = None
                     if failed_attempts >= 5:
                         lock_time = datetime.now() + timedelta(minutes=15)
-                        flash('❌ Too many failed attempts. Account locked for 15 minutes.', 'error')
+                        flash('Too many failed attempts. Account locked for 15 minutes.', 'error')
                     else:
-                        flash(f'❌ Invalid password. {5 - failed_attempts} attempts remaining.', 'error')
+                        flash(f'Invalid password. {5 - failed_attempts} attempts remaining.', 'error')
                     
+                    lock_time_str = lock_time if USE_POSTGRESQL else (lock_time.strftime("%Y-%m-%d %H:%M:%S") if lock_time else None)
                     if USE_POSTGRESQL:
-                        cur.execute("UPDATE users SET failed_login_attempts = %s, locked_until = %s WHERE id = %s", (failed_attempts, lock_time, user_dict['id']))
+                        cur.execute("UPDATE users SET failed_login_attempts = %s, locked_until = %s WHERE id = %s",
+                            (failed_attempts, lock_time_str, user_dict['id']))
                     else:
-                        cur.execute("UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?", (failed_attempts, lock_time.strftime("%Y-%m-%d %H:%M:%S") if lock_time else None, user_dict['id']))
-                    
+                        cur.execute("UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?",
+                            (failed_attempts, lock_time_str, user_dict['id']))
                     conn.commit()
             else:
-                flash('❌ Invalid username or password.', 'error')
-        
+                flash('Invalid username or password.', 'error')
         except Exception as e:
-            print(f"❌ Login error: {str(e)}")
+            print(f"Login error: {str(e)}")
             traceback.print_exc()
             flash('An error occurred. Please try again.', 'error')
         finally:
             if cur:
-                try:
-                    cur.close()
-                except:
-                    pass
+                try: cur.close()
+                except: pass
             if conn:
-                try:
-                    conn.close()
-                except:
-                    pass
+                try: conn.close()
+                except: pass
     
     return render_template('login.html')
+
 
 @app.route('/logout')
 @login_required
@@ -506,8 +538,9 @@ def logout():
     username = session.get('username')
     log_activity("LOGOUT", f"User logged out: {username}")
     session.clear()
-    flash('✅ You have been logged out successfully.', 'success')
+    flash('You have been logged out successfully.', 'success')
     return redirect(url_for('login'))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
@@ -540,31 +573,31 @@ def register():
             conn = get_db_connection()
             cur = conn.cursor()
             hashed_password = generate_password_hash(password)
+            now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if USE_POSTGRESQL:
-                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (%s, %s, %s, %s, %s)", (username, hashed_password, email if email else None, 'user', datetime.now()))
+                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (%s, %s, %s, %s, %s)",
+                    (username, hashed_password, email if email else None, 'user', now))
             else:
-                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)", (username, hashed_password, email if email else None, 'user', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                cur.execute("INSERT INTO users (username, password, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+                    (username, hashed_password, email if email else None, 'user', now))
             conn.commit()
             log_activity("USER_REGISTERED", f"New user registered: {username}")
-            flash('✅ Registration successful! Please login.', 'success')
+            flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
         except Exception as e:
-            print(f"❌ Registration error: {str(e)}")
+            print(f"Registration error: {str(e)}")
             flash('Username already exists. Choose a different one.', 'error')
             return render_template('register.html')
         finally:
             if cur:
-                try:
-                    cur.close()
-                except:
-                    pass
+                try: cur.close()
+                except: pass
             if conn:
-                try:
-                    conn.close()
-                except:
-                    pass
+                try: conn.close()
+                except: pass
     
     return render_template('register.html')
+
 
 @app.route('/dashboard')
 @login_required
@@ -575,20 +608,12 @@ def dashboard():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        if USE_POSTGRESQL:
-            cur.execute("SELECT COUNT(*) FROM clients")
-            total_clients = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM documents")
-            total_docs = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users")
-            total_users = cur.fetchone()[0]
-        else:
-            cur.execute("SELECT COUNT(*) FROM clients")
-            total_clients = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM documents")
-            total_docs = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM users")
-            total_users = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM clients")
+        total_clients = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM documents")
+        total_docs = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM users")
+        total_users = cur.fetchone()[0]
         
         stats = {
             'total_clients': total_clients,
@@ -601,30 +626,29 @@ def dashboard():
         
         return render_template('dashboard.html', stats=stats)
     except Exception as e:
-        print(f"❌ Dashboard error: {str(e)}")
+        print(f"Dashboard error: {str(e)}")
         flash(f"Error loading dashboard: {str(e)}", "error")
         return render_template('dashboard.html', stats={})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/upload_page')
 @login_required
 def upload_page():
     return render_template('upload.html')
 
+
 @app.route('/fetch')
 @login_required
 def fetch_page():
     return render_template('fetch.html')
+
 
 @app.route('/clients')
 @login_required
@@ -636,70 +660,74 @@ def list_clients():
         order = request.args.get('order', 'desc')
         search_query = request.args.get('search', '').strip()
         
-        # ✅ FIX: Whitelist valid sort columns to prevent SQL injection
+        # Whitelist valid sort columns to prevent SQL injection
         valid_sorts = ['name', 'created_at', 'updated_at']
         if sort_by not in valid_sorts:
             sort_by = 'updated_at'
         
-        # ✅ FIX: Validate order direction
-        order = 'ASC' if order == 'asc' else 'DESC'
+        # Validate order direction
+        order_sql = 'ASC' if order.lower() == 'asc' else 'DESC'
         
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Build safe query with whitelisted column
-        base_query = f"SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count FROM clients c LEFT JOIN documents d ON c.id = d.client_id"
+        base_query = """SELECT c.id, c.name, c.created_at, c.updated_at, COUNT(d.id) as doc_count
+            FROM clients c LEFT JOIN documents d ON c.id = d.client_id"""
         
         if search_query:
             if USE_POSTGRESQL:
-                query = base_query + f" WHERE c.name ILIKE %s GROUP BY c.id ORDER BY c.{sort_by} {order}"
+                query = f"{base_query} WHERE c.name ILIKE %s GROUP BY c.id ORDER BY c.{sort_by} {order_sql}"
                 cur.execute(query, (f'%{search_query}%',))
             else:
-                query = base_query + f" WHERE c.name LIKE ? GROUP BY c.id ORDER BY c.{sort_by} {order}"
+                query = f"{base_query} WHERE c.name LIKE ? GROUP BY c.id ORDER BY c.{sort_by} {order_sql}"
                 cur.execute(query, (f'%{search_query}%',))
         else:
-            query = base_query + f" GROUP BY c.id ORDER BY c.updated_at DESC LIMIT 20"
+            query = f"{base_query} GROUP BY c.id ORDER BY c.updated_at DESC LIMIT 20"
             cur.execute(query)
         
         clients = cur.fetchall()
         clients_list = [tuple(client) for client in clients] if USE_POSTGRESQL else clients
         
-        return render_template('clients.html', clients=clients_list, sort_by=sort_by, order=order.lower(), search_query=search_query, is_search=bool(search_query))
-    
+        return render_template('clients.html', clients=clients_list, sort_by=sort_by,
+            order=order_sql.lower(), search_query=search_query, is_search=bool(search_query))
     except Exception as e:
-        print(f"❌ List clients error: {str(e)}")
+        print(f"List clients error: {str(e)}")
         traceback.print_exc()
         flash(f"Error: {str(e)}", "error")
         return render_template('clients.html', clients=[], is_search=False)
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/manual-sync')
 @login_required
 def manual_sync():
     try:
-        print("🔄 Starting manual Google Drive sync...")
+        print("Starting manual Google Drive sync...")
         synced = sync_drive_to_database()
-        flash(f'✅ Synced {synced} documents from Google Drive', 'success')
+        flash(f'Synced {synced} documents from Google Drive', 'success')
         return redirect(url_for('list_clients'))
     except Exception as e:
-        print(f"❌ Sync error: {str(e)}")
+        print(f"Sync error: {str(e)}")
         traceback.print_exc()
         flash(f'Error during sync: {str(e)}', 'error')
         return redirect(url_for('list_clients'))
 
+
 @app.errorhandler(404)
 def not_found(e):
     return render_template('404.html'), 404
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('404.html'), 403
+
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 @limiter.limit("3 per hour")
@@ -731,25 +759,21 @@ def forgot_password():
                 log_activity("FORGOT_PASSWORD_INITIATED", f"Password reset requested for: {username}")
                 return render_template('forgot_password.html', reset_code=reset_code, username=username)
             else:
-                flash('❌ Username not found.', 'error')
+                flash('Username not found.', 'error')
                 log_activity("FORGOT_PASSWORD_FAILED", f"Unknown username: {username}")
-        
         except Exception as e:
-            print(f"❌ Forgot password error: {str(e)}")
+            print(f"Forgot password error: {str(e)}")
             flash('An error occurred. Please try again.', 'error')
         finally:
             if cur:
-                try:
-                    cur.close()
-                except:
-                    pass
+                try: cur.close()
+                except: pass
             if conn:
-                try:
-                    conn.close()
-                except:
-                    pass
+                try: conn.close()
+                except: pass
     
     return render_template('forgot_password.html')
+
 
 @app.route('/reset_password_confirm', methods=['POST'])
 def reset_password_confirm():
@@ -798,32 +822,31 @@ def reset_password_confirm():
         cur = conn.cursor()
         hashed_password = generate_password_hash(new_password)
         if USE_POSTGRESQL:
-            cur.execute("UPDATE users SET password = %s, failed_login_attempts = 0, locked_until = NULL WHERE username = %s", (hashed_password, username))
+            cur.execute("UPDATE users SET password = %s, failed_login_attempts = 0, locked_until = NULL WHERE username = %s",
+                (hashed_password, username))
         else:
-            cur.execute("UPDATE users SET password = ?, failed_login_attempts = 0, locked_until = NULL WHERE username = ?", (hashed_password, username))
+            cur.execute("UPDATE users SET password = ?, failed_login_attempts = 0, locked_until = NULL WHERE username = ?",
+                (hashed_password, username))
         conn.commit()
         
         session.pop('reset_username', None)
         session.pop('reset_code', None)
         session.pop('reset_expiry', None)
         log_activity("RESET_PASSWORD_SUCCESS", f"Password reset for: {username}")
-        flash('✅ Password reset successful! Please login with your new password.', 'success')
+        flash('Password reset successful! Please login with your new password.', 'success')
         return redirect(url_for('login'))
     except Exception as e:
-        print(f"❌ Reset password error: {str(e)}")
+        print(f"Reset password error: {str(e)}")
         flash('An error occurred. Please try again.', 'error')
         return redirect(url_for('forgot_password'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
@@ -869,25 +892,22 @@ def change_password():
                 cur.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_new_password, user_id))
             conn.commit()
             log_activity("PASSWORD_CHANGED", "User changed password")
-            flash('✅ Password changed successfully!', 'success')
+            flash('Password changed successfully!', 'success')
             return redirect(url_for('dashboard'))
         except Exception as e:
-            print(f"❌ Change password error: {str(e)}")
+            print(f"Change password error: {str(e)}")
             flash('An error occurred. Please try again.', 'error')
             return render_template('change_password.html')
         finally:
             if cur:
-                try:
-                    cur.close()
-                except:
-                    pass
+                try: cur.close()
+                except: pass
             if conn:
-                try:
-                    conn.close()
-                except:
-                    pass
+                try: conn.close()
+                except: pass
     
     return render_template('change_password.html')
+
 
 @app.route('/upload', methods=['POST'])
 @login_required
@@ -936,13 +956,15 @@ def upload():
                 flash(f'Error creating folder: {str(e)}', 'error')
                 return redirect(url_for('upload_page'))
             
+            now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if USE_POSTGRESQL:
-                cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (%s, %s, %s, %s, %s) RETURNING id", (client_name, folder_id, datetime.now(), datetime.now(), session.get('user_id')))
+                cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                    (client_name, folder_id, now, now, session.get('user_id')))
                 client_id = cur.fetchone()[0]
             else:
-                cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?)", (client_name, folder_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id')))
+                cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at, created_by) VALUES (?, ?, ?, ?, ?)",
+                    (client_name, folder_id, now, now, session.get('user_id')))
                 client_id = cur.lastrowid
-            
             conn.commit()
         else:
             client_id = client[0]
@@ -952,10 +974,10 @@ def upload():
             file = request.files.get(doc_type)
             if file and file.filename:
                 if not allowed_file(file.filename):
-                    flash(f'❌ {doc_type}: Invalid file format.', 'error')
+                    flash(f'{doc_type}: Invalid file format.', 'error')
                     continue
                 if not validate_file_size(file):
-                    flash(f'❌ {doc_type}: File too large (max 10MB).', 'error')
+                    flash(f'{doc_type}: File too large (max 10MB).', 'error')
                     continue
                 
                 try:
@@ -967,41 +989,45 @@ def upload():
                     gfile.Upload()
                     file_url = f"https://drive.google.com/uc?export=download&id={gfile['id']}"
                     
+                    now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     if USE_POSTGRESQL:
-                        cur.execute("INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (client_id, document_type) DO UPDATE SET file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, upload_time = EXCLUDED.upload_time", (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now(), session.get('user_id')))
+                        cur.execute("""INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (client_id, document_type) DO UPDATE SET
+                            file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, upload_time = EXCLUDED.upload_time""",
+                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, now, session.get('user_id')))
                     else:
-                        cur.execute("INSERT OR REPLACE INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id')))
+                        cur.execute("""INSERT OR REPLACE INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, now, session.get('user_id')))
                     
                     upload_results.append({'type': doc_type, 'filename': gfile['title'], 'url': file_url})
                 except Exception as e:
-                    flash(f'❌ Error uploading {doc_type}: {str(e)}', 'error')
+                    flash(f'Error uploading {doc_type}: {str(e)}', 'error')
         
+        now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if USE_POSTGRESQL:
-            cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (datetime.now(), client_id))
+            cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (now, client_id))
         else:
-            cur.execute("UPDATE clients SET updated_at = ? WHERE id = ?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), client_id))
+            cur.execute("UPDATE clients SET updated_at = ? WHERE id = ?", (now, client_id))
         
         conn.commit()
         log_activity("DOCUMENT_UPLOADED", f"Uploaded {len(upload_results)} documents for {client_name}")
-        flash(f'✅ Successfully uploaded {len(upload_results)} document(s)!', 'success')
+        flash(f'Successfully uploaded {len(upload_results)} document(s)!', 'success')
         return render_template('upload.html', success=True, name=client_name, upload_results=upload_results)
-    
     except Exception as e:
-        print(f"❌ Upload error: {str(e)}")
+        print(f"Upload error: {str(e)}")
         traceback.print_exc()
         flash(f'Upload error: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/fetch_data', methods=['POST'])
 @login_required
@@ -1039,41 +1065,31 @@ def fetch_data():
         for doc in docs:
             doc_type = doc[0]
             documents[doc_type] = {
-                'file_id': doc[1],
-                'file_name': doc[2],
-                'url': doc[3],
-                'file_size': doc[4] or 0,
-                'upload_time': doc[5],
-                'image_url': doc[3]
+                'file_id': doc[1], 'file_name': doc[2], 'url': doc[3],
+                'file_size': doc[4] or 0, 'upload_time': doc[5], 'image_url': doc[3]
             }
         
         client = {
-            'id': client_id,
-            'name': client_row[1],
+            'id': client_id, 'name': client_row[1],
             'created_at': client_row[2].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[2], 'strftime') else client_row[2],
             'updated_at': client_row[3].strftime('%Y-%m-%d %H:%M:%S') if hasattr(client_row[3], 'strftime') else client_row[3],
-            'folder_id': client_row[4],
-            'documents': documents
+            'folder_id': client_row[4], 'documents': documents
         }
         
         log_activity("DOCUMENTS_VIEWED", f"Viewed documents for {client_row[1]}")
         return render_template('fetch.html', client=client)
-    
     except Exception as e:
-        print(f"❌ Fetch data error: {str(e)}")
+        print(f"Fetch data error: {str(e)}")
         traceback.print_exc()
         return render_template('fetch.html', error=str(e))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/download_document', methods=['POST'])
 @login_required
@@ -1081,10 +1097,12 @@ def download_document():
     file_id = request.form.get('file_id', '')
     
     if not file_id:
-        return jsonify({'success': False, 'error': 'File ID is required'})
+        flash('File ID is required', 'error')
+        return redirect(url_for('fetch_page'))
     
     if not drive:
-        return jsonify({'success': False, 'error': 'Google Drive not configured'})
+        flash('Google Drive not configured', 'error')
+        return redirect(url_for('fetch_page'))
     
     try:
         file = drive.CreateFile({'id': file_id})
@@ -1101,8 +1119,10 @@ def download_document():
         
         return response
     except Exception as e:
-        print(f"❌ Download error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        print(f"Download error: {str(e)}")
+        flash(f'Error downloading: {str(e)}', 'error')
+        return redirect(url_for('fetch_page'))
+
 
 @app.route('/delete_document', methods=['POST'])
 @login_required
@@ -1110,10 +1130,12 @@ def delete_document():
     file_id = request.form.get('file_id', '')
     
     if not file_id:
-        return jsonify({'success': False, 'error': 'File ID is required'})
+        flash('File ID is required', 'error')
+        return redirect(request.referrer or url_for('fetch_page'))
     
     if not drive:
-        return jsonify({'success': False, 'error': 'Google Drive not configured'})
+        flash('Google Drive not configured', 'error')
+        return redirect(request.referrer or url_for('fetch_page'))
     
     conn = None
     cur = None
@@ -1131,21 +1153,20 @@ def delete_document():
         
         conn.commit()
         log_activity("DOCUMENT_DELETED", f"Deleted file: {file_id}")
-        return jsonify({'success': True, 'message': 'Document deleted successfully'})
+        flash('Document deleted successfully', 'success')
+        return redirect(request.referrer or url_for('fetch_page'))
     except Exception as e:
-        print(f"❌ Delete error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        print(f"Delete error: {str(e)}")
+        flash(f'Error deleting document: {str(e)}', 'error')
+        return redirect(request.referrer or url_for('fetch_page'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/delete_client', methods=['POST'])
 @login_required
@@ -1153,7 +1174,8 @@ def delete_client():
     client_name = request.form.get('name', '').strip()
     
     if not client_name:
-        return jsonify({'success': False, 'error': 'Client name is required'})
+        flash('Client name is required', 'error')
+        return redirect(url_for('list_clients'))
     
     conn = None
     cur = None
@@ -1168,7 +1190,8 @@ def delete_client():
         
         client = cur.fetchone()
         if not client:
-            return jsonify({'success': False, 'error': 'Client not found'})
+            flash('Client not found', 'error')
+            return redirect(url_for('list_clients'))
         
         client_id, folder_id = client[0], client[1]
         
@@ -1176,8 +1199,7 @@ def delete_client():
             try:
                 folder = drive.CreateFile({'id': folder_id})
                 folder.Delete()
-            except:
-                pass
+            except: pass
         
         if USE_POSTGRESQL:
             cur.execute("DELETE FROM clients WHERE id = %s", (client_id,))
@@ -1186,21 +1208,20 @@ def delete_client():
         
         conn.commit()
         log_activity("CLIENT_DELETED", f"Deleted client: {client_name}")
-        return jsonify({'success': True, 'message': 'Client and all documents deleted successfully'})
+        flash('Client and all documents deleted successfully', 'success')
+        return redirect(url_for('list_clients'))
     except Exception as e:
-        print(f"❌ Delete client error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        print(f"Delete client error: {str(e)}")
+        flash(f'Error deleting client: {str(e)}', 'error')
+        return redirect(url_for('list_clients'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/edit_client/<int:client_id>', methods=['POST'])
 @login_required
@@ -1230,19 +1251,16 @@ def edit_client(client_id):
         log_activity("CLIENT_RENAMED", f"Renamed client to: {new_name}")
         return jsonify({'success': True, 'message': 'Client name updated successfully'})
     except Exception as e:
-        print(f"❌ Edit client error: {str(e)}")
+        print(f"Edit client error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/api/quick_search', methods=['GET'])
 @login_required
@@ -1259,33 +1277,37 @@ def api_quick_search():
         cur = conn.cursor()
         
         if USE_POSTGRESQL:
-            cur.execute("SELECT c.name, c.updated_at, COUNT(d.id) as doc_count FROM clients c LEFT JOIN documents d ON c.id = d.client_id WHERE c.name ILIKE %s GROUP BY c.id, c.name, c.updated_at LIMIT 10", (f'%{query}%',))
+            cur.execute("""SELECT c.name, c.updated_at, COUNT(d.id) as doc_count FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id WHERE c.name ILIKE %s
+                GROUP BY c.id, c.name, c.updated_at LIMIT 10""", (f'%{query}%',))
         else:
-            cur.execute("SELECT c.name, c.updated_at, COUNT(d.id) as doc_count FROM clients c LEFT JOIN documents d ON c.id = d.client_id WHERE c.name LIKE ? GROUP BY c.id, c.name LIMIT 10", (f'%{query}%',))
+            cur.execute("""SELECT c.name, c.updated_at, COUNT(d.id) as doc_count FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id WHERE c.name LIKE ?
+                GROUP BY c.id, c.name LIMIT 10""", (f'%{query}%',))
         
         results = []
         for row in cur.fetchall():
-            results.append({
-                'name': row[0],
-                'updated_at': row[1][:10] if row[1] else '',
-                'doc_count': row[2]
-            })
+            updated_at = row[1]
+            if hasattr(updated_at, 'strftime'):
+                updated_at = updated_at.strftime('%Y-%m-%d')
+            elif updated_at:
+                updated_at = str(updated_at)[:10]
+            else:
+                updated_at = ''
+            results.append({'name': row[0], 'updated_at': updated_at, 'doc_count': row[2]})
         
         return jsonify({'results': results})
     except Exception as e:
-        print(f"❌ Quick search error: {str(e)}")
+        print(f"Quick search error: {str(e)}")
         return jsonify({'results': [], 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/api/client/<int:client_id>/documents', methods=['GET'])
 @login_required
@@ -1307,31 +1329,22 @@ def get_client_documents(client_id):
         for doc in docs:
             doc_type = doc[0]
             documents[doc_type] = {
-                'file_id': doc[1],
-                'file_name': doc[2],
-                'url': doc[3],
-                'file_size': doc[4] or 0,
-                'upload_time': doc[5]
+                'file_id': doc[1], 'file_name': doc[2], 'url': doc[3],
+                'file_size': doc[4] or 0, 'upload_time': doc[5]
             }
         
-        return jsonify({
-            'success': True,
-            'documents': documents
-        })
+        return jsonify({'success': True, 'documents': documents})
     except Exception as e:
-        print(f"❌ Get documents error: {str(e)}")
+        print(f"Get documents error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/api/client/<int:client_id>/update-documents', methods=['POST'])
 @login_required
@@ -1356,6 +1369,7 @@ def update_client_documents(client_id):
         updated_docs = []
         
         for doc_type in DOCUMENT_TYPES:
+            # Handle deletion
             if request.form.get(f'delete_{doc_type}') == 'true':
                 try:
                     if USE_POSTGRESQL:
@@ -1368,19 +1382,18 @@ def update_client_documents(client_id):
                         try:
                             file = drive.CreateFile({'id': doc_row[0]})
                             file.Delete()
-                        except:
-                            pass
+                        except: pass
                     
                     if USE_POSTGRESQL:
                         cur.execute("DELETE FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
                     else:
                         cur.execute("DELETE FROM documents WHERE client_id = ? AND document_type = ?", (client_id, doc_type))
-                    
                     conn.commit()
-                    print(f"✅ Deleted {doc_type} for client {client_id}")
+                    print(f"Deleted {doc_type} for client {client_id}")
                 except Exception as e:
-                    print(f"❌ Error deleting {doc_type}: {str(e)}")
+                    print(f"Error deleting {doc_type}: {str(e)}")
             
+            # Handle file upload
             file = request.files.get(doc_type)
             if file and file.filename:
                 if not allowed_file(file.filename):
@@ -1389,6 +1402,7 @@ def update_client_documents(client_id):
                     continue
                 
                 try:
+                    # Delete old file if exists
                     if USE_POSTGRESQL:
                         cur.execute("SELECT file_id FROM documents WHERE client_id = %s AND document_type = %s", (client_id, doc_type))
                     else:
@@ -1399,9 +1413,9 @@ def update_client_documents(client_id):
                         try:
                             old_file = drive.CreateFile({'id': old_doc[0]})
                             old_file.Delete()
-                        except:
-                            pass
+                        except: pass
                     
+                    # Upload new file
                     gfile = drive.CreateFile({
                         'title': f"{client_id}_{doc_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
                         'parents': [{'id': folder_id}]
@@ -1410,57 +1424,52 @@ def update_client_documents(client_id):
                     gfile.Upload()
                     
                     file_url = f"https://drive.google.com/uc?export=download&id={gfile['id']}"
+                    now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     
                     if USE_POSTGRESQL:
-                        cur.execute(
-                            "INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) "
-                            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
-                            "ON CONFLICT (client_id, document_type) DO UPDATE SET "
-                            "file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, upload_time = EXCLUDED.upload_time",
-                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now(), session.get('user_id'))
-                        )
+                        cur.execute("""INSERT INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (client_id, document_type) DO UPDATE SET
+                            file_id = EXCLUDED.file_id, file_name = EXCLUDED.file_name, url = EXCLUDED.url, upload_time = EXCLUDED.upload_time""",
+                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, now, session.get('user_id')))
                     else:
-                        cur.execute(
-                            "INSERT OR REPLACE INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by) "
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), session.get('user_id'))
-                        )
+                        cur.execute("""INSERT OR REPLACE INTO documents (client_id, document_type, file_id, file_name, url, file_size, mime_type, upload_time, uploaded_by)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (client_id, doc_type, gfile['id'], gfile['title'], file_url, file.content_length, file.content_type, now, session.get('user_id')))
                     
                     conn.commit()
                     updated_docs.append(doc_type)
-                    print(f"✅ Updated {doc_type} for client {client_id}")
+                    print(f"Updated {doc_type} for client {client_id}")
                 except Exception as e:
-                    print(f"❌ Error uploading {doc_type}: {str(e)}")
+                    print(f"Error uploading {doc_type}: {str(e)}")
         
+        # Update client timestamp
+        now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if USE_POSTGRESQL:
-            cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (datetime.now(), client_id))
+            cur.execute("UPDATE clients SET updated_at = %s WHERE id = %s", (now, client_id))
         else:
-            cur.execute("UPDATE clients SET updated_at = ? WHERE id = ?", (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), client_id))
+            cur.execute("UPDATE clients SET updated_at = ? WHERE id = ?", (now, client_id))
         
         conn.commit()
         log_activity("DOCUMENTS_UPDATED", f"Updated {len(updated_docs)} documents for client {client_id}")
         
         return jsonify({
             'success': True,
-            'message': f'✅ Successfully updated {len(updated_docs)} document(s)!',
+            'message': f'Successfully updated {len(updated_docs)} document(s)!',
             'updated': updated_docs
         })
-    
     except Exception as e:
-        print(f"❌ Update documents error: {str(e)}")
+        print(f"Update documents error: {str(e)}")
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/view-document/<path:file_url>')
 @login_required
@@ -1468,8 +1477,12 @@ def view_document(file_url):
     try:
         return redirect(file_url)
     except Exception as e:
-        print(f"❌ View document error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        print(f"View document error: {str(e)}")
+        flash(f'Error viewing document: {str(e)}', 'error')
+        return redirect(url_for('fetch_page'))
+
+
+# ============= ADMIN ROUTES =============
 
 @app.route('/admin/dashboard')
 @admin_required
@@ -1480,11 +1493,7 @@ def admin_dashboard():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        if USE_POSTGRESQL:
-            cur.execute("SELECT id, username, email, role, created_at, failed_login_attempts, locked_until FROM users ORDER BY created_at DESC")
-        else:
-            cur.execute("SELECT id, username, email, role, created_at, failed_login_attempts, locked_until FROM users ORDER BY created_at DESC")
-        
+        cur.execute("SELECT id, username, email, role, created_at, failed_login_attempts, locked_until FROM users ORDER BY created_at DESC")
         users = cur.fetchall()
         
         if USE_POSTGRESQL:
@@ -1492,19 +1501,16 @@ def admin_dashboard():
             admin_count = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM users WHERE role = %s", ('user',))
             user_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM clients")
-            clients_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM documents")
-            docs_count = cur.fetchone()[0]
         else:
             cur.execute("SELECT COUNT(*) FROM users WHERE role = ?", ('admin',))
             admin_count = cur.fetchone()[0]
             cur.execute("SELECT COUNT(*) FROM users WHERE role = ?", ('user',))
             user_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM clients")
-            clients_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM documents")
-            docs_count = cur.fetchone()[0]
+        
+        cur.execute("SELECT COUNT(*) FROM clients")
+        clients_count = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM documents")
+        docs_count = cur.fetchone()[0]
         
         stats = {
             'total_users': admin_count + user_count,
@@ -1516,20 +1522,17 @@ def admin_dashboard():
         
         return render_template('admin_dashboard.html', users=users, stats=stats)
     except Exception as e:
-        print(f"❌ Admin dashboard error: {str(e)}")
+        print(f"Admin dashboard error: {str(e)}")
         flash('Error loading admin dashboard.', 'error')
         return redirect(url_for('dashboard'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/admin/users')
 @admin_required
@@ -1540,28 +1543,23 @@ def manage_users():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        if USE_POSTGRESQL:
-            cur.execute("SELECT id, username, email, role, created_at, failed_login_attempts, locked_until FROM users ORDER BY created_at DESC")
-        else:
-            cur.execute("SELECT id, username, email, role, created_at, failed_login_attempts, locked_until FROM users ORDER BY created_at DESC")
-        
+        cur.execute("SELECT id, username, email, role, created_at, failed_login_attempts, locked_until FROM users ORDER BY created_at DESC")
         users = cur.fetchall()
-        return render_template('admin_dashboard.html', users=users)
+        
+        stats = {'total_users': len(users), 'admin_users': 0, 'regular_users': 0, 'total_clients': 0, 'total_documents': 0}
+        return render_template('admin_dashboard.html', users=users, stats=stats)
     except Exception as e:
-        print(f"❌ Manage users error: {str(e)}")
+        print(f"Manage users error: {str(e)}")
         flash('Error loading users.', 'error')
         return redirect(url_for('admin_dashboard'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/admin/user/<int:user_id>/role', methods=['POST'])
 @admin_required
@@ -1589,19 +1587,16 @@ def change_user_role(user_id):
         log_activity("ROLE_CHANGED", f"User role changed to {new_role} for user ID: {user_id}")
         return jsonify({'success': True, 'message': f'User role changed to {new_role}'})
     except Exception as e:
-        print(f"❌ Change role error: {str(e)}")
+        print(f"Change role error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/admin/user/<int:user_id>/unlock', methods=['POST'])
 @admin_required
@@ -1621,19 +1616,16 @@ def unlock_user(user_id):
         log_activity("USER_UNLOCKED", f"User ID {user_id} unlocked by admin")
         return jsonify({'success': True, 'message': 'User account unlocked'})
     except Exception as e:
-        print(f"❌ Unlock user error: {str(e)}")
+        print(f"Unlock user error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
 @admin_required
@@ -1664,19 +1656,16 @@ def delete_user(user_id):
         log_activity("USER_DELETED", f"User deleted: {username}")
         return jsonify({'success': True, 'message': 'User account deleted'})
     except Exception as e:
-        print(f"❌ Delete user error: {str(e)}")
+        print(f"Delete user error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/admin/user/<int:user_id>/activity')
 @admin_required
@@ -1688,27 +1677,51 @@ def user_activity(user_id):
         cur = conn.cursor()
         
         if USE_POSTGRESQL:
+            cur.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+        else:
+            cur.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+        
+        user = cur.fetchone()
+        username = user[0] if user else 'Unknown'
+        
+        if USE_POSTGRESQL:
             cur.execute("SELECT action, details, timestamp, ip_address FROM activity_logs WHERE user_id = %s ORDER BY timestamp DESC LIMIT 100", (user_id,))
         else:
             cur.execute("SELECT action, details, timestamp, ip_address FROM activity_logs WHERE user_id = ? ORDER BY timestamp DESC LIMIT 100", (user_id,))
         
         activities = cur.fetchall()
-        return render_template('user_activity.html', activities=activities)
+        
+        # Return simple HTML if template doesn't exist
+        html = f'''<!DOCTYPE html>
+<html><head><title>Activity Log - {username}</title>
+<link rel="stylesheet" href="/static/style.css"></head>
+<body><div class="container">
+<h1>Activity Log: {username}</h1>
+<a href="/admin/dashboard" class="link">Back to Admin</a>
+<table style="width:100%; margin-top:20px; border-collapse:collapse;">
+<tr style="background:#667eea; color:white;">
+<th style="padding:10px; text-align:left;">Action</th>
+<th style="padding:10px; text-align:left;">Details</th>
+<th style="padding:10px; text-align:left;">Time</th>
+<th style="padding:10px; text-align:left;">IP</th></tr>'''
+        
+        for act in activities:
+            html += f'<tr style="border-bottom:1px solid #ddd;"><td style="padding:10px;">{act[0]}</td><td style="padding:10px;">{act[1] or "-"}</td><td style="padding:10px;">{act[2]}</td><td style="padding:10px;">{act[3] or "-"}</td></tr>'
+        
+        html += '</table></div></body></html>'
+        return html
     except Exception as e:
-        print(f"❌ User activity error: {str(e)}")
+        print(f"User activity error: {str(e)}")
         flash('Error loading activity logs.', 'error')
-        return redirect(url_for('manage_users'))
+        return redirect(url_for('admin_dashboard'))
     finally:
         if cur:
-            try:
-                cur.close()
-            except:
-                pass
+            try: cur.close()
+            except: pass
         if conn:
-            try:
-                conn.close()
-            except:
-                pass
+            try: conn.close()
+            except: pass
+
 
 @app.route('/api/user/role')
 @login_required
@@ -1718,17 +1731,16 @@ def get_user_role():
         'username': session.get('username')
     })
 
-@app.errorhandler(403)
-def forbidden(e):
-    return render_template('404.html'), 403
+
+# ============= MAIN =============
 
 if __name__ == '__main__':
     try:
-        print("🔄 Starting initial sync on app startup...")
+        print("Starting initial sync on app startup...")
         synced = sync_drive_to_database()
-        print(f"✅ Sync complete: {synced} documents synced")
+        print(f"Sync complete: {synced} documents synced")
     except Exception as e:
-        print(f"⚠️ Sync warning: {e}")
+        print(f"Sync warning: {e}")
     
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     port = int(os.getenv('PORT', 5000))

@@ -6,13 +6,28 @@
   <title>404 - Page Not Found</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+    }
+
     .error-container {
       text-align: center;
-      padding: 40px 20px;
+      padding: 50px 40px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 500px;
+      width: 100%;
     }
     
     .error-code {
-      font-size: 120px;
+      font-size: 100px;
       font-weight: 900;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
@@ -20,30 +35,29 @@
       background-clip: text;
       margin: 0;
       line-height: 1;
-      animation: bounce 2s infinite;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
     
     .error-icon {
-      font-size: 80px;
+      font-size: 60px;
       margin: 20px 0;
-      animation: spin 3s linear infinite;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
     
     .error-message {
-      font-size: 24px;
+      font-size: 22px;
       color: #333;
-      margin: 20px 0;
+      margin: 15px 0;
       font-weight: 600;
     }
     
     .error-description {
       color: #666;
-      font-size: 16px;
+      font-size: 15px;
       margin: 15px 0 30px;
       line-height: 1.6;
     }
@@ -53,27 +67,76 @@
       gap: 15px;
       justify-content: center;
       flex-wrap: wrap;
-      margin-top: 30px;
+    }
+
+    .home-links .link {
+      padding: 12px 25px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .home-links .link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+    }
+
+    .home-links .link.secondary {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .home-links .link.secondary:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    @media (max-width: 480px) {
+      .error-code {
+        font-size: 70px;
+      }
+
+      .error-icon {
+        font-size: 45px;
+      }
+
+      .error-message {
+        font-size: 18px;
+      }
+
+      .error-description {
+        font-size: 14px;
+      }
+
+      .home-links {
+        flex-direction: column;
+      }
+
+      .home-links .link {
+        width: 100%;
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="error-container">
-      <div class="error-code">404</div>
-      <div class="error-icon">🔍</div>
-      <h1 class="error-message">Oops! Page Not Found</h1>
-      <p class="error-description">
-        The page you're looking for doesn't exist or has been moved.<br>
-        Let's get you back on track!
-      </p>
-      
-      <div class="home-links">
-        <a href="/" class="link">🏠 Go Home</a>
-        <a href="/fetch" class="link">🔍 Search Files</a>
-      </div>
+  <div class="error-container">
+    <div class="error-code">404</div>
+    <div class="error-icon">🔍</div>
+    <h1 class="error-message">Page Not Found</h1>
+    <p class="error-description">
+      The page you're looking for doesn't exist or has been moved.<br>
+      Let's get you back on track!
+    </p>
+    
+    <div class="home-links">
+      <a href="/" class="link">🏠 Go Home</a>
+      <a href="/fetch" class="link secondary">🔍 Search Files</a>
     </div>
   </div>
-  {% include 'mobile_optimizations.html' %}
 </body>
 </html>

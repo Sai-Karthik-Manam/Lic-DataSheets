@@ -6,95 +6,102 @@
   <title>Register | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      margin: 0;
+    }
+
     .register-container {
-      max-width: 450px;
-      margin: 0 auto;
+      max-width: 420px;
+      width: 100%;
+      background: white;
+      padding: 35px 30px;
+      border-radius: 20px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
     }
     
     .register-header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
     
     .register-icon {
-      font-size: 64px;
-      margin-bottom: 15px;
+      font-size: 50px;
+      margin-bottom: 10px;
+    }
+
+    .register-header h1 {
+      margin: 0;
+      color: #333;
+      font-size: 24px;
     }
     
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     
     .form-group label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
       color: #333;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
     }
     
     .form-group input {
       width: 100%;
-      padding: 12px 15px;
+      padding: 13px 15px;
       border: 2px solid #e0e0e0;
       border-radius: 10px;
       font-size: 15px;
       transition: all 0.3s ease;
+      box-sizing: border-box;
     }
     
     .form-group input:focus {
       outline: none;
       border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
     }
     
     .form-group small {
       display: block;
       margin-top: 5px;
-      color: #666;
-      font-size: 12px;
+      color: #888;
+      font-size: 11px;
     }
     
-    /* ✅ FIXED: Show/Hide button outside the input box */
     .password-wrapper {
       display: flex;
       gap: 10px;
-      align-items: center;
-      width: 100%;
+      align-items: stretch;
     }
     
     .password-wrapper input {
       flex: 1;
-      width: auto;
+      min-width: 0;
     }
     
     .password-toggle {
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
       border: 2px solid #667eea;
       color: #667eea;
       cursor: pointer;
-      padding: 12px 20px;
+      padding: 13px 14px;
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
       transition: all 0.3s ease;
-      min-width: 70px;
       white-space: nowrap;
-      user-select: none;
+      flex-shrink: 0;
     }
     
-    .password-toggle:hover {
-      background: #667eea;
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-    
-    .password-toggle:active {
-      transform: translateY(0);
-    }
-    
-    .password-toggle.active {
+    .password-toggle:hover, .password-toggle.active {
       background: #667eea;
       color: white;
     }
@@ -106,21 +113,21 @@
       color: white;
       border: none;
       border-radius: 12px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
-      margin-top: 10px;
+      margin-top: 8px;
     }
     
     .btn-register:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
     
     .divider {
       text-align: center;
-      margin: 25px 0;
+      margin: 22px 0;
       position: relative;
     }
     
@@ -139,12 +146,17 @@
       background: white;
       padding: 0 15px;
       color: #999;
-      font-size: 14px;
+      font-size: 13px;
     }
     
     .login-link {
       text-align: center;
-      margin-top: 20px;
+    }
+    
+    .login-link p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
     }
     
     .login-link a {
@@ -158,7 +170,7 @@
     }
     
     .password-strength {
-      margin-top: 10px;
+      margin-top: 8px;
       height: 4px;
       background: #e0e0e0;
       border-radius: 2px;
@@ -175,95 +187,37 @@
     .strength-weak { background: #dc3545; width: 33%; }
     .strength-medium { background: #ffc107; width: 66%; }
     .strength-strong { background: #28a745; width: 100%; }
-    
-    /* ✅ FIXED: Mobile responsive styles */
-    @media (max-width: 768px) {
-      .register-container {
-        padding: 20px;
-      }
-      
-      .register-icon {
-        font-size: 48px;
-      }
-      
-      h1 {
-        font-size: 24px !important;
-      }
-      
-      .form-group {
-        margin-bottom: 18px;
-      }
-      
-      .form-group label {
-        font-size: 13px;
-      }
-      
-      .form-group input {
-        font-size: 16px !important;
-        padding: 14px 15px;
-      }
-      
-      /* ✅ FIXED: Better mobile layout for password wrapper */
-      .password-wrapper {
-        gap: 8px;
-      }
-      
-      .password-wrapper input {
-        flex: 1;
-        min-width: 0;
-      }
-      
-      .password-toggle {
-        min-width: 55px;
-        max-width: 55px;
-        padding: 12px 8px;
-        font-size: 12px;
-        flex-shrink: 0;
-      }
-      
-      .btn-register {
-        padding: 16px;
-        font-size: 15px;
-      }
+
+    .error, .success {
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      font-size: 13px;
     }
-    
+
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
     @media (max-width: 480px) {
-      .register-container {
-        padding: 15px;
-      }
-      
-      .register-icon {
-        font-size: 40px;
-      }
-      
-      h1 {
-        font-size: 20px !important;
-      }
-      
-      /* ✅ FIXED: Even smaller button on very small screens */
-      .password-toggle {
-        min-width: 50px;
-        max-width: 50px;
-        padding: 12px 6px;
-        font-size: 11px;
-      }
+      .register-container { padding: 28px 22px; }
+      .register-icon { font-size: 40px; }
+      .register-header h1 { font-size: 20px; }
+      .password-toggle { padding: 13px 10px; font-size: 11px; }
     }
   </style>
 </head>
 <body>
-  <div class="container register-container">
+  <div class="register-container">
     <div class="register-header">
       <div class="register-icon">✨</div>
       <h1>Create Account</h1>
-      <p style="color: #666; margin-top: 10px;">Join us to manage client documents</p>
+      <p style="color: #666; margin-top: 8px; font-size: 13px;">Join us to manage client documents</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="{{ category }}">
-            {{ message }}
-          </div>
+          <div class="{{ category }}">{{ message }}</div>
         {% endfor %}
       {% endif %}
     {% endwith %}
@@ -273,47 +227,22 @@
       
       <div class="form-group">
         <label for="username">👤 Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          name="username" 
-          placeholder="Choose a username"
-          required
-          minlength="3"
-          autofocus
-        >
+        <input type="text" id="username" name="username" placeholder="Choose a username"
+          required minlength="3" autofocus>
         <small>Minimum 3 characters</small>
       </div>
 
       <div class="form-group">
         <label for="email">📧 Email (Optional)</label>
-        <input 
-          type="email" 
-          id="email" 
-          name="email" 
-          placeholder="your@email.com"
-        >
+        <input type="email" id="email" name="email" placeholder="your@email.com">
       </div>
 
       <div class="form-group">
-        <label for="password">🔒 Password</label>
+        <label for="password">🔑 Password</label>
         <div class="password-wrapper">
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
-            placeholder="Create a strong password"
-            required
-            minlength="8"
-          >
-          <button 
-            type="button" 
-            class="password-toggle" 
-            id="togglePassword"
-            aria-label="Toggle password visibility"
-          >
-            Show
-          </button>
+          <input type="password" id="password" name="password" placeholder="Create a strong password"
+            required minlength="8">
+          <button type="button" class="password-toggle" id="togglePassword">Show</button>
         </div>
         <div class="password-strength" id="passwordStrength">
           <div class="password-strength-bar" id="strengthBar"></div>
@@ -322,34 +251,18 @@
       </div>
 
       <div class="form-group">
-        <label for="confirm_password">🔒 Confirm Password</label>
+        <label for="confirm_password">🔑 Confirm Password</label>
         <div class="password-wrapper">
-          <input 
-            type="password" 
-            id="confirm_password" 
-            name="confirm_password" 
-            placeholder="Re-enter your password"
-            required
-          >
-          <button 
-            type="button" 
-            class="password-toggle" 
-            id="toggleConfirmPassword"
-            aria-label="Toggle password visibility"
-          >
-            Show
-          </button>
+          <input type="password" id="confirm_password" name="confirm_password" 
+            placeholder="Re-enter your password" required>
+          <button type="button" class="password-toggle" id="toggleConfirmPassword">Show</button>
         </div>
       </div>
 
-      <button type="submit" class="btn-register">
-        🚀 Create Account
-      </button>
+      <button type="submit" class="btn-register">🚀 Create Account</button>
     </form>
 
-    <div class="divider">
-      <span>OR</span>
-    </div>
+    <div class="divider"><span>OR</span></div>
 
     <div class="login-link">
       <p>Already have an account? <a href="/login">Login here</a></p>
@@ -357,47 +270,32 @@
   </div>
 
   <script>
-    // ✅ FIXED: Password toggle for main password
-    const passwordInput = document.getElementById('password');
-    const togglePassword = document.getElementById('togglePassword');
-    
-    togglePassword.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        togglePassword.textContent = 'Hide';
-        togglePassword.classList.add('active');
-      } else {
-        passwordInput.type = 'password';
-        togglePassword.textContent = 'Show';
-        togglePassword.classList.remove('active');
+    // Toggle password visibility
+    function setupToggle(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      if (input && button) {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          if (input.type === 'password') {
+            input.type = 'text';
+            button.textContent = 'Hide';
+            button.classList.add('active');
+          } else {
+            input.type = 'password';
+            button.textContent = 'Show';
+            button.classList.remove('active');
+          }
+          input.focus();
+        });
       }
-      
-      passwordInput.focus();
-    });
-    
-    // ✅ FIXED: Password toggle for confirm password
-    const confirmPasswordInput = document.getElementById('confirm_password');
-    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-    
-    toggleConfirmPassword.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      if (confirmPasswordInput.type === 'password') {
-        confirmPasswordInput.type = 'text';
-        toggleConfirmPassword.textContent = 'Hide';
-        toggleConfirmPassword.classList.add('active');
-      } else {
-        confirmPasswordInput.type = 'password';
-        toggleConfirmPassword.textContent = 'Show';
-        toggleConfirmPassword.classList.remove('active');
-      }
-      
-      confirmPasswordInput.focus();
-    });
+    }
 
-    // Password strength indicator
+    setupToggle('password', 'togglePassword');
+    setupToggle('confirm_password', 'toggleConfirmPassword');
+
+    // Password strength
+    const passwordInput = document.getElementById('password');
     const strengthIndicator = document.getElementById('passwordStrength');
     const strengthBar = document.getElementById('strengthBar');
 
@@ -420,18 +318,13 @@
       
       strengthBar.className = 'password-strength-bar';
       
-      if (strength <= 2) {
-        strengthBar.classList.add('strength-weak');
-      } else if (strength <= 3) {
-        strengthBar.classList.add('strength-medium');
-      } else {
-        strengthBar.classList.add('strength-strong');
-      }
+      if (strength <= 2) strengthBar.classList.add('strength-weak');
+      else if (strength <= 3) strengthBar.classList.add('strength-medium');
+      else strengthBar.classList.add('strength-strong');
     });
 
     // Form validation
-    const form = document.getElementById('registerForm');
-    form.addEventListener('submit', function(e) {
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirm_password').value;
       

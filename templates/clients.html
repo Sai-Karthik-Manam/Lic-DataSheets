@@ -6,38 +6,137 @@
   <title>All Clients | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      padding: 12px 25px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar-left { display: flex; gap: 20px; align-items: center; }
+
+    .navbar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .navbar-links { display: flex; gap: 10px; }
+
+    .navbar-link {
+      padding: 8px 14px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-link:hover {
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      color: #667eea;
+    }
+
+    .navbar-right { display: flex; gap: 12px; align-items: center; }
+
+    .navbar-user {
+      padding: 8px 14px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .content-wrapper { padding-top: 80px; }
+
     .clients-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
-      gap: 15px;
+      gap: 12px;
     }
     
     .clients-count {
-      padding: 15px 25px;
+      padding: 12px 20px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border-radius: 15px;
+      border-radius: 12px;
       font-weight: 600;
-      font-size: 18px;
+      font-size: 15px;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .search-form input {
+      flex: 1;
+      padding: 14px 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .search-form input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+    }
+
+    .search-form button {
+      padding: 14px 25px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .search-form button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102,126,234,0.4);
     }
     
     .clients-table-container {
       background: white;
-      border-radius: 20px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      border: 1px solid #eee;
+    }
+
+    .table-wrapper {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      position: relative;
     }
     
     .clients-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 800px;
+      min-width: 700px;
     }
     
     .clients-table thead {
@@ -46,31 +145,31 @@
     }
     
     .clients-table th {
-      padding: 18px 15px;
+      padding: 15px 12px;
       text-align: left;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       white-space: nowrap;
     }
     
     .clients-table td {
-      padding: 18px 15px;
-      border-bottom: 1px solid #e9ecef;
+      padding: 14px 12px;
+      border-bottom: 1px solid #f0f0f0;
       color: #333;
-      font-size: 15px;
+      font-size: 14px;
     }
     
     .clients-table tbody tr:hover {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      background: #f8f9ff;
     }
     
     .client-name-cell {
       font-weight: 600;
       color: #667eea;
       cursor: pointer;
-      max-width: 200px;
+      max-width: 180px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -82,56 +181,49 @@
     
     .doc-badge {
       display: inline-block;
-      padding: 5px 12px;
+      padding: 5px 10px;
       background: #e7f3ff;
       color: #0057a0;
-      border-radius: 20px;
-      font-size: 13px;
+      border-radius: 15px;
+      font-size: 12px;
       font-weight: 600;
-      white-space: nowrap;
     }
     
     .date-cell {
       color: #666;
-      font-size: 14px;
+      font-size: 13px;
       white-space: nowrap;
     }
     
     .action-cell {
       display: flex;
-      gap: 8px;
-      flex-wrap: nowrap;
+      gap: 6px;
     }
     
-    .btn-view {
-      padding: 8px 15px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+    .btn-view, .btn-edit {
+      padding: 7px 12px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       transition: all 0.3s ease;
       white-space: nowrap;
+    }
+
+    .btn-view {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
     
     .btn-view:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
     }
     
     .btn-edit {
-      padding: 8px 15px;
       background: #ffc107;
       color: #333;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      white-space: nowrap;
     }
     
     .btn-edit:hover {
@@ -141,107 +233,20 @@
     
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: 50px 20px;
     }
 
-    /* Scroll hint for mobile */
     .scroll-hint {
       display: none;
-      position: sticky;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(102, 126, 234, 0.9);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 8px 15px;
+      padding: 8px;
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      z-index: 10;
     }
 
-    @media (max-width: 768px) {
-      .clients-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .clients-count {
-        width: 100%;
-        text-align: center;
-        font-size: 16px;
-        padding: 12px 20px;
-      }
-      
-      .clients-table-container {
-        margin: 0 -20px;
-        border-radius: 0;
-        width: calc(100% + 40px);
-      }
-
-      .scroll-hint {
-        display: block;
-      }
-
-      .clients-table {
-        min-width: 700px;
-        font-size: 13px;
-      }
-
-      .clients-table th,
-      .clients-table td {
-        padding: 12px 10px;
-        font-size: 12px;
-      }
-
-      .client-name-cell {
-        max-width: 120px;
-      }
-      
-      .action-cell {
-        flex-direction: column;
-        gap: 5px;
-      }
-
-      .btn-view,
-      .btn-edit {
-        width: 100%;
-        padding: 6px 10px;
-        font-size: 11px;
-      }
-
-      h1 {
-        font-size: 24px !important;
-      }
-
-      .doc-badge {
-        font-size: 11px;
-        padding: 4px 8px;
-      }
-
-      /* Search button mobile fix */
-      form[action="/clients"] button[type="submit"] {
-        position: static !important;
-        transform: none !important;
-        width: 100%;
-        margin-top: 10px;
-        padding: 12px 20px !important;
-        font-size: 15px !important;
-      }
-
-      form[action="/clients"] input[name="search"] {
-        padding: 15px 20px !important;
-        margin-bottom: 0;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .clients-table {
-        min-width: 650px;
-      }
-    }
-
-    /* EDIT MODAL STYLES */
+    /* Edit Modal */
     .edit-modal-overlay {
       display: none;
       position: fixed;
@@ -250,64 +255,56 @@
       right: 0;
       bottom: 0;
       background: rgba(0, 0, 0, 0.6);
-      z-index: 1000;
+      z-index: 2000;
       justify-content: center;
       align-items: center;
       padding: 20px;
       overflow-y: auto;
     }
 
-    .edit-modal-overlay.active {
-      display: flex;
-    }
+    .edit-modal-overlay.active { display: flex; }
 
     .edit-modal-box {
       background: white;
-      border-radius: 15px;
-      padding: 30px;
-      max-width: 600px;
+      border-radius: 16px;
+      padding: 25px;
+      max-width: 580px;
       width: 100%;
-      max-height: 85vh;
+      max-height: 80vh;
       overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
     }
 
     .edit-modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       border-bottom: 2px solid #667eea;
-      padding-bottom: 15px;
+      padding-bottom: 12px;
     }
 
-    .edit-modal-header h2 {
-      margin: 0;
-      color: #333;
-      font-size: 22px;
-    }
+    .edit-modal-header h2 { margin: 0; color: #333; font-size: 20px; }
 
     .edit-modal-close {
       background: none;
       border: none;
-      font-size: 24px;
+      font-size: 22px;
       cursor: pointer;
       color: #999;
     }
 
-    .edit-modal-close:hover {
-      color: #dc3545;
-    }
+    .edit-modal-close:hover { color: #dc3545; }
 
     .doc-types-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 15px;
-      margin: 20px 0;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 18px 0;
     }
 
     .doc-type-card {
-      padding: 15px;
+      padding: 14px;
       background: #f8f9fa;
       border: 2px solid #dee2e6;
       border-radius: 10px;
@@ -322,41 +319,21 @@
     .doc-type-name {
       font-weight: 600;
       color: #333;
-      margin-bottom: 10px;
-      font-size: 14px;
+      margin-bottom: 8px;
+      font-size: 13px;
     }
 
     .doc-type-status {
-      font-size: 12px;
-      padding: 5px 8px;
+      font-size: 11px;
+      padding: 4px 8px;
       border-radius: 5px;
       margin-bottom: 10px;
       text-align: center;
     }
 
-    .status-exists {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-empty {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .status-ready {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      margin-bottom: 10px;
-    }
-
-    .file-input-wrapper input[type="file"] {
-      display: none;
-    }
+    .status-exists { background: #d4edda; color: #155724; }
+    .status-empty { background: #f8d7da; color: #721c24; }
+    .status-ready { background: #fff3cd; color: #856404; }
 
     .btn-upload-file {
       width: 100%;
@@ -366,14 +343,8 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .btn-upload-file:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
     .btn-remove-file {
@@ -384,226 +355,237 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       display: none;
-      transition: all 0.3s ease;
+      margin-top: 6px;
     }
 
-    .btn-remove-file.show {
-      display: block;
-    }
-
-    .btn-remove-file:hover {
-      background: #c82333;
-    }
+    .btn-remove-file.show { display: block; }
 
     .modal-actions {
       display: flex;
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 18px;
       justify-content: flex-end;
       border-top: 1px solid #dee2e6;
       padding-top: 15px;
     }
 
-    .btn-modal-save {
-      padding: 10px 20px;
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
+    .btn-modal-save, .btn-modal-cancel {
+      padding: 10px 18px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .btn-modal-save:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
-    }
-
-    .btn-modal-cancel {
-      padding: 10px 20px;
-      background: #6c757d;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .btn-modal-cancel:hover {
-      background: #5a6268;
-    }
-
-    .success-msg {
-      display: none;
-      padding: 12px;
-      background: #d4edda;
-      color: #155724;
-      border-radius: 6px;
-      margin-bottom: 15px;
       font-size: 13px;
     }
 
-    .success-msg.show {
-      display: block;
+    .btn-modal-save {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
     }
 
+    .btn-modal-cancel { background: #6c757d; color: white; }
+
+    .success-msg {
+      display: none;
+      padding: 10px;
+      background: #d4edda;
+      color: #155724;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .success-msg.show { display: block; }
+
+    .action-links {
+      margin-top: 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .action-links .link {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    /* Mobile */
     @media (max-width: 768px) {
-      .edit-modal-box {
-        padding: 20px;
-        margin: 10px;
+      .navbar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 15px;
       }
 
-      .edit-modal-header h2 {
-        font-size: 18px;
-      }
-
-      .doc-types-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .modal-actions {
-        flex-direction: column-reverse;
-      }
-
-      .btn-modal-save,
-      .btn-modal-cancel {
+      .navbar-left {
         width: 100%;
+        flex-direction: column;
+        gap: 10px;
       }
+      
+      .navbar-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .navbar-link { padding: 6px 10px; font-size: 11px; }
+
+      .navbar-right { width: 100%; justify-content: center; }
+
+      .content-wrapper { padding-top: 130px; }
+
+      .clients-header { flex-direction: column; align-items: stretch; }
+      .clients-count { width: 100%; text-align: center; font-size: 14px; }
+
+      .search-form { flex-direction: column; }
+      .search-form button { width: 100%; }
+
+      .scroll-hint { display: block; }
+
+      .clients-table { min-width: 650px; }
+      .clients-table th, .clients-table td { padding: 10px 8px; font-size: 12px; }
+
+      .action-cell { flex-direction: column; gap: 4px; }
+      .btn-view, .btn-edit { width: 100%; padding: 6px 8px; font-size: 11px; }
+
+      h1 { font-size: 22px !important; }
+
+      .edit-modal-box { padding: 18px; }
+      .doc-types-grid { grid-template-columns: 1fr 1fr; }
+      .modal-actions { flex-direction: column-reverse; }
+      .btn-modal-save, .btn-modal-cancel { width: 100%; }
+    }
+
+    @media (max-width: 480px) {
+      .content-wrapper { padding-top: 150px; }
+      .doc-types-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container" style="max-width: 1200px;">
-    <div class="clients-header">
-      <h1 style="margin: 0;">👥 All Clients</h1>
-      <div class="clients-count">
-        📊 Total: {{ clients|length }} Clients
+  <nav class="navbar">
+    <div class="navbar-left">
+      <div class="navbar-logo">📊 LIC Manager</div>
+      <div class="navbar-links">
+        <a href="/dashboard" class="navbar-link">📈 Dashboard</a>
+        <a href="/upload_page" class="navbar-link">📤 Upload</a>
+        <a href="/fetch" class="navbar-link">🔍 Search</a>
+        <a href="/clients" class="navbar-link">👥 Clients</a>
       </div>
     </div>
+    <div class="navbar-right">
+      <div class="navbar-user">👤 {{ session.username }}</div>
+      <a href="/logout" class="navbar-link">🚪 Logout</a>
+    </div>
+  </nav>
 
-    {% if not is_search and clients|length == 20 %}
-      <div style="padding: 15px; background: #e7f3ff; border-radius: 10px; margin-bottom: 20px; font-size: 14px; color: #0057a0;">
-        📋 Showing 20 most recently updated clients. <strong>Search for a specific client name to see all results.</strong>
+  <div class="content-wrapper">
+    <div class="container" style="max-width: 1100px;">
+      <div class="clients-header">
+        <h1 style="margin: 0;">👥 All Clients</h1>
+        <div class="clients-count">📊 Total: {{ clients|length }} Clients</div>
       </div>
-    {% elif is_search %}
-      <div style="padding: 10px; background: #d4edda; border-radius: 5px; margin-bottom: 10px; font-size: 12px; color: #155724;">
-        🔍 Showing search results for: <strong>"{{ search_query }}"</strong>
-      </div>
-    {% endif %}
 
-    <!-- Search Box -->
-    <div style="margin: 20px 0;">
-      <form method="GET" action="/clients" style="display: flex; gap: 10px; align-items: stretch;">
-        <input 
-          type="text" 
-          name="search" 
-          placeholder="🔎 Search client by name..." 
-          value="{{ search_query }}"
-          style="flex: 1; padding: 15px 20px; border: 2px solid #e0e0e0; border-radius: 15px; font-size: 16px;"
-        >
-        <button type="submit" style="padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 15px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;">
-          🔍 Search
-        </button>
+      {% if not is_search and clients|length == 20 %}
+      <div style="padding: 12px; background: #e7f3ff; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #0057a0;">
+        📋 Showing 20 most recent clients. <strong>Search to find a specific client.</strong>
+      </div>
+      {% elif is_search %}
+      <div style="padding: 10px; background: #d4edda; border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #155724;">
+        🔍 Search results for: <strong>"{{ search_query }}"</strong>
+      </div>
+      {% endif %}
+
+      <form method="GET" action="/clients" class="search-form">
+        <input type="text" name="search" placeholder="🔎 Search client by name..." value="{{ search_query }}">
+        <button type="submit">🔍 Search</button>
       </form>
-    </div>
 
-    {% if clients and clients|length > 0 %}
+      {% if clients and clients|length > 0 %}
       <div class="clients-table-container">
-        <table class="clients-table" id="clientsTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>👤 Client Name</th>
-              <th>📄 Documents</th>
-              <th>📅 Created</th>
-              <th>🔄 Updated</th>
-              <th>⚡ Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for client in clients %}
-            <tr>
-              <td>{{ loop.index }}</td>
-              <td>
-                <span class="client-name-cell" onclick="viewClientData('{{ client[1] }}')">
-                  {{ client[1] }}
-                </span>
-              </td>
-              <td>
-                <span class="doc-badge">{{ client[4] }} doc{{ 's' if client[4] != 1 else '' }}</span>
-              </td>
-              <td class="date-cell">
-                {% if client[2] %}
-                  {{ client[2].strftime('%Y-%m-%d') if client[2].__class__.__name__ == 'datetime' else client[2][:10] }}
-                {% endif %}
-              </td>
-              <td class="date-cell">
-                {% if client[3] %}
-                  {{ client[3].strftime('%Y-%m-%d') if client[3].__class__.__name__ == 'datetime' else client[3][:10] }}
-                {% endif %}
-              </td>
-              <td>
-                <div class="action-cell">
-                  <button class="btn-edit" onclick="openEditModal('{{ client[0] }}', '{{ client[1] }}')">
-                    ✏️ Edit
-                  </button>
-                  <button class="btn-view" onclick="viewClientData('{{ client[1] }}')">
-                    👁️ View
-                  </button>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <div class="scroll-hint">← Swipe left/right to see more →</div>
+        <div class="table-wrapper">
+          <table class="clients-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>👤 Client Name</th>
+                <th>📄 Docs</th>
+                <th>📅 Created</th>
+                <th>🔄 Updated</th>
+                <th>⚡ Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for client in clients %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  <span class="client-name-cell" onclick="viewClientData('{{ client[1] }}')">
+                    {{ client[1] }}
+                  </span>
+                </td>
+                <td><span class="doc-badge">{{ client[4] }} doc{{ 's' if client[4] != 1 else '' }}</span></td>
+                <td class="date-cell">
+                  {% if client[2] %}
+                    {{ client[2].strftime('%Y-%m-%d') if client[2].__class__.__name__ == 'datetime' else client[2][:10] }}
+                  {% endif %}
+                </td>
+                <td class="date-cell">
+                  {% if client[3] %}
+                    {{ client[3].strftime('%Y-%m-%d') if client[3].__class__.__name__ == 'datetime' else client[3][:10] }}
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="action-cell">
+                    <button class="btn-edit" onclick="openEditModal('{{ client[0] }}', '{{ client[1] }}')">✏️ Edit</button>
+                    <button class="btn-view" onclick="viewClientData('{{ client[1] }}')">👁️ View</button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="scroll-hint">← Swipe to see more →</div>
       </div>
-
-    {% else %}
+      {% else %}
       <div class="empty-state">
-        <div style="font-size: 80px; margin-bottom: 20px; opacity: 0.5;">👥</div>
+        <div style="font-size: 60px; margin-bottom: 15px; opacity: 0.5;">👥</div>
         <h2>No Clients Yet</h2>
-        <p style="color: #666; margin: 15px 0;">
-          Sync your Google Drive to see all your clients.
-        </p>
-        <a href="/manual-sync" class="link" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
-          🔄 Sync Google Drive Now
+        <p style="color: #666; margin: 12px 0;">Sync your Google Drive to see clients.</p>
+        <a href="/manual-sync" class="link" style="display: inline-block; margin-top: 15px; padding: 12px 20px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+          🔄 Sync Google Drive
         </a>
       </div>
-    {% endif %}
+      {% endif %}
 
-    <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
-      <a href="/manual-sync" class="link" style="padding: 10px 20px; background: #667eea; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">🔄 Manual Sync</a>
-      <a href="/upload_page" class="link" style="padding: 10px 20px; background: #28a745; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📤 Upload Documents</a>
-      <a href="/dashboard" class="link" style="padding: 10px 20px; background: #17a2b8; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">📈 Dashboard</a>
+      <div class="action-links">
+        <a href="/manual-sync" class="link" style="background: #667eea; color: white;">🔄 Sync</a>
+        <a href="/upload_page" class="link" style="background: #28a745; color: white;">📤 Upload</a>
+        <a href="/dashboard" class="link" style="background: #17a2b8; color: white;">📈 Dashboard</a>
+      </div>
     </div>
   </div>
 
-  <!-- EDIT MODAL -->
+  <!-- Edit Modal -->
   <div class="edit-modal-overlay" id="editModal">
     <div class="edit-modal-box">
       <div class="edit-modal-header">
         <h2>✏️ Edit Client Documents</h2>
         <button class="edit-modal-close" onclick="closeEditModal()">✕</button>
       </div>
-
-      <div class="success-msg" id="successMsg">✅ Documents updated successfully!</div>
-
+      <div class="success-msg" id="successMsg">✅ Documents updated!</div>
       <form id="editDocForm" onsubmit="saveDocuments(event)">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="client_id" id="clientIdField">
-
-        <div class="doc-types-grid" id="docTypesGrid">
-          <!-- Will be populated by JavaScript -->
-        </div>
-
+        <div class="doc-types-grid" id="docTypesGrid"></div>
         <div class="modal-actions">
           <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">Cancel</button>
           <button type="submit" class="btn-modal-save">Save Changes</button>
@@ -619,21 +601,18 @@
       document.getElementById('clientIdField').value = clientId;
       selectedFiles = {};
       
-      fetch(`/api/client/${clientId}/documents`)
-        .then(response => response.json())
+      fetch('/api/client/' + clientId + '/documents')
+        .then(r => r.json())
         .then(data => {
           if (data.success) {
             renderDocumentTypes(data.documents);
             document.getElementById('editModal').classList.add('active');
             document.body.style.overflow = 'hidden';
           } else {
-            alert('❌ Error: ' + data.error);
+            alert('Error: ' + data.error);
           }
         })
-        .catch(error => {
-          alert('❌ Error loading documents: ' + error.message);
-          console.error(error);
-        });
+        .catch(err => alert('Error loading documents'));
     }
 
     function closeEditModal() {
@@ -641,6 +620,7 @@
       document.body.style.overflow = '';
       selectedFiles = {};
       document.getElementById('editDocForm').reset();
+      document.getElementById('successMsg').classList.remove('show');
     }
 
     function renderDocumentTypes(documents) {
@@ -665,13 +645,11 @@
           <div class="doc-type-status ${hasDoc ? 'status-exists' : 'status-empty'}">
             ${hasDoc ? '✅ Exists' : '⚠️ Empty'}
           </div>
-          <div class="file-input-wrapper">
-            <input type="file" id="file_${doc.key}" accept="image/*,application/pdf" 
-                   onchange="selectFile('${doc.key}', this)">
-            <button type="button" class="btn-upload-file" onclick="document.getElementById('file_${doc.key}').click()">
-              📤 ${hasDoc ? 'Replace' : 'Upload'}
-            </button>
-          </div>
+          <input type="file" id="file_${doc.key}" accept="image/*,application/pdf" 
+            onchange="selectFile('${doc.key}', this)" style="display:none;">
+          <button type="button" class="btn-upload-file" onclick="document.getElementById('file_${doc.key}').click()">
+            📤 ${hasDoc ? 'Replace' : 'Upload'}
+          </button>
           ${hasDoc ? `<button type="button" class="btn-remove-file show" onclick="removeFile('${doc.key}')">🗑️ Remove</button>` : ''}
         `;
         grid.appendChild(card);
@@ -681,15 +659,12 @@
     function selectFile(docType, input) {
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        
         if (file.size > 10 * 1024 * 1024) {
-          alert('❌ File too large! Max 10MB.');
+          alert('File too large! Max 10MB.');
           input.value = '';
           return;
         }
-
         selectedFiles[docType] = file;
-        
         const card = input.closest('.doc-type-card');
         const status = card.querySelector('.doc-type-status');
         status.textContent = '📄 Ready to upload';
@@ -702,10 +677,12 @@
         selectedFiles[docType] = 'DELETE';
         const cards = document.querySelectorAll('.doc-type-card');
         cards.forEach(card => {
-          if (card.querySelector(`#file_${docType}`)) {
+          if (card.querySelector('#file_' + docType) || card.innerHTML.includes('file_' + docType)) {
             const status = card.querySelector('.doc-type-status');
-            status.textContent = '🗑️ Will remove';
-            status.className = 'doc-type-status status-empty';
+            if (status) {
+              status.textContent = '🗑️ Will remove';
+              status.className = 'doc-type-status status-empty';
+            }
           }
         });
       }
@@ -713,15 +690,14 @@
 
     async function saveDocuments(e) {
       e.preventDefault();
-
       if (Object.keys(selectedFiles).length === 0) {
-        alert('⚠️ Select at least one document.');
+        alert('Select at least one document to update.');
         return;
       }
 
       const saveBtn = e.target.querySelector('[type="submit"]');
       saveBtn.disabled = true;
-      saveBtn.textContent = '⏳ Saving...';
+      saveBtn.textContent = 'Saving...';
 
       const clientId = document.getElementById('clientIdField').value;
       const formData = new FormData();
@@ -729,66 +705,43 @@
 
       Object.keys(selectedFiles).forEach(docType => {
         if (selectedFiles[docType] === 'DELETE') {
-          formData.append(`delete_${docType}`, 'true');
+          formData.append('delete_' + docType, 'true');
         } else if (selectedFiles[docType] instanceof File) {
           formData.append(docType, selectedFiles[docType]);
         }
       });
 
       try {
-        const response = await fetch(`/api/client/${clientId}/update-documents`, {
+        const response = await fetch('/api/client/' + clientId + '/update-documents', {
           method: 'POST',
           body: formData
         });
-
         const data = await response.json();
-
         if (data.success) {
           document.getElementById('successMsg').classList.add('show');
-          setTimeout(() => {
-            closeEditModal();
-            location.reload();
-          }, 1500);
+          setTimeout(() => { closeEditModal(); location.reload(); }, 1200);
         } else {
-          alert('❌ Error: ' + data.error);
+          alert('Error: ' + data.error);
         }
-      } catch (error) {
-        alert('❌ Error: ' + error.message);
+      } catch (err) {
+        alert('Error: ' + err.message);
       } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Changes';
       }
     }
 
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeEditModal();
-    });
-
-    document.getElementById('editModal').addEventListener('click', e => {
-      if (e.target.id === 'editModal') closeEditModal();
-    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditModal(); });
+    document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
 
     function viewClientData(clientName) {
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
-      
-      const csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'csrf_token';
-      csrfInput.value = '{{ csrf_token() }}';
-      form.appendChild(csrfInput);
-      
-      const nameInput = document.createElement('input');
-      nameInput.type = 'hidden';
-      nameInput.name = 'name';
-      nameInput.value = clientName;
-      form.appendChild(nameInput);
-      
+      form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="' + clientName + '">';
       document.body.appendChild(form);
       form.submit();
     }
   </script>
-
 </body>
 </html>

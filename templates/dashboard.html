@@ -11,11 +11,11 @@
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(10px);
-      padding: 15px 30px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 999;
+      padding: 12px 25px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -28,7 +28,7 @@
     }
 
     .navbar-logo {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
@@ -38,65 +38,37 @@
 
     .navbar-links {
       display: flex;
-      gap: 15px;
+      gap: 10px;
     }
 
     .navbar-link {
-      padding: 8px 15px;
-      color: #333;
+      padding: 8px 14px;
+      color: #555;
       text-decoration: none;
       border-radius: 8px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       transition: all 0.3s ease;
     }
 
     .navbar-link:hover {
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
       color: #667eea;
     }
 
     .navbar-right {
       display: flex;
-      gap: 15px;
+      gap: 12px;
       align-items: center;
     }
 
     .navbar-user {
-      padding: 8px 15px;
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      padding: 8px 14px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #667eea;
-    }
-
-    .quick-search-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-    }
-
-    .quick-search-trigger {
-      padding: 12px 20px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border: 2px solid #667eea;
-      border-radius: 25px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      color: #667eea;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-
-    .quick-search-trigger:hover {
-      background: #667eea;
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
     .content-wrapper {
@@ -111,10 +83,10 @@
     }
     
     .stat-card-large {
-      padding: 30px;
+      padding: 25px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border-radius: 20px;
+      border-radius: 16px;
       box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
       transition: all 0.3s ease;
       text-align: center;
@@ -126,66 +98,36 @@
     }
     
     .stat-icon {
-      font-size: 48px;
-      margin-bottom: 15px;
+      font-size: 40px;
+      margin-bottom: 12px;
     }
     
     .stat-value {
-      font-size: 42px;
+      font-size: 36px;
       font-weight: 700;
       margin-bottom: 5px;
     }
     
     .stat-label {
-      font-size: 16px;
+      font-size: 14px;
       opacity: 0.9;
     }
     
     .section-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       color: #333;
-      margin: 40px 0 20px;
+      margin: 35px 0 18px;
       display: flex;
       align-items: center;
       gap: 10px;
-    }
-    
-    .activity-list {
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .activity-item {
-      padding: 15px;
-      border-left: 4px solid #667eea;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-    
-    .activity-user {
-      font-weight: 600;
-      color: #667eea;
-    }
-    
-    .activity-action {
-      color: #333;
-      margin: 5px 0;
-    }
-    
-    .activity-time {
-      font-size: 12px;
-      color: #999;
     }
     
     .chart-container {
       background: white;
       border-radius: 15px;
       padding: 25px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
       margin: 20px 0;
     }
     
@@ -196,16 +138,17 @@
     }
     
     .doc-type-label {
-      min-width: 120px;
+      min-width: 110px;
       font-weight: 600;
       color: #333;
+      font-size: 14px;
     }
     
     .doc-type-progress {
       flex: 1;
-      height: 30px;
-      background: #e0e0e0;
-      border-radius: 15px;
+      height: 28px;
+      background: #e9ecef;
+      border-radius: 14px;
       overflow: hidden;
       margin: 0 15px;
     }
@@ -219,45 +162,193 @@
       justify-content: center;
       color: white;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 12px;
+      min-width: 30px;
     }
     
     .recent-clients-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 15px;
-      margin-top: 20px;
+      margin-top: 18px;
     }
     
     .recent-client-card {
       background: white;
       border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      padding: 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
       transition: all 0.3s ease;
       cursor: pointer;
+      border: 1px solid #eee;
     }
     
     .recent-client-card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      border-color: #667eea;
     }
     
     .recent-client-name {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: #667eea;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     
     .recent-client-meta {
-      font-size: 13px;
+      font-size: 12px;
       color: #666;
       display: flex;
       justify-content: space-between;
     }
 
-    /* MOBILE RESPONSIVE */
+    .activity-list {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    .activity-item {
+      padding: 14px;
+      border-left: 4px solid #667eea;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .activity-user {
+      font-weight: 600;
+      color: #667eea;
+      font-size: 14px;
+    }
+    
+    .activity-action {
+      color: #333;
+      margin: 4px 0;
+      font-size: 13px;
+    }
+    
+    .activity-time {
+      font-size: 11px;
+      color: #999;
+    }
+
+    /* Quick Search */
+    .quick-search-container {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      z-index: 999;
+    }
+
+    .quick-search-trigger {
+      padding: 14px 22px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .quick-search-trigger:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+    }
+
+    .quick-search-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 2000;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 100px 20px 20px;
+    }
+
+    .quick-search-modal.active {
+      display: flex;
+    }
+
+    .quick-search-box {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 550px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .quick-search-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .quick-search-input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .quick-search-input:focus {
+      border-color: #667eea;
+    }
+
+    .quick-search-results {
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    .quick-search-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .quick-search-item:hover {
+      background: #f8f9fa;
+    }
+
+    .quick-search-item-name {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .quick-search-item-meta {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .quick-search-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #999;
+    }
+
+    .quick-search-empty-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    /* Mobile Responsive */
     @media (max-width: 1200px) {
       .dashboard-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -267,8 +358,8 @@
     @media (max-width: 768px) {
       .navbar {
         flex-direction: column;
-        gap: 12px;
-        padding: 12px 15px;
+        gap: 10px;
+        padding: 10px 15px;
       }
 
       .navbar-left {
@@ -280,146 +371,92 @@
       .navbar-links {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 8px;
-        width: 100%;
+        gap: 6px;
       }
 
       .navbar-link {
-        padding: 6px 12px;
-        font-size: 12px;
+        padding: 6px 10px;
+        font-size: 11px;
       }
 
       .navbar-right {
         width: 100%;
-        justify-content: space-between;
+        justify-content: center;
       }
 
       .navbar-user {
-        font-size: 12px;
-        padding: 6px 12px;
+        font-size: 11px;
+        padding: 6px 10px;
+      }
+
+      .content-wrapper {
+        padding-top: 130px !important;
       }
       
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin: 20px 0;
+      }
+
+      .stat-card-large {
+        padding: 18px;
+      }
+
+      .stat-icon { font-size: 32px; }
+      .stat-value { font-size: 28px; }
+      .stat-label { font-size: 12px; }
+
+      .section-title {
+        font-size: 18px;
+        margin: 25px 0 12px;
+      }
+
+      .chart-container { padding: 15px; }
+
+      .doc-type-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .doc-type-label {
+        width: 100%;
+        margin-bottom: 6px;
+      }
+
+      .doc-type-progress {
+        width: 100%;
+        margin: 0;
+      }
+
+      .recent-clients-grid {
+        grid-template-columns: 1fr;
+      }
+
       .quick-search-container {
         bottom: 15px;
         right: 15px;
       }
 
       .quick-search-trigger {
-        padding: 10px 16px;
-        font-size: 12px;
-      }
-      
-      .dashboard-grid {
-        grid-template-columns: 1fr !important;
-        gap: 15px !important;
-        margin: 20px 0 !important;
-      }
-
-      .stat-card-large {
-        padding: 20px !important;
-      }
-
-      .stat-icon {
-        font-size: 36px !important;
-      }
-
-      .stat-value {
-        font-size: 32px !important;
-      }
-
-      .stat-label {
-        font-size: 14px !important;
-      }
-
-      .content-wrapper {
-        padding-top: 140px !important;
-      }
-
-      .section-title {
-        font-size: 20px;
-        margin: 30px 0 15px;
-      }
-
-      .chart-container {
-        padding: 15px;
-      }
-
-      .doc-type-bar {
-        flex-direction: column;
-        align-items: flex-start;
-        margin: 12px 0;
-      }
-
-      .doc-type-label {
-        width: 100%;
-        margin-bottom: 8px;
+        padding: 12px 18px;
         font-size: 13px;
       }
 
-      .doc-type-progress {
-        width: 100%;
-        margin: 0 0 5px 0;
-      }
-
-      .doc-type-fill {
-        font-size: 12px;
-      }
-
-      .recent-clients-grid {
-        grid-template-columns: 1fr !important;
-        gap: 12px;
-      }
-
-      .recent-client-card {
-        padding: 15px;
-      }
-
-      .recent-client-name {
-        font-size: 16px;
-      }
-
-      .recent-client-meta {
-        font-size: 12px;
-      }
-
-      .activity-item {
-        padding: 12px;
-        font-size: 13px;
-      }
-
-      .activity-time {
-        font-size: 11px;
+      .quick-search-modal {
+        padding: 80px 15px 15px;
       }
     }
 
     @media (max-width: 480px) {
       .content-wrapper {
-        padding-top: 160px !important;
+        padding-top: 150px !important;
       }
 
-      .stat-card-large {
-        padding: 15px !important;
-      }
+      h1 { font-size: 22px !important; }
 
-      .stat-icon {
-        font-size: 28px !important;
-      }
-
-      .stat-value {
-        font-size: 24px !important;
-      }
-
-      .stat-label {
-        font-size: 12px !important;
-      }
-
-      h1 {
-        font-size: 22px !important;
-      }
-
-      .section-title {
-        font-size: 18px;
-      }
+      .stat-icon { font-size: 26px; }
+      .stat-value { font-size: 22px; }
     }
   </style>
 </head>
@@ -432,10 +469,14 @@
         <a href="/upload_page" class="navbar-link">📤 Upload</a>
         <a href="/fetch" class="navbar-link">🔍 Search</a>
         <a href="/clients" class="navbar-link">👥 Clients</a>
+        {% if session.get('role') == 'admin' %}
+        <a href="/admin/dashboard" class="navbar-link">⚙️ Admin</a>
+        {% endif %}
       </div>
     </div>
     <div class="navbar-right">
       <div class="navbar-user">👤 {{ session.username }}</div>
+      <a href="/change_password" class="navbar-link">🔑</a>
       <a href="/logout" class="navbar-link">🚪 Logout</a>
     </div>
   </nav>
@@ -449,14 +490,8 @@
   <div class="quick-search-modal" id="quickSearchModal" onclick="closeQuickSearch(event)">
     <div class="quick-search-box" onclick="event.stopPropagation()">
       <div class="quick-search-header">
-        <input 
-          type="text" 
-          class="quick-search-input" 
-          id="quickSearchInput"
-          placeholder="🔎 Search clients by name..."
-          oninput="performQuickSearch()"
-          autofocus
-        >
+        <input type="text" class="quick-search-input" id="quickSearchInput"
+          placeholder="Search clients by name..." oninput="performQuickSearch()" autofocus>
       </div>
       <div class="quick-search-results" id="quickSearchResults">
         <div class="quick-search-empty">
@@ -468,7 +503,7 @@
   </div>
 
   <div class="content-wrapper">
-    <div class="container" style="max-width: 1400px;">
+    <div class="container" style="max-width: 1300px;">
       <h1>📈 Dashboard</h1>
       <p style="color: #666; margin-top: -10px;">Overview of your LIC document management system</p>
 
@@ -493,7 +528,7 @@
 
         <div class="stat-card-large" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
           <div class="stat-icon">📊</div>
-          <div class="stat-value">{{ ((stats.total_docs / (stats.total_clients * 4) * 100) if stats.total_clients > 0 else 0)|round(1) }}%</div>
+          <div class="stat-value">{{ ((stats.total_docs / (stats.total_clients * 4) * 100) if stats.total_clients and stats.total_clients > 0 else 0)|round(1) }}%</div>
           <div class="stat-label">Completion Rate</div>
         </div>
       </div>
@@ -511,19 +546,14 @@
                 {% endif %}
               </div>
               <div class="doc-type-progress">
-                <div class="doc-type-fill" data-width="{{ ((count / stats.total_docs * 100) if stats.total_docs > 0 else 0)|round(1) }}">
+                <div class="doc-type-fill" style="width: '{{ ((count / stats.total_docs * 100) if stats.total_docs and stats.total_docs > 0 else 0)|round(1) }}%'">
                   {{ count }}
                 </div>
               </div>
             </div>
           {% endfor %}
-          <script>
-            document.querySelectorAll('.doc-type-fill').forEach(el => {
-              el.style.width = el.getAttribute('data-width') + '%';
-            });
-          </script>
         {% else %}
-          <p style="text-align: center; color: #999; padding: 20px;">No document data available</p>
+          <p style="text-align: center; color: #999; padding: 20px;">No document data available yet</p>
         {% endif %}
       </div>
 
@@ -535,12 +565,14 @@
               <div class="recent-client-name">{{ client[0] }}</div>
               <div class="recent-client-meta">
                 <span>📄 {{ client[2] }} documents</span>
-                <span>📅 {{ client[1][:10] }}</span>
+                <span>📅 {{ client[1][:10] if client[1] else 'N/A' }}</span>
               </div>
             </div>
           {% endfor %}
         {% else %}
-          <p style="text-align: center; color: #999; padding: 40px; grid-column: 1/-1;">No clients yet. Start by uploading documents!</p>
+          <p style="text-align: center; color: #999; padding: 40px; grid-column: 1/-1;">
+            No clients yet. Start by uploading documents!
+          </p>
         {% endif %}
       </div>
 
@@ -565,23 +597,16 @@
     let searchTimeout;
 
     function openQuickSearch() {
-      const modal = document.getElementById('quickSearchModal');
-      modal.classList.add('active');
+      document.getElementById('quickSearchModal').classList.add('active');
       document.getElementById('quickSearchInput').focus();
       document.body.style.overflow = 'hidden';
     }
 
     function closeQuickSearch(event) {
       if (event && event.target.id !== 'quickSearchModal') return;
-      const modal = document.getElementById('quickSearchModal');
-      modal.classList.remove('active');
+      document.getElementById('quickSearchModal').classList.remove('active');
       document.getElementById('quickSearchInput').value = '';
-      document.getElementById('quickSearchResults').innerHTML = `
-        <div class="quick-search-empty">
-          <div class="quick-search-empty-icon">🔍</div>
-          <p>Start typing to search clients...</p>
-        </div>
-      `;
+      document.getElementById('quickSearchResults').innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">🔍</div><p>Start typing to search clients...</p></div>';
       document.body.style.overflow = '';
     }
 
@@ -590,59 +615,29 @@
       const resultsContainer = document.getElementById('quickSearchResults');
 
       if (query.length < 2) {
-        resultsContainer.innerHTML = `
-          <div class="quick-search-empty">
-            <div class="quick-search-empty-icon">🔍</div>
-            <p>Type at least 2 characters to search...</p>
-          </div>
-        `;
+        resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">🔍</div><p>Type at least 2 characters...</p></div>';
         return;
       }
 
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        resultsContainer.innerHTML = `
-          <div class="quick-search-empty">
-            <div class="quick-search-empty-icon">⏳</div>
-            <p>Searching...</p>
-          </div>
-        `;
+        resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">⏳</div><p>Searching...</p></div>';
 
-        fetch(`/api/quick_search?q=${encodeURIComponent(query)}`)
-          .then(response => response.json())
+        fetch('/api/quick_search?q=' + encodeURIComponent(query))
+          .then(r => r.json())
           .then(data => {
             if (data.results && data.results.length > 0) {
               let html = '';
-              data.results.forEach(result => {
-                html += `
-                  <div class="quick-search-item" onclick="selectClient('${result.name}')">
-                    <div>
-                      <div class="quick-search-item-name">${result.name}</div>
-                      <div class="quick-search-item-meta">
-                        📄 ${result.doc_count} documents • 📅 ${result.updated_at}
-                      </div>
-                    </div>
-                    <div style="color: #667eea; font-size: 20px;">↗</div>
-                  </div>
-                `;
+              data.results.forEach(r => {
+                html += '<div class="quick-search-item" onclick="selectClient(\'' + r.name.replace(/'/g, "\\'") + '\')"><div><div class="quick-search-item-name">' + r.name + '</div><div class="quick-search-item-meta">📄 ' + r.doc_count + ' docs • 📅 ' + r.updated_at + '</div></div><div style="color:#667eea;font-size:18px;">→</div></div>';
               });
               resultsContainer.innerHTML = html;
             } else {
-              resultsContainer.innerHTML = `
-                <div class="quick-search-empty">
-                  <div class="quick-search-empty-icon">😕</div>
-                  <p>No clients found matching "${query}"</p>
-                </div>
-              `;
+              resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">😕</div><p>No clients found</p></div>';
             }
           })
-          .catch(error => {
-            resultsContainer.innerHTML = `
-              <div class="quick-search-empty">
-                <div class="quick-search-empty-icon">❌</div>
-                <p>Error: ${error.message}</p>
-              </div>
-            `;
+          .catch(err => {
+            resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">❌</div><p>Error searching</p></div>';
           });
       }, 300);
     }
@@ -651,42 +646,13 @@
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
-      
-      const csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'csrf_token';
-      csrfInput.value = '{{ csrf_token() }}';
-      form.appendChild(csrfInput);
-      
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'name';
-      input.value = name;
-      form.appendChild(input);
-      
+      form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="' + name + '">';
       document.body.appendChild(form);
       form.submit();
     }
 
     function viewClient(name) {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/fetch_data';
-      
-      const csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'csrf_token';
-      csrfInput.value = '{{ csrf_token() }}';
-      form.appendChild(csrfInput);
-      
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'name';
-      input.value = name;
-      form.appendChild(input);
-      
-      document.body.appendChild(form);
-      form.submit();
+      selectClient(name);
     }
 
     document.addEventListener('keydown', function(e) {
@@ -694,7 +660,6 @@
         e.preventDefault();
         openQuickSearch();
       }
-      
       if (e.key === 'Escape') {
         closeQuickSearch({ target: { id: 'quickSearchModal' } });
       }

@@ -6,358 +6,497 @@
   <title>Fetch Client Documents | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      padding: 12px 25px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar-left { display: flex; gap: 20px; align-items: center; }
+
+    .navbar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .navbar-links { display: flex; gap: 10px; }
+
+    .navbar-link {
+      padding: 8px 14px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-link:hover {
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      color: #667eea;
+    }
+
+    .navbar-right { display: flex; gap: 12px; align-items: center; }
+
+    .navbar-user {
+      padding: 8px 14px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .content-wrapper { padding-top: 80px; }
+
     .client-info-card {
       margin: 25px 0;
-      padding: 25px;
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-      border-radius: 20px;
+      padding: 22px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%);
+      border-radius: 16px;
       border-left: 5px solid #667eea;
     }
     
     .client-info-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
       margin-top: 15px;
     }
     
     .info-badge {
-      padding: 15px;
+      padding: 14px;
       background: white;
-      border-radius: 12px;
+      border-radius: 10px;
       text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .info-badge strong {
       display: block;
       color: #667eea;
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
       margin-bottom: 5px;
     }
     
     .info-badge span {
       color: #333;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 500;
-    }
-    
-    .documents-section {
-      margin: 30px 0;
     }
     
     .doc-grid-view {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
       margin-top: 20px;
     }
     
     .doc-item {
       background: white;
-      border-radius: 20px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
       transition: all 0.3s ease;
+      border: 1px solid #eee;
     }
     
     .doc-item:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      transform: translateY(-6px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
     }
     
     .doc-image {
       width: 100%;
-      height: 200px;
+      height: 180px;
       object-fit: cover;
       cursor: pointer;
       background: #f8f9fa;
       display: block;
     }
     
-    .doc-content {
-      padding: 20px;
-    }
+    .doc-content { padding: 18px; }
     
     .doc-type-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
     
     .doc-type-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: #333;
     }
     
-    .doc-type-icon {
-      font-size: 24px;
-    }
+    .doc-type-icon { font-size: 22px; }
     
     .doc-meta {
-      font-size: 13px;
+      font-size: 12px;
       color: #666;
-      margin: 5px 0;
+      margin: 4px 0;
     }
     
     .doc-actions {
       display: flex;
       gap: 8px;
-      margin-top: 15px;
+      margin-top: 14px;
     }
     
-    .doc-actions button {
+    .doc-actions button, .doc-actions .download-btn {
       flex: 1;
       padding: 10px;
       font-size: 13px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .download-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+      width: 100%;
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background: #c82333;
     }
     
     .empty-doc {
       text-align: center;
-      padding: 40px 20px;
+      padding: 35px 15px;
       background: #f8f9fa;
-      border-radius: 15px;
+      border-radius: 12px;
       color: #999;
     }
     
     .empty-doc-icon {
-      font-size: 48px;
+      font-size: 42px;
       margin-bottom: 10px;
     }
     
     .client-actions {
       margin: 25px 0;
-      padding: 20px;
+      padding: 18px;
       background: linear-gradient(135deg, #fff5f5 0%, #ffe9e9 100%);
-      border-radius: 15px;
+      border-radius: 14px;
       border-left: 5px solid #dc3545;
     }
     
     .danger-zone-title {
       color: #dc3545;
       font-weight: 700;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+    }
+
+    .search-container {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-container input {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .search-container input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 15px;
+      }
+
+      .navbar-left {
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .navbar-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .navbar-link { padding: 6px 10px; font-size: 11px; }
+
+      .navbar-right { width: 100%; justify-content: center; }
+
+      .content-wrapper { padding-top: 130px; }
+
+      .client-info-grid { grid-template-columns: repeat(2, 1fr); }
+
+      .doc-grid-view { grid-template-columns: 1fr; }
+
+      .doc-image { height: 150px; }
+    }
+
+    @media (max-width: 480px) {
+      .content-wrapper { padding-top: 150px; }
+      .client-info-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container" style="max-width: 1100px;">
-    <h1>🔍 Fetch Client Documents</h1>
-    
-    <form action="/fetch_data" method="POST" id="fetchForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="search-container">
-        <input 
-          type="text" 
-          name="name" 
-          id="clientName"
-          placeholder="🔎 Enter client name to search..." 
-          required
-          autocomplete="off"
-          style="padding-left: 20px;"
-        >
+  <nav class="navbar">
+    <div class="navbar-left">
+      <div class="navbar-logo">📊 LIC Manager</div>
+      <div class="navbar-links">
+        <a href="/dashboard" class="navbar-link">📈 Dashboard</a>
+        <a href="/upload_page" class="navbar-link">📤 Upload</a>
+        <a href="/fetch" class="navbar-link">🔍 Search</a>
+        <a href="/clients" class="navbar-link">👥 Clients</a>
       </div>
-      <button type="submit" id="fetchBtn">
-        <span id="btnText">🔍 Search Documents</span>
-      </button>
-    </form>
+    </div>
+    <div class="navbar-right">
+      <div class="navbar-user">👤 {{ session.username }}</div>
+      <a href="/logout" class="navbar-link">🚪 Logout</a>
+    </div>
+  </nav>
 
-    {% if client %}
-      <div class="client-info-card">
-        <h3 style="margin-top: 0; color: #333;">👤 Client Information: <span style="color: #667eea;">{{ client.name }}</span></h3>
-        
-        <div class="client-info-grid">
-          <div class="info-badge">
-            <strong>📄 Total Documents</strong>
-            <span>{{ client.documents|length }}</span>
-          </div>
-          <div class="info-badge">
-            <strong>📅 Created On</strong>
-            <span>{% if client.created_at.__class__.__name__ == 'datetime' %}{{ client.created_at.strftime('%Y-%m-%d') }}{% else %}{{ client.created_at[:10] }}{% endif %}</span>
-          </div>
-          <div class="info-badge">
-            <strong>⏰ Last Updated</strong>
-            <span>{% if client.updated_at.__class__.__name__ == 'datetime' %}{{ client.updated_at.strftime('%Y-%m-%d') }}{% else %}{{ client.updated_at[:10] }}{% endif %}</span>
-          </div>
-          <div class="info-badge">
-            <strong>🆔 Folder ID</strong>
-            <span style="font-size: 11px; word-break: break-all;">{{ client.folder_id[:20] }}...</span>
-          </div>
+  <div class="content-wrapper">
+    <div class="container" style="max-width: 1000px;">
+      <h1>🔍 Fetch Client Documents</h1>
+      
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      
+      <form action="/fetch_data" method="POST" id="fetchForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="search-container">
+          <input type="text" name="name" id="clientName" placeholder="🔎 Enter client name to search..." 
+            required autocomplete="off">
         </div>
-      </div>
-
-      <div class="documents-section">
-        <h3 style="color: #333;">📄 Uploaded Documents</h3>
-        
-        <div class="doc-grid-view">
-          {% if client.documents.datasheet %}
-          <div class="doc-item">
-            <img src="{{ client.documents.datasheet.image_url }}" 
-                 alt="Datasheet" 
-                 class="doc-image"
-                 onclick="window.open(this.src, '_blank')"
-                 title="Click to view in new tab">
-            <div class="doc-content">
-              <div class="doc-type-header">
-                <span class="doc-type-title">📊 Datasheet</span>
-                <span class="doc-type-icon">📄</span>
-              </div>
-              <div class="doc-meta">📄 {{ client.documents.datasheet.file_name }}</div>
-              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.datasheet.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏱ {{ client.documents.datasheet.upload_time }}</div>
-              <div class="doc-actions">
-                <form action="/download_document" method="POST" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="file_id" value="{{ client.documents.datasheet.file_id }}">
-                  <button type="submit" class="download-btn">⬇️ Download</button>
-                </form>
-              </div>
-            </div>
-          </div>
-          {% else %}
-          <div class="doc-item">
-            <div class="empty-doc">
-              <div class="empty-doc-icon">📊</div>
-              <p><strong>Datasheet</strong><br>Not uploaded</p>
-            </div>
-          </div>
-          {% endif %}
-
-          {% if client.documents.aadhaar %}
-          <div class="doc-item">
-            <img src="{{ client.documents.aadhaar.image_url }}" 
-                 alt="Aadhaar" 
-                 class="doc-image"
-                 onclick="window.open(this.src, '_blank')">
-            <div class="doc-content">
-              <div class="doc-type-header">
-                <span class="doc-type-title">🪪 Aadhaar Card</span>
-                <span class="doc-type-icon">🆔</span>
-              </div>
-              <div class="doc-meta">📄 {{ client.documents.aadhaar.file_name }}</div>
-              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.aadhaar.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏱ {{ client.documents.aadhaar.upload_time }}</div>
-              <div class="doc-actions">
-                <form action="/download_document" method="POST" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="file_id" value="{{ client.documents.aadhaar.file_id }}">
-                  <button type="submit" class="download-btn">⬇️</button>
-                </form>
-                <button onclick="deleteDocument('{{ client.documents.aadhaar.file_id }}', 'Aadhaar')" class="delete-btn">🗑️</button>
-              </div>
-            </div>
-          </div>
-          {% else %}
-          <div class="doc-item">
-            <div class="empty-doc">
-              <div class="empty-doc-icon">🪪</div>
-              <p><strong>Aadhaar Card</strong><br>Not uploaded</p>
-            </div>
-          </div>
-          {% endif %}
-
-          {% if client.documents.pan %}
-          <div class="doc-item">
-            <img src="{{ client.documents.pan.image_url }}" 
-                 alt="PAN Card" 
-                 class="doc-image"
-                 onclick="window.open(this.src, '_blank')">
-            <div class="doc-content">
-              <div class="doc-type-header">
-                <span class="doc-type-title">💳 PAN Card</span>
-                <span class="doc-type-icon">🎴</span>
-              </div>
-              <div class="doc-meta">📄 {{ client.documents.pan.file_name }}</div>
-              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.pan.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏱ {{ client.documents.pan.upload_time }}</div>
-              <div class="doc-actions">
-                <form action="/download_document" method="POST" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="file_id" value="{{ client.documents.pan.file_id }}">
-                  <button type="submit" class="download-btn">⬇️</button>
-                </form>
-                <button onclick="deleteDocument('{{ client.documents.pan.file_id }}', 'PAN')" class="delete-btn">🗑️</button>
-              </div>
-            </div>
-          </div>
-          {% else %}
-          <div class="doc-item">
-            <div class="empty-doc">
-              <div class="empty-doc-icon">💳</div>
-              <p><strong>PAN Card</strong><br>Not uploaded</p>
-            </div>
-          </div>
-          {% endif %}
-
-          {% if client.documents.bank_account %}
-          <div class="doc-item">
-            <img src="{{ client.documents.bank_account.image_url }}" 
-                 alt="Bank Account" 
-                 class="doc-image"
-                 onclick="window.open(this.src, '_blank')">
-            <div class="doc-content">
-              <div class="doc-type-header">
-                <span class="doc-type-title">🏦 Bank Account</span>
-                <span class="doc-type-icon">💰</span>
-              </div>
-              <div class="doc-meta">📄 {{ client.documents.bank_account.file_name }}</div>
-              <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.bank_account.file_size / (1024*1024)) }} MB</div>
-              <div class="doc-meta">⏱ {{ client.documents.bank_account.upload_time }}</div>
-              <div class="doc-actions">
-                <form action="/download_document" method="POST" style="flex: 1;">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="file_id" value="{{ client.documents.bank_account.file_id }}">
-                  <button type="submit" class="download-btn">⬇️</button>
-                </form>
-                <button onclick="deleteDocument('{{ client.documents.bank_account.file_id }}', 'Bank Account')" class="delete-btn">🗑️</button>
-              </div>
-            </div>
-          </div>
-          {% else %}
-          <div class="doc-item">
-            <div class="empty-doc">
-              <div class="empty-doc-icon">🏦</div>
-              <p><strong>Bank Account</strong><br>Not uploaded</p>
-            </div>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="client-actions">
-        <div class="danger-zone-title">⚠️ Danger Zone</div>
-        <p style="margin: 10px 0; color: #666; font-size: 14px;">
-          Deleting this client will permanently remove all documents and cannot be undone.
-        </p>
-        <button onclick="deleteClient('{{ client.name }}')" class="delete-btn">
-          🗑️ Delete Entire Client & All Documents
+        <button type="submit" id="fetchBtn">
+          <span id="btnText">🔍 Search Documents</span>
         </button>
-      </div>
+      </form>
 
-    {% elif not_found %}
-      <div class="error">
-        <div style="text-align: center; padding: 40px 20px;">
-          <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.5;">📂</div>
+      {% if client %}
+        <div class="client-info-card">
+          <h3 style="margin-top: 0; color: #333;">👤 Client: <span style="color: #667eea;">{{ client.name }}</span></h3>
+          
+          <div class="client-info-grid">
+            <div class="info-badge">
+              <strong>📄 Documents</strong>
+              <span>{{ client.documents|length }}</span>
+            </div>
+            <div class="info-badge">
+              <strong>📅 Created</strong>
+              <span>{{ client.created_at[:10] if client.created_at else 'N/A' }}</span>
+            </div>
+            <div class="info-badge">
+              <strong>🕐 Updated</strong>
+              <span>{{ client.updated_at[:10] if client.updated_at else 'N/A' }}</span>
+            </div>
+            <div class="info-badge">
+              <strong>🆔 Folder ID</strong>
+              <span style="font-size: 10px; word-break: break-all;">{{ client.folder_id[:18] }}...</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="documents-section">
+          <h3 style="color: #333;">📄 Uploaded Documents</h3>
+          
+          <div class="doc-grid-view">
+            {% if client.documents.datasheet %}
+            <div class="doc-item">
+              <img src="{{ client.documents.datasheet.image_url }}" alt="Datasheet" class="doc-image"
+                onclick="window.open(this.src, '_blank')" title="Click to view">
+              <div class="doc-content">
+                <div class="doc-type-header">
+                  <span class="doc-type-title">📊 Datasheet</span>
+                  <span class="doc-type-icon">📄</span>
+                </div>
+                <div class="doc-meta">📄 {{ client.documents.datasheet.file_name }}</div>
+                <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.datasheet.file_size / (1024*1024)) }} MB</div>
+                <div class="doc-actions">
+                  <form action="/download_document" method="POST" style="flex: 1;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="file_id" value="{{ client.documents.datasheet.file_id }}">
+                    <button type="submit" class="download-btn">⬇️ Download</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="doc-item">
+              <div class="empty-doc">
+                <div class="empty-doc-icon">📊</div>
+                <p><strong>Datasheet</strong><br>Not uploaded</p>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if client.documents.aadhaar %}
+            <div class="doc-item">
+              <img src="{{ client.documents.aadhaar.image_url }}" alt="Aadhaar" class="doc-image"
+                onclick="window.open(this.src, '_blank')">
+              <div class="doc-content">
+                <div class="doc-type-header">
+                  <span class="doc-type-title">🪪 Aadhaar</span>
+                  <span class="doc-type-icon">🆔</span>
+                </div>
+                <div class="doc-meta">📄 {{ client.documents.aadhaar.file_name }}</div>
+                <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.aadhaar.file_size / (1024*1024)) }} MB</div>
+                <div class="doc-actions">
+                  <form action="/download_document" method="POST" style="flex: 1;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="file_id" value="{{ client.documents.aadhaar.file_id }}">
+                    <button type="submit" class="download-btn">⬇️</button>
+                  </form>
+                  <button onclick="deleteDocument('{{ client.documents.aadhaar.file_id }}', 'Aadhaar')" class="delete-btn">🗑️</button>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="doc-item">
+              <div class="empty-doc">
+                <div class="empty-doc-icon">🪪</div>
+                <p><strong>Aadhaar</strong><br>Not uploaded</p>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if client.documents.pan %}
+            <div class="doc-item">
+              <img src="{{ client.documents.pan.image_url }}" alt="PAN" class="doc-image"
+                onclick="window.open(this.src, '_blank')">
+              <div class="doc-content">
+                <div class="doc-type-header">
+                  <span class="doc-type-title">💳 PAN Card</span>
+                  <span class="doc-type-icon">🎴</span>
+                </div>
+                <div class="doc-meta">📄 {{ client.documents.pan.file_name }}</div>
+                <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.pan.file_size / (1024*1024)) }} MB</div>
+                <div class="doc-actions">
+                  <form action="/download_document" method="POST" style="flex: 1;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="file_id" value="{{ client.documents.pan.file_id }}">
+                    <button type="submit" class="download-btn">⬇️</button>
+                  </form>
+                  <button onclick="deleteDocument('{{ client.documents.pan.file_id }}', 'PAN')" class="delete-btn">🗑️</button>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="doc-item">
+              <div class="empty-doc">
+                <div class="empty-doc-icon">💳</div>
+                <p><strong>PAN Card</strong><br>Not uploaded</p>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if client.documents.bank_account %}
+            <div class="doc-item">
+              <img src="{{ client.documents.bank_account.image_url }}" alt="Bank" class="doc-image"
+                onclick="window.open(this.src, '_blank')">
+              <div class="doc-content">
+                <div class="doc-type-header">
+                  <span class="doc-type-title">🏦 Bank Account</span>
+                  <span class="doc-type-icon">💰</span>
+                </div>
+                <div class="doc-meta">📄 {{ client.documents.bank_account.file_name }}</div>
+                <div class="doc-meta">💾 {{ "%.2f"|format(client.documents.bank_account.file_size / (1024*1024)) }} MB</div>
+                <div class="doc-actions">
+                  <form action="/download_document" method="POST" style="flex: 1;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="file_id" value="{{ client.documents.bank_account.file_id }}">
+                    <button type="submit" class="download-btn">⬇️</button>
+                  </form>
+                  <button onclick="deleteDocument('{{ client.documents.bank_account.file_id }}', 'Bank')" class="delete-btn">🗑️</button>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="doc-item">
+              <div class="empty-doc">
+                <div class="empty-doc-icon">🏦</div>
+                <p><strong>Bank Account</strong><br>Not uploaded</p>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="client-actions">
+          <div class="danger-zone-title">⚠️ Danger Zone</div>
+          <p style="margin: 8px 0; color: #666; font-size: 13px;">
+            Deleting this client will permanently remove all documents.
+          </p>
+          <button onclick="deleteClient('{{ client.name }}')" class="delete-btn" style="padding: 12px 20px;">
+            🗑️ Delete Entire Client
+          </button>
+        </div>
+
+      {% elif not_found %}
+        <div class="error" style="text-align: center; padding: 40px 20px;">
+          <div style="font-size: 50px; margin-bottom: 15px; opacity: 0.5;">📂</div>
           <h3>No Client Found</h3>
           <p>We couldn't find a client named '<strong>{{ name }}</strong>'</p>
-          <p style="margin-top: 15px; color: #666;">
-            💡 <strong>Suggestions:</strong><br>
-            • Check the spelling of the name<br>
-            • Try a different name<br>
-            • Upload documents first
+          <p style="margin-top: 12px; color: #666; font-size: 13px;">
+            Check the spelling or try a different name
           </p>
         </div>
+      {% endif %}
+
+      {% if error %}
+        <div class="error">Error: {{ error }}</div>
+      {% endif %}
+
+      <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/upload_page" class="link">📤 Upload Documents</a>
+        <a href="/clients" class="link">👥 View All Clients</a>
       </div>
-    {% endif %}
-
-    {% if error %}
-      <div class="error">❌ <strong>Error:</strong> {{ error }}</div>
-    {% endif %}
-
-    <a href="/" class="link">⬅️ Go Back to Upload</a>
-    <a href="/clients" class="link" style="margin-left: 10px;">👥 View All Clients</a>
+    </div>
   </div>
 
   <script>
@@ -367,62 +506,34 @@
 
     fetchForm.addEventListener('submit', function(e) {
       fetchBtn.disabled = true;
-      btnText.textContent = '🔎 Searching...';
+      btnText.textContent = 'Searching...';
       fetchBtn.style.opacity = '0.7';
     });
 
     function deleteDocument(fileId, docType) {
-      if (!confirm(`⚠️ Are you sure you want to delete ${docType}?\n\nThis action cannot be undone!`)) {
-        return;
-      }
+      if (!confirm('Delete ' + docType + '? This cannot be undone!')) return;
 
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/delete_document';
-      
-      const csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'csrf_token';
-      csrfInput.value = '{{ csrf_token() }}';
-      form.appendChild(csrfInput);
-      
-      const fileInput = document.createElement('input');
-      fileInput.type = 'hidden';
-      fileInput.name = 'file_id';
-      fileInput.value = fileId;
-      form.appendChild(fileInput);
-      
+      form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="file_id" value="' + fileId + '">';
       document.body.appendChild(form);
       form.submit();
     }
 
     function deleteClient(name) {
-      if (!confirm(`⚠️⚠️⚠️ FINAL WARNING ⚠️⚠️⚠️\n\nYou are about to delete ALL documents for "${name}"!\n\nThis will permanently remove:\n• All uploaded documents\n• Client folder\n• All database records\n\nThis action CANNOT be undone!\n\nType the client name to confirm.`)) {
-        return;
-      }
-
-      const confirmName = prompt(`Type "${name}" to confirm deletion:`);
+      if (!confirm('WARNING: Delete ALL documents for "' + name + '"? This cannot be undone!')) return;
+      
+      const confirmName = prompt('Type "' + name + '" to confirm:');
       if (confirmName !== name) {
-        alert('❌ Deletion cancelled. Name did not match.');
+        alert('Deletion cancelled. Name did not match.');
         return;
       }
 
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/delete_client';
-      
-      const csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'csrf_token';
-      csrfInput.value = '{{ csrf_token() }}';
-      form.appendChild(csrfInput);
-      
-      const nameInput = document.createElement('input');
-      nameInput.type = 'hidden';
-      nameInput.name = 'name';
-      nameInput.value = name;
-      form.appendChild(nameInput);
-      
+      form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="' + name + '">';
       document.body.appendChild(form);
       form.submit();
     }

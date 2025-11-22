@@ -6,17 +6,86 @@
   <title>Upload Client Documents | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      padding: 12px 25px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar-left {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .navbar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .navbar-links {
+      display: flex;
+      gap: 10px;
+    }
+
+    .navbar-link {
+      padding: 8px 14px;
+      color: #555;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-link:hover {
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      color: #667eea;
+    }
+
+    .navbar-right {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .navbar-user {
+      padding: 8px 14px;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .content-wrapper {
+      padding-top: 80px;
+    }
+
     .doc-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
       margin: 25px 0;
     }
     
     .doc-card {
-      padding: 20px;
+      padding: 18px;
       background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-radius: 15px;
+      border-radius: 14px;
       border: 2px dashed #dee2e6;
       transition: all 0.3s ease;
       position: relative;
@@ -34,19 +103,19 @@
     }
     
     .doc-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
     }
     
     .doc-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
     
     .doc-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
       color: #333;
     }
@@ -54,7 +123,7 @@
     .doc-badge {
       padding: 3px 8px;
       border-radius: 10px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
     }
     
@@ -69,8 +138,8 @@
     }
     
     .doc-icon {
-      font-size: 32px;
-      margin: 10px 0;
+      font-size: 28px;
+      margin: 8px 0;
       display: block;
       text-align: center;
     }
@@ -90,14 +159,14 @@
     
     .file-label-small {
       display: block;
-      padding: 10px 15px;
+      padding: 10px 12px;
       background: white;
       color: #667eea;
       border: 2px solid #667eea;
       border-radius: 10px;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       text-align: center;
     }
@@ -108,19 +177,21 @@
     }
     
     .file-info-small {
-      margin-top: 10px;
-      padding: 8px;
+      margin-top: 8px;
+      padding: 6px;
       background: white;
-      border-radius: 8px;
-      font-size: 12px;
+      border-radius: 6px;
+      font-size: 11px;
       display: none;
+      text-align: center;
+      color: #666;
     }
     
     .preview-small {
-      margin-top: 10px;
+      margin-top: 8px;
       max-width: 100%;
-      max-height: 100px;
-      border-radius: 10px;
+      max-height: 80px;
+      border-radius: 8px;
       display: none;
     }
     
@@ -128,19 +199,19 @@
       margin: 25px 0;
       padding: 20px;
       background: linear-gradient(135deg, #e7f3ff 0%, #d1e7fd 100%);
-      border-radius: 15px;
+      border-radius: 14px;
       border-left: 5px solid #0057a0;
     }
     
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-top: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
     }
     
     .summary-item {
-      padding: 15px;
+      padding: 12px;
       background: white;
       border-radius: 10px;
       text-align: center;
@@ -149,14 +220,14 @@
     .summary-item strong {
       display: block;
       color: #667eea;
-      font-size: 14px;
+      font-size: 13px;
       margin-bottom: 5px;
     }
     
     .summary-item a {
       color: #0057a0;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12px;
       word-break: break-all;
     }
 
@@ -176,164 +247,216 @@
       width: 0%;
       transition: width 0.3s ease;
     }
+
+    .upload-rules {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #666;
+      line-height: 1.8;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 15px;
+      }
+
+      .navbar-left {
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .navbar-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .navbar-link {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+
+      .navbar-right {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .content-wrapper {
+        padding-top: 130px;
+      }
+
+      .doc-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .doc-card {
+        padding: 14px;
+      }
+
+      .doc-title { font-size: 12px; }
+      .doc-icon { font-size: 24px; }
+      .file-label-small { font-size: 11px; padding: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .content-wrapper {
+        padding-top: 150px;
+      }
+
+      .doc-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="container" style="max-width: 900px;">
-    <h1>📤 Upload Client Documents</h1>
-    
-    <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      
-      <input 
-        type="text" 
-        name="name" 
-        id="clientName" 
-        placeholder="🙋 Enter Client Name (Required)" 
-        required
-        autocomplete="off"
-      >
-      
-      <div class="doc-grid">
-        <div class="doc-card required" id="card-datasheet">
-          <div class="doc-header">
-            <span class="doc-title">📄 Datasheet</span>
-            <span class="doc-badge badge-required">REQUIRED (New)</span>
-          </div>
-          <div class="doc-icon">📊</div>
-          <div class="file-input-small">
-            <input 
-              type="file" 
-              name="datasheet" 
-              id="datasheet" 
-              accept="image/*,application/pdf"
-              onchange="handleFileSelect('datasheet')"
-            >
-            <label for="datasheet" class="file-label-small">
-              <span id="label-datasheet">Choose File</span>
-            </label>
-          </div>
-          <div class="file-info-small" id="info-datasheet"></div>
-          <img class="preview-small" id="preview-datasheet" alt="Preview">
-          <small style="display: block; margin-top: 8px; color: #666; font-size: 11px;">
-            Required for new clients. Optional for updates.
-          </small>
-        </div>
-
-        <div class="doc-card" id="card-aadhaar">
-          <div class="doc-header">
-            <span class="doc-title">🆔 Aadhaar Card</span>
-            <span class="doc-badge badge-optional">OPTIONAL</span>
-          </div>
-          <div class="doc-icon">🪪</div>
-          <div class="file-input-small">
-            <input 
-              type="file" 
-              name="aadhaar" 
-              id="aadhaar" 
-              accept="image/*,application/pdf"
-              onchange="handleFileSelect('aadhaar')"
-            >
-            <label for="aadhaar" class="file-label-small">
-              <span id="label-aadhaar">Choose File</span>
-            </label>
-          </div>
-          <div class="file-info-small" id="info-aadhaar"></div>
-          <img class="preview-small" id="preview-aadhaar" alt="Preview">
-        </div>
-
-        <div class="doc-card" id="card-pan">
-          <div class="doc-header">
-            <span class="doc-title">💳 PAN Card</span>
-            <span class="doc-badge badge-optional">OPTIONAL</span>
-          </div>
-          <div class="doc-icon">🎴</div>
-          <div class="file-input-small">
-            <input 
-              type="file" 
-              name="pan" 
-              id="pan" 
-              accept="image/*,application/pdf"
-              onchange="handleFileSelect('pan')"
-            >
-            <label for="pan" class="file-label-small">
-              <span id="label-pan">Choose File</span>
-            </label>
-          </div>
-          <div class="file-info-small" id="info-pan"></div>
-          <img class="preview-small" id="preview-pan" alt="Preview">
-        </div>
-
-        <div class="doc-card" id="card-bank_account">
-          <div class="doc-header">
-            <span class="doc-title">🏦 Bank Account</span>
-            <span class="doc-badge badge-optional">OPTIONAL</span>
-          </div>
-          <div class="doc-icon">💰</div>
-          <div class="file-input-small">
-            <input 
-              type="file" 
-              name="bank_account" 
-              id="bank_account" 
-              accept="image/*,application/pdf"
-              onchange="handleFileSelect('bank_account')"
-            >
-            <label for="bank_account" class="file-label-small">
-              <span id="label-bank_account">Choose File</span>
-            </label>
-          </div>
-          <div class="file-info-small" id="info-bank_account"></div>
-          <img class="preview-small" id="preview-bank_account" alt="Preview">
-        </div>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <div class="navbar-logo">📊 LIC Manager</div>
+      <div class="navbar-links">
+        <a href="/dashboard" class="navbar-link">📈 Dashboard</a>
+        <a href="/upload_page" class="navbar-link">📤 Upload</a>
+        <a href="/fetch" class="navbar-link">🔍 Search</a>
+        <a href="/clients" class="navbar-link">👥 Clients</a>
       </div>
+    </div>
+    <div class="navbar-right">
+      <div class="navbar-user">👤 {{ session.username }}</div>
+      <a href="/logout" class="navbar-link">🚪 Logout</a>
+    </div>
+  </nav>
 
-      <div class="progress-bar" id="progressBar">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
+  <div class="content-wrapper">
+    <div class="container" style="max-width: 900px;">
+      <h1>📤 Upload Client Documents</h1>
       
-      <button type="submit" id="submitBtn">
-        <span id="btnText">✨ Upload Documents</span>
-      </button>
-      
-      <div class="upload-rules">
-        <small>
-          ℹ️ <strong>Allowed formats:</strong> JPG, PNG, GIF, BMP, WEBP, PDF<br>
-          ℹ️ <strong>Maximum size:</strong> 10MB per file<br>
-          ⚠️ <strong>New Clients:</strong> Datasheet is mandatory<br>
-          ✨ <strong>Existing Clients:</strong> Upload any document(s) to add or replace<br>
-          💡 <strong>Tip:</strong> You can upload documents one at a time or all together<br>
-          📄 <strong>Update:</strong> Uploading a document again will replace the old one
-        </small>
-      </div>
-    </form>
-
-    {% if success %}
-      <div class="success">
-        ✅ <strong>Success!</strong> Documents uploaded for <b>{{ name }}</b>!
-      </div>
-      
-      <div class="upload-summary">
-        <h4 style="margin-top: 0; color: #0057a0;">📋 Uploaded Documents</h4>
-        <div class="summary-grid">
-          {% for result in upload_results %}
-          <div class="summary-item">
-            <strong>{{ result.type.replace('_', ' ').title() }}</strong>
-            <span style="font-size: 12px; color: #666;">{{ result.filename }}</span><br>
-            <a href="{{ result.url }}" target="_blank">View File</a>
-          </div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="{{ category }}">{{ message }}</div>
           {% endfor %}
+        {% endif %}
+      {% endwith %}
+      
+      <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <input type="text" name="name" id="clientName" placeholder="Enter Client Name (Required)" 
+          required autocomplete="off" style="padding-left: 20px;">
+        
+        <div class="doc-grid">
+          <div class="doc-card required" id="card-datasheet">
+            <div class="doc-header">
+              <span class="doc-title">📄 Datasheet</span>
+              <span class="doc-badge badge-required">REQUIRED</span>
+            </div>
+            <div class="doc-icon">📊</div>
+            <div class="file-input-small">
+              <input type="file" name="datasheet" id="datasheet" accept="image/*,application/pdf" onchange="handleFileSelect('datasheet')">
+              <label for="datasheet" class="file-label-small">
+                <span id="label-datasheet">Choose File</span>
+              </label>
+            </div>
+            <div class="file-info-small" id="info-datasheet"></div>
+            <img class="preview-small" id="preview-datasheet" alt="Preview">
+          </div>
+
+          <div class="doc-card" id="card-aadhaar">
+            <div class="doc-header">
+              <span class="doc-title">🪪 Aadhaar Card</span>
+              <span class="doc-badge badge-optional">OPTIONAL</span>
+            </div>
+            <div class="doc-icon">🪪</div>
+            <div class="file-input-small">
+              <input type="file" name="aadhaar" id="aadhaar" accept="image/*,application/pdf" onchange="handleFileSelect('aadhaar')">
+              <label for="aadhaar" class="file-label-small">
+                <span id="label-aadhaar">Choose File</span>
+              </label>
+            </div>
+            <div class="file-info-small" id="info-aadhaar"></div>
+            <img class="preview-small" id="preview-aadhaar" alt="Preview">
+          </div>
+
+          <div class="doc-card" id="card-pan">
+            <div class="doc-header">
+              <span class="doc-title">💳 PAN Card</span>
+              <span class="doc-badge badge-optional">OPTIONAL</span>
+            </div>
+            <div class="doc-icon">💳</div>
+            <div class="file-input-small">
+              <input type="file" name="pan" id="pan" accept="image/*,application/pdf" onchange="handleFileSelect('pan')">
+              <label for="pan" class="file-label-small">
+                <span id="label-pan">Choose File</span>
+              </label>
+            </div>
+            <div class="file-info-small" id="info-pan"></div>
+            <img class="preview-small" id="preview-pan" alt="Preview">
+          </div>
+
+          <div class="doc-card" id="card-bank_account">
+            <div class="doc-header">
+              <span class="doc-title">🏦 Bank Account</span>
+              <span class="doc-badge badge-optional">OPTIONAL</span>
+            </div>
+            <div class="doc-icon">🏦</div>
+            <div class="file-input-small">
+              <input type="file" name="bank_account" id="bank_account" accept="image/*,application/pdf" onchange="handleFileSelect('bank_account')">
+              <label for="bank_account" class="file-label-small">
+                <span id="label-bank_account">Choose File</span>
+              </label>
+            </div>
+            <div class="file-info-small" id="info-bank_account"></div>
+            <img class="preview-small" id="preview-bank_account" alt="Preview">
+          </div>
         </div>
-      </div>
-    {% endif %}
 
-    {% if error %}
-      <div class="error">
-        ❌ <strong>Error:</strong> {{ error }}
-      </div>
-    {% endif %}
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <button type="submit" id="submitBtn">
+          <span id="btnText">✨ Upload Documents</span>
+        </button>
+        
+        <div class="upload-rules">
+          <strong>Upload Guidelines:</strong><br>
+          • Allowed formats: JPG, PNG, GIF, BMP, WEBP, PDF<br>
+          • Maximum size: 10MB per file<br>
+          • New Clients: Datasheet is mandatory<br>
+          • Existing Clients: Upload any document(s) to add or replace
+        </div>
+      </form>
 
-    <a href="/fetch" class="link">🔍 View Client Documents</a>
-    <a href="/clients" class="link" style="margin-left: 10px;">👥 View All Clients</a>
+      {% if success %}
+        <div class="success">Documents uploaded for <b>{{ name }}</b>!</div>
+        
+        <div class="upload-summary">
+          <h4 style="margin-top: 0; color: #0057a0;">📋 Uploaded Documents</h4>
+          <div class="summary-grid">
+            {% for result in upload_results %}
+            <div class="summary-item">
+              <strong>{{ result.type.replace('_', ' ').title() }}</strong>
+              <span style="font-size: 11px; color: #666;">{{ result.filename }}</span><br>
+              <a href="{{ result.url }}" target="_blank">View File</a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div style="margin-top: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="/fetch" class="link">🔍 View Client Documents</a>
+        <a href="/clients" class="link">👥 View All Clients</a>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -347,14 +470,14 @@
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
         
-        label.textContent = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
+        label.textContent = file.name.length > 18 ? file.name.substring(0, 18) + '...' : file.name;
         
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        info.textContent = `📊 ${sizeMB} MB | ${file.type}`;
+        info.textContent = sizeMB + ' MB • ' + file.type.split('/')[1];
         info.style.display = 'block';
         
         if (file.size > 10 * 1024 * 1024) {
-          alert(`⚠️ ${docType} file is too large! Maximum size is 10MB.`);
+          alert('File is too large! Maximum size is 10MB.');
           fileInput.value = '';
           label.textContent = 'Choose File';
           info.style.display = 'none';
@@ -386,14 +509,13 @@
 
     uploadForm.addEventListener('submit', function(e) {
       submitBtn.disabled = true;
-      btnText.textContent = '⏳ Uploading...';
+      btnText.textContent = 'Uploading...';
       submitBtn.style.opacity = '0.7';
-      
       progressBar.style.display = 'block';
       
       let progress = 0;
       const interval = setInterval(() => {
-        progress += Math.random() * 30;
+        progress += Math.random() * 25;
         if (progress > 90) progress = 90;
         progressFill.style.width = progress + '%';
       }, 200);
@@ -402,38 +524,6 @@
     });
 
     document.getElementById('clientName').focus();
-
-    const updateClient = sessionStorage.getItem('updateClient');
-    if (updateClient) {
-      document.getElementById('clientName').value = updateClient;
-      document.getElementById('clientName').readOnly = true;
-      
-      const container = document.querySelector('.container');
-      const updateAlert = document.createElement('div');
-      updateAlert.className = 'success';
-      updateAlert.style.marginBottom = '20px';
-      updateAlert.innerHTML = `
-        ℹ️ <strong>Updating documents for: ${updateClient}</strong><br>
-        Upload any document(s) to add or replace existing ones.<br>
-        <button onclick="clearUpdate()" style="margin-top: 10px; padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">
-          ↻ Upload for Different Client
-        </button>
-      `;
-      container.insertBefore(updateAlert, container.firstChild.nextSibling);
-      
-      sessionStorage.removeItem('updateClient');
-    }
-
-    function clearUpdate() {
-      document.getElementById('clientName').value = '';
-      document.getElementById('clientName').readOnly = false;
-      document.getElementById('clientName').focus();
-      
-      const successMsg = document.querySelector('.success');
-      if (successMsg) {
-        successMsg.remove();
-      }
-    }
   </script>
 </body>
 </html>
