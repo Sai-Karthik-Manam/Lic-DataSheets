@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Verify OTP | LIC Manager</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      margin: 0;
+    }
+
+    .otp-container {
+      max-width: 420px;
+      width: 100%;
+      background: white;
+      padding: 35px 30px;
+      border-radius: 20px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+    }
+    
+    .otp-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    
+    .otp-icon {
+      font-size: 55px;
+      margin-bottom: 12px;
+    }
+
+    .otp-header h1 {
+      margin: 0;
+      color: #333;
+      font-size: 24px;
+    }
+
+    .otp-input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 24px;
+      text-align: center;
+      letter-spacing: 8px;
+      font-weight: 600;
+      margin: 20px 0;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+      font-family: 'Courier New', monospace;
+    }
+
+    .otp-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+    }
+
+    .btn-verify {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+
+    .btn-verify:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+    }
+
+    .btn-verify:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .resend-section {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .btn-resend {
+      background: none;
+      border: none;
+      color: #667eea;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 8px 12px;
+      text-decoration: underline;
+      transition: all 0.3s ease;
+    }
+
+    .btn-resend:hover {
+      color: #764ba2;
+    }
+
+    .btn-resend:disabled {
+      color: #999;
+      cursor: not-allowed;
+      text-decoration: none;
+    }
+
+    .timer {
+      font-size: 13px;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    .info-box {
+      margin: 20px 0;
+      padding: 15px;
+      background: #e7f3ff;
+      border-radius: 10px;
+      border-left: 4px solid #0057a0;
+      font-size: 13px;
+      color: #0057a0;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .otp-container { padding: 28px 22px; }
+      .otp-icon { font-size: 45px; }
+      .otp-header h1 { font-size: 20px; }
+      .otp-input { font-size: 20px; letter-spacing: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="otp-container">
+    <div class="otp-header">
+      <div class="otp-icon">🔐</div>
+      <h1>Verify OTP</h1>
+      <p style="color: #666; margin-top: 8px; font-size: 13px;">
+        Enter the 6-digit code sent to your email
+      </p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="{{ category }}" style="padding: 12px 15px; border-radius: 8px; margin-bottom: 18px; font-size: 13px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('verify_otp_page') }}" id="otpForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      
+      <input 
+        type="text" 
+        id="otp_code" 
+        name="otp_code" 
+        class="otp-input"
+        placeholder="000000"
+        maxlength="6"
+        pattern="[0-9]{6}"
+        required
+        autofocus
+        autocomplete="off"
+      >
+
+      <button type="submit" class="btn-verify" id="verifyBtn">
+        ✓ Verify & Login
+      </button>
+
+      <div class="info-box">
+        ⏱️ The OTP code will expire in <strong>5 minutes</strong>
+      </div>
+    </form>
+
+    <div class="resend-section">
+      <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+        Didn't receive the code?
+      </p>
+      <button type="button" class="btn-resend" id="resendBtn">
+        📧 Resend OTP
+      </button>
+      <div class="timer" id="timer"></div>
+    </div>
+
+    <a href="{{ url_for('login') }}" class="back-link">← Back to Login</a>
+  </div>
+
+  <script>
+    // Auto-format OTP input (only allow numbers)
+    const otpInput = document.getElementById('otp_code');
+    otpInput.addEventListener('input', function(e) {
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Auto-submit when 6 digits are entered
+    otpInput.addEventListener('input', function(e) {
+      if (this.value.length === 6) {
+        // Small delay to show the complete input
+        setTimeout(() => {
+          document.getElementById('otpForm').submit();
+        }, 300);
+      }
+    });
+
+    // Form submission handler
+    const otpForm = document.getElementById('otpForm');
+    const verifyBtn = document.getElementById('verifyBtn');
+    
+    otpForm.addEventListener('submit', function(e) {
+      const otpValue = otpInput.value.trim();
+      
+      if (otpValue.length !== 6) {
+        e.preventDefault();
+        alert('Please enter a 6-digit OTP code');
+        otpInput.focus();
+        return;
+      }
+      
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = '⏳ Verifying...';
+    });
+
+    // Resend OTP functionality
+    let resendTimer = 30;
+    let timerInterval;
+    const resendBtn = document.getElementById('resendBtn');
+    const timerDiv = document.getElementById('timer');
+
+    function startResendTimer() {
+      resendBtn.disabled = true;
+      resendTimer = 30;
+      
+      timerInterval = setInterval(() => {
+        resendTimer--;
+        timerDiv.textContent = `You can resend OTP in ${resendTimer} seconds`;
+        
+        if (resendTimer <= 0) {
+          clearInterval(timerInterval);
+          resendBtn.disabled = false;
+          timerDiv.textContent = '';
+        }
+      }, 1000);
+    }
+
+    function resendOTP() {
+      resendBtn.disabled = true;
+      resendBtn.textContent = '⏳ Sending...';
+      
+      fetch('{{ url_for("resend_otp") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          alert('✅ OTP sent successfully! Please check your email.');
+          startResendTimer();
+        } else {
+          alert('❌ Failed to send OTP: ' + (data.error || 'Unknown error'));
+          resendBtn.disabled = false;
+        }
+        resendBtn.textContent = '📧 Resend OTP';
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Network error. Please try again.');
+        resendBtn.disabled = false;
+        resendBtn.textContent = '📧 Resend OTP';
+      });
+    }
+
+    // Attach resend function to button
+    resendBtn.addEventListener('click', resendOTP);
+
+    // Start timer on page load
+    startResendTimer();
+
+    // Focus OTP input
+    otpInput.focus();
+
+    // Paste handling - auto-fill OTP if 6 digits are pasted
+    otpInput.addEventListener('paste', function(e) {
+      e.preventDefault();
+      const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+      const digits = pastedText.replace(/[^0-9]/g, '').substring(0, 6);
+      this.value = digits;
+      
+      if (digits.length === 6) {
+        setTimeout(() => {
+          otpForm.submit();
+        }, 300);
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      // Ctrl/Cmd + V is already handled by paste event
+      // Enter key submits form (default behavior)
+      
+      // Escape key goes back to login
+      if (e.key === 'Escape') {
+        if (confirm('Go back to login page?')) {
+          window.location.href = '{{ url_for("login") }}';
+        }
+      }
+    });
+
+    // Prevent back button (to avoid expired OTP issues)
+    history.pushState(null, null, location.href);
+    window.onpopstate = function() {
+      history.go(1);
+    };
+  </script>
+</body>
+</html>

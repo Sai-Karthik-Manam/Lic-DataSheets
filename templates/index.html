@@ -54,23 +54,12 @@
     }
 
     .btn-login {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
+      background: white;
+      color: #667eea;
       border: 2px solid white;
     }
 
     .btn-login:hover {
-      background: white;
-      color: #667eea;
-    }
-
-    .btn-signup {
-      background: white;
-      color: #667eea;
-      border: 2px solid white;
-    }
-
-    .btn-signup:hover {
       background: transparent;
       color: white;
     }
@@ -289,19 +278,18 @@
 <body>
   <nav class="top-nav">
     <div class="logo">
-      <span>📊</span>
+      <span>ðŸ"Š</span>
       <span>LIC Manager</span>
     </div>
     <div class="nav-buttons">
-      <a href="/login" class="nav-btn btn-login">🔐 Login</a>
-      <a href="/register" class="nav-btn btn-signup">✨ Sign Up</a>
+      <a href="/login" class="nav-btn btn-login">ðŸ" Login</a>
     </div>
   </nav>
 
   <div class="landing-container">
     <div class="hero">
-      <h1>📊 LIC Document Manager</h1>
-      <p>Secure • Organized • Efficient</p>
+      <h1>ðŸ"Š LIC Document Manager</h1>
+      <p>Secure â€¢ Organized â€¢ Efficient</p>
       <p class="hero-tagline">
         Professional document management for LIC agents<br>
         Manage all your client documents in one secure place
@@ -310,79 +298,82 @@
 
     <div class="features-grid">
       <div class="feature-card" onclick="handleFeatureClick('upload')">
-        <div class="lock-icon">🔒</div>
-        <div class="feature-icon">📤</div>
+        <div class="lock-icon">ðŸ"'</div>
+        <div class="feature-icon">ðŸ"¤</div>
         <h3 class="feature-title">Upload Documents</h3>
         <p class="feature-description">
           Upload multiple documents for each client. Supports Datasheet, Aadhaar, PAN, and Bank documents.
         </p>
-        <span class="feature-action">Get Started →</span>
+        <span class="feature-action">Get Started â†'</span>
       </div>
 
       <div class="feature-card" onclick="handleFeatureClick('search')">
-        <div class="lock-icon">🔒</div>
-        <div class="feature-icon">🔍</div>
+        <div class="lock-icon">ðŸ"'</div>
+        <div class="feature-icon">ðŸ"</div>
         <h3 class="feature-title">Search Documents</h3>
         <p class="feature-description">
           Instantly find any client's documents. Fast search with real-time results and preview.
         </p>
-        <span class="feature-action">Start Searching →</span>
+        <span class="feature-action">Start Searching â†'</span>
       </div>
 
       <div class="feature-card" onclick="handleFeatureClick('clients')">
-        <div class="lock-icon">🔒</div>
-        <div class="feature-icon">👥</div>
+        <div class="lock-icon">ðŸ"'</div>
+        <div class="feature-icon">ðŸ'¥</div>
         <h3 class="feature-title">Manage Clients</h3>
         <p class="feature-description">
           View all clients, sort by date or name, and manage client information easily.
         </p>
-        <span class="feature-action">View Clients →</span>
+        <span class="feature-action">View Clients â†'</span>
       </div>
 
       <div class="feature-card" onclick="handleFeatureClick('dashboard')">
-        <div class="lock-icon">🔒</div>
-        <div class="feature-icon">📈</div>
+        <div class="lock-icon">ðŸ"'</div>
+        <div class="feature-icon">ðŸ"ˆ</div>
         <h3 class="feature-title">Dashboard</h3>
         <p class="feature-description">
           Get insights with statistics, recent activity, and performance metrics.
         </p>
-        <span class="feature-action">View Stats →</span>
+        <span class="feature-action">View Stats â†'</span>
       </div>
     </div>
 
     <div class="stats-section">
-      <h2 style="text-align: center; color: #333; margin-bottom: 25px;">✨ Why Choose LIC Manager?</h2>
+      <h2 style="text-align: center; color: #333; margin-bottom: 25px;">âœ¨ Why Choose LIC Manager?</h2>
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-number">⚡</div>
+          <div class="stat-number">âš¡</div>
           <div class="stat-label">Lightning Fast</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">🔐</div>
+          <div class="stat-number">ðŸ"</div>
           <div class="stat-label">100% Secure</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">☁️</div>
+          <div class="stat-number">â˜ï¸</div>
           <div class="stat-label">Cloud Backup</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">📱</div>
+          <div class="stat-number">ðŸ"±</div>
           <div class="stat-label">Mobile Ready</div>
         </div>
       </div>
     </div>
 
     <div class="landing-footer">
-      <p>© 2025 LIC Manager. Powered by Google Drive • Secure • Reliable</p>
+      <p>Â© 2025 LIC Manager. Powered by Google Drive â€¢ Secure â€¢ Reliable</p>
       <p style="margin-top: 8px; font-size: 11px; opacity: 0.8;">
         All documents safely stored on Google Drive with enterprise-grade security
+      </p>
+      <p style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+        ðŸ"' Two-Factor Authentication (OTP) enabled for enhanced security
       </p>
     </div>
   </div>
 
   <script>
     function handleFeatureClick(feature) {
-      if (confirm('🔐 You need to login to access this feature.\n\nClick OK to go to the login page.')) {
+      if (confirm('ðŸ" You need to login to access this feature.\n\nClick OK to go to the login page.')) {
         window.location.href = '/login';
       }
     }

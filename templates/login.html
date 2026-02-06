@@ -41,6 +41,7 @@
       border-radius: 10px;
       font-size: 16px;
       transition: all 0.3s ease;
+      box-sizing: border-box;
     }
 
     .form-group input:focus {
@@ -49,7 +50,6 @@
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
-    /* ✅ FIXED: Show/Hide button outside the input box */
     .password-wrapper {
       display: flex;
       gap: 10px;
@@ -117,50 +117,23 @@
       transform: translateY(0);
     }
     
-    .divider {
-      text-align: center;
-      margin: 25px 0;
-      position: relative;
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
     }
     
-    .divider::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      width: 100%;
-      height: 1px;
-      background: #e0e0e0;
-    }
-    
-    .divider span {
-      position: relative;
-      background: white;
-      padding: 0 15px;
-      color: #999;
-      font-size: 14px;
-    }
-    
-    .register-link {
-      text-align: center;
+    .info-box {
       margin-top: 20px;
-    }
-    
-    .register-link a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 600;
-      display: inline-block;
-      padding: 8px;
-      min-height: 44px;
-      line-height: 28px;
-    }
-    
-    .register-link a:hover {
-      text-decoration: underline;
+      padding: 15px;
+      background: #e7f3ff;
+      border-radius: 10px;
+      border-left: 4px solid #0057a0;
+      font-size: 13px;
+      color: #0057a0;
+      line-height: 1.6;
     }
 
-    /* Mobile Optimizations */
     @media (max-width: 768px) {
       body {
         padding: 15px;
@@ -197,40 +170,27 @@
         padding: 14px 15px;
       }
 
-      /* ✅ FIXED: Better mobile layout for password wrapper */
       .password-wrapper {
         gap: 8px;
       }
       
       .password-wrapper input {
         flex: 1;
-        min-width: 0; /* Allow input to shrink */
+        min-width: 0;
       }
       
       .password-toggle {
-        min-width: 55px; /* Smaller button on mobile */
+        min-width: 55px;
         max-width: 55px;
         padding: 12px 8px;
         font-size: 12px;
-        flex-shrink: 0; /* Don't shrink button */
+        flex-shrink: 0;
       }
 
       .btn-login {
         padding: 16px;
         font-size: 15px;
         min-height: 52px;
-      }
-
-      .divider {
-        margin: 20px 0;
-      }
-
-      .register-link {
-        font-size: 14px;
-      }
-
-      .register-link p {
-        margin: 10px 0;
       }
     }
 
@@ -251,7 +211,6 @@
         font-size: 20px !important;
       }
       
-      /* ✅ FIXED: Even smaller button on very small screens */
       .password-toggle {
         min-width: 50px;
         max-width: 50px;
@@ -260,7 +219,6 @@
       }
     }
 
-    /* Prevent zoom on input focus for iOS */
     @supports (-webkit-touch-callout: none) {
       input[type="text"],
       input[type="password"] {
@@ -274,7 +232,7 @@
     <div class="login-header">
       <div class="login-icon">🔐</div>
       <h1>Welcome Back!</h1>
-      <p style="color: #666; margin-top: 10px;">Login to manage your client documents</p>
+      <p style="color: #666; margin-top: 10px;">Login with OTP verification</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -287,7 +245,7 @@
       {% endif %}
     {% endwith %}
 
-    <form method="POST" action="/login">
+    <form method="POST" action="{{ url_for('login') }}" id="loginForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       
       <div class="form-group">
@@ -304,7 +262,7 @@
       </div>
 
       <div class="form-group">
-        <label for="password">🔒 Password</label>
+        <label for="password">🔑 Password</label>
         <div class="password-wrapper">
           <input 
             type="password" 
@@ -325,46 +283,70 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-login">
-        🚀 Login
+      <button type="submit" class="btn-login" id="loginButton">
+        🚀 Login & Get OTP
       </button>
     </form>
 
-    <div class="divider">
-      <span>OR</span>
-    </div>
-
-    <div class="register-link">
-      <p>Don't have an account? <a href="/register">Register here</a></p>
-      <p style="margin-top: 10px;"><a href="/forgot_password" style="color: #dc3545;">🔑 Forgot Password?</a></p>
+    <div class="info-box">
+      <strong>🔐 Two-Factor Authentication</strong><br>
+      After entering your credentials, an OTP will be sent to your registered email address.
+      The OTP is valid for 5 minutes.
     </div>
   </div>
 
   <script>
-    // ✅ FIXED: Improved password toggle functionality
+    // Password toggle functionality
     const passwordInput = document.getElementById('password');
     const toggleButton = document.getElementById('togglePassword');
     
-    toggleButton.addEventListener('click', function(e) {
-      e.preventDefault();
-      
-      // Toggle password visibility
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleButton.textContent = 'Hide';
-        toggleButton.classList.add('active');
-      } else {
-        passwordInput.type = 'password';
-        toggleButton.textContent = 'Show';
-        toggleButton.classList.remove('active');
-      }
-      
-      // Keep focus on password input
-      passwordInput.focus();
-    });
+    if (toggleButton && passwordInput) {
+      toggleButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          toggleButton.textContent = 'Hide';
+          toggleButton.classList.add('active');
+        } else {
+          passwordInput.type = 'password';
+          toggleButton.textContent = 'Show';
+          toggleButton.classList.remove('active');
+        }
+        
+        passwordInput.focus();
+      });
+    }
+    
+    // Form submission handler
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    
+    if (loginForm && loginButton) {
+      loginForm.addEventListener('submit', function(e) {
+        // Disable button to prevent double submission
+        loginButton.disabled = true;
+        loginButton.textContent = '⏳ Sending OTP...';
+        
+        // Re-enable after 5 seconds in case of error
+        setTimeout(function() {
+          loginButton.disabled = false;
+          loginButton.textContent = '🚀 Login & Get OTP';
+        }, 5000);
+      });
+    }
     
     // Focus username input on page load
-    document.getElementById('username').focus();
+    const usernameInput = document.getElementById('username');
+    if (usernameInput) {
+      usernameInput.focus();
+    }
+    
+    // Prevent form resubmission on refresh
+    if (window.history.replaceState) {
+      window.history.replaceState(null, null, window.location.href);
+    }
   </script>
 </body>
 </html>
