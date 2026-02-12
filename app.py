@@ -27,18 +27,16 @@ app = Flask(__name__)
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     SECRET_KEY = secrets.token_urlsafe(32)
-    print(f"WARNING: Using generated SECRET_KEY: {SECRET_KEY}")
+    app.logger.info(f"WARNING: Using generated SECRET_KEY: {SECRET_KEY}")
 app.secret_key = SECRET_KEY
 
-# ============= ADD SESSION SECURITY CONFIGURATION HERE =============
 app.config.update(
-    SESSION_COOKIE_SECURE=False,  # HTTPS only in production
+    SESSION_COOKIE_SECURE=False,  # Set to True in production with HTTPS
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
     SESSION_COOKIE_SAMESITE='Lax',  # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
     MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 10MB max upload
 )
-# ===================================================================
 
 csrf = CSRFProtect(app)
 limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"], storage_uri="memory://")
@@ -51,22 +49,20 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ROOT_FOLDER_ID = os.getenv('GOOGLE_DRIVE_FOLDER_ID')
 if not ROOT_FOLDER_ID:
-    print("WARNING: GOOGLE_DRIVE_FOLDER_ID not set!")
+    app.logger.info("WARNING: GOOGLE_DRIVE_FOLDER_ID not set!")
 
-# Email Configuration
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
 SMTP_USERNAME = os.getenv('SMTP_USERNAME', 'lic.datasheets@gmail.com')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')
 
-# Email addresses for OTP
 USER_EMAIL = 'lic.datasheets@gmail.com'
 ADMIN_EMAIL = 'karthik.manam1101@gmail.com'
 
 USE_POSTGRESQL = os.getenv('DB_HOST') is not None
 
 if USE_POSTGRESQL:
-    print("Using PostgreSQL database")
+    app.logger.info("Using PostgreSQL database")
     import psycopg2
     from psycopg2.extras import DictCursor
     def get_db_connection():
@@ -78,7 +74,7 @@ if USE_POSTGRESQL:
             port=os.getenv('DB_PORT', 5432)
         )
 else:
-    print("Using SQLite database")
+    app.logger.info("Using SQLite database")
     import sqlite3
     def get_db_connection():
         conn = sqlite3.connect("database.db")
@@ -86,7 +82,6 @@ else:
         return conn
 
 
-# ============= ADD SECURITY HEADERS FUNCTION HERE =============
 @app.after_request
 def set_security_headers(response):
     """Add security headers to all responses"""
@@ -96,10 +91,8 @@ def set_security_headers(response):
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
-# ===============================================================
 
 
-# ============= ADD INPUT SANITIZATION FUNCTION HERE =============
 def sanitize_input(text):
     """Sanitize user input to prevent XSS attacks"""
     if not text:
@@ -112,10 +105,8 @@ def validate_and_sanitize_name(name):
     if not name or not isinstance(name, str):
         raise ValueError("Client name is required")
     
-    # Sanitize first
     name = sanitize_input(name)
     
-    # Remove extra whitespace
     name = ' '.join(name.split())
     
     if len(name) < 2:
@@ -123,15 +114,12 @@ def validate_and_sanitize_name(name):
     if len(name) > 100:
         raise ValueError("Client name is too long (max 100 characters)")
     
-    # Only allow alphanumeric, spaces, hyphens, underscores, periods
     if not re.match(r'^[a-zA-Z0-9\s\-_.]+$', name):
         raise ValueError("Client name contains invalid characters")
     
     return name
-# ================================================================
 
 
-# ============= ADD ERROR HANDLER HERE =============
 @app.errorhandler(413)
 def request_entity_too_large(error):
     """Handle file upload size limit exceeded"""
@@ -145,11 +133,20 @@ def internal_server_error(error):
     app.logger.error(f"Internal server error: {str(error)}", exc_info=True)
     flash('An internal error occurred. Please try again.', 'error')
     return redirect(url_for('dashboard')), 500
-# ==================================================
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('404.html'), 403
 
 
 def init_db():
-    """Initialize database - ONLY creates tables, NO default users"""
+    """Initialize database tables"""
     conn = None
     cur = None
     try:
@@ -157,7 +154,6 @@ def init_db():
         cur = conn.cursor()
         
         if USE_POSTGRESQL:
-            # Create tables
             cur.execute('''CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, 
                 username VARCHAR(255) UNIQUE NOT NULL,
@@ -205,7 +201,6 @@ def init_db():
                 expires_at TIMESTAMP NOT NULL,
                 used BOOLEAN DEFAULT FALSE)''')
         else:
-            # SQLite tables
             cur.execute('''CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
                 username TEXT NOT NULL UNIQUE,
@@ -257,7 +252,6 @@ def init_db():
                 expires_at TEXT NOT NULL,
                 used INTEGER DEFAULT 0)''')
         
-        # Create indexes
         cur.execute('CREATE INDEX IF NOT EXISTS idx_client_name ON clients(name)')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_folder_id ON clients(folder_id)')
         cur.execute('CREATE INDEX IF NOT EXISTS idx_client_id ON documents(client_id)')
@@ -267,10 +261,9 @@ def init_db():
         cur.execute('CREATE INDEX IF NOT EXISTS idx_otp_username ON otp_codes(username)')
         
         conn.commit()
-        print("Database tables initialized successfully")
-        print("Note: No default users created. Use admin panel to add users.")
+        app.logger.info("Database tables initialized successfully")
     except Exception as e:
-        print(f"Database initialization error: {str(e)}")
+        app.logger.info(f"Database initialization error: {str(e)}")
         traceback.print_exc()
         if conn:
             conn.rollback()
@@ -289,7 +282,7 @@ def init_db():
 try:
     init_db()
 except Exception as e:
-    print(f"Database initialization warning: {e}")
+    app.logger.info(f"Database initialization warning: {e}")
 
 def send_otp_email(email, otp_code, username):
     """Send OTP code via email"""
@@ -330,7 +323,7 @@ def send_otp_email(email, otp_code, username):
         
         return True
     except Exception as e:
-        print(f"Email send error: {str(e)}")
+        app.logger.info(f"Email send error: {str(e)}")
         traceback.print_exc()
         return False
 
@@ -340,27 +333,14 @@ def generate_otp():
     return ''.join([str(secrets.randbelow(10)) for _ in range(6)])
 
 
-
-
-# Define timezone - using UTC to match PostgreSQL
-UTC = pytz.UTC
-IST = pytz.timezone('Asia/Kolkata')
-
-# ============= FIXED OTP FUNCTIONS =============
 def store_otp(username, otp_code):
-    """
-    Store OTP in database - FIXED VERSION
-    Key fix: Mark old OTPs as used instead of deleting them
-    This prevents race conditions and timing issues
-    """
+    """Store OTP in database - FIXED VERSION"""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # CRITICAL FIX: Mark old OTPs as used instead of deleting
-        # This prevents timing issues when generating multiple OTPs
         if USE_POSTGRESQL:
             cur.execute("""
                 UPDATE otp_codes 
@@ -374,14 +354,12 @@ def store_otp(username, otp_code):
                 WHERE username = ? AND used = 0
             """, (username,))
         
-        # Store new OTP - Use PostgreSQL's NOW() function
         if USE_POSTGRESQL:
             cur.execute("""
                 INSERT INTO otp_codes (username, otp_code, created_at, expires_at, used) 
-                VALUES (%s, %s, NOW(), NOW() + INTERVAL '5 minutes', FALSE)
+                VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '5 minutes', FALSE)
             """, (username, otp_code))
             
-            # Get the actual stored values for logging
             cur.execute("""
                 SELECT created_at, expires_at, 
                        EXTRACT(EPOCH FROM (expires_at - NOW())) as seconds_remaining
@@ -393,12 +371,11 @@ def store_otp(username, otp_code):
             result = cur.fetchone()
             if result:
                 created, expires, remaining = result
-                print(f"✓ OTP stored for {username}: {otp_code}")
-                print(f"  Created: {created}")
-                print(f"  Expires: {expires}")
-                print(f"  Valid for: {int(remaining)} seconds")
+                app.logger.info(f"✓ OTP stored for {username}: {otp_code}")
+                app.logger.info(f"  Created: {created}")
+                app.logger.info(f"  Expires: {expires}")
+                app.logger.info(f"  Valid for: {int(remaining)} seconds")
         else:
-            # SQLite
             now = datetime.now()
             expires = now + timedelta(minutes=5)
             cur.execute("""
@@ -406,12 +383,12 @@ def store_otp(username, otp_code):
                 VALUES (?, ?, ?, ?, ?)
             """, (username, otp_code, now.strftime("%Y-%m-%d %H:%M:%S"), 
                   expires.strftime("%Y-%m-%d %H:%M:%S"), 0))
-            print(f"✓ OTP stored for {username}: {otp_code}")
+            app.logger.info(f"✓ OTP stored for {username}: {otp_code}")
         
         conn.commit()
         return True
     except Exception as e:
-        print(f"❌ Store OTP error: {str(e)}")
+        app.logger.info(f"❌ Store OTP error: {str(e)}")
         traceback.print_exc()
         if conn:
             conn.rollback()
@@ -430,10 +407,7 @@ def store_otp(username, otp_code):
 
 
 def verify_otp(username, otp_code):
-    """
-    Verify OTP code - FIXED VERSION
-    Key fix: Better error handling and clearer logging
-    """
+    """Verify OTP code - FIXED VERSION"""
     conn = None
     cur = None
     try:
@@ -441,15 +415,14 @@ def verify_otp(username, otp_code):
         cur = conn.cursor()
         
         if USE_POSTGRESQL:
-            # Use PostgreSQL's NOW() for all time comparisons
             cur.execute("""
                 SELECT 
                     id, 
                     expires_at, 
                     used,
                     created_at,
-                    EXTRACT(EPOCH FROM (expires_at - NOW())) as seconds_remaining,
-                    EXTRACT(EPOCH FROM (NOW() - created_at)) as seconds_old
+                    EXTRACT(EPOCH FROM (expires_at - CURRENT_TIMESTAMP)) as seconds_remaining,
+                    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) as seconds_old
                 FROM otp_codes 
                 WHERE username = %s AND otp_code = %s AND used = FALSE
                 ORDER BY created_at DESC 
@@ -459,46 +432,28 @@ def verify_otp(username, otp_code):
             result = cur.fetchone()
             
             if not result:
-                print(f"❌ OTP not found or already used: username={username}, code={otp_code}")
-                # Show recent OTPs for debugging
-                cur.execute("""
-                    SELECT otp_code, used,
-                           EXTRACT(EPOCH FROM (expires_at - NOW())) as remaining
-                    FROM otp_codes 
-                    WHERE username = %s 
-                    ORDER BY created_at DESC 
-                    LIMIT 3
-                """, (username,))
-                existing = cur.fetchall()
-                if existing:
-                    print(f"  Recent OTPs for {username}:")
-                    for code, used, rem in existing:
-                        status = "USED" if used else ("EXPIRED" if rem <= 0 else f"{int(rem)}s left")
-                        print(f"    - {code}: {status}")
+                app.logger.info(f"❌ OTP not found or already used: username={username}, code={otp_code}")
                 return False
             
             otp_id, expires_at, used, created_at, seconds_remaining, seconds_old = result
             
-            print(f"🔍 OTP Verification for {username}:")
-            print(f"   Code: {otp_code}")
-            print(f"   Created: {created_at} (DB time)")
-            print(f"   Expires: {expires_at} (DB time)")
-            print(f"   Age: {int(seconds_old)} seconds")
-            print(f"   Remaining: {int(seconds_remaining)} seconds")
+            app.logger.info(f"🔍 OTP Verification for {username}:")
+            app.logger.info(f"   Code: {otp_code}")
+            app.logger.info(f"   Created: {created_at} (DB time)")
+            app.logger.info(f"   Expires: {expires_at} (DB time)")
+            app.logger.info(f"   Age: {int(seconds_old)} seconds")
+            app.logger.info(f"   Remaining: {int(seconds_remaining)} seconds")
             
-            # Check if expired
             if seconds_remaining <= 0:
-                print(f"❌ OTP expired {int(abs(seconds_remaining))} seconds ago")
+                app.logger.info(f"❌ OTP expired {int(abs(seconds_remaining))} seconds ago")
                 return False
             
-            # Valid OTP - mark as used
             cur.execute("UPDATE otp_codes SET used = TRUE WHERE id = %s", (otp_id,))
             conn.commit()
-            print(f"✅ OTP verified successfully!")
+            app.logger.info(f"✅ OTP verified successfully!")
             return True
             
         else:
-            # SQLite version
             cur.execute("""
                 SELECT id, expires_at, used 
                 FROM otp_codes 
@@ -510,7 +465,7 @@ def verify_otp(username, otp_code):
             result = cur.fetchone()
             
             if not result:
-                print(f"❌ OTP not found or already used: username={username}, code={otp_code}")
+                app.logger.info(f"❌ OTP not found or already used: username={username}, code={otp_code}")
                 return False
             
             otp_id = result[0]
@@ -518,16 +473,16 @@ def verify_otp(username, otp_code):
             now = datetime.now()
             
             if now > expires_at:
-                print(f"❌ OTP expired")
+                app.logger.info(f"❌ OTP expired")
                 return False
             
             cur.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", (otp_id,))
             conn.commit()
-            print(f"✅ OTP verified successfully for {username}")
+            app.logger.info(f"✅ OTP verified successfully for {username}")
             return True
         
     except Exception as e:
-        print(f"❌ Verify OTP error: {str(e)}")
+        app.logger.info(f"❌ Verify OTP error: {str(e)}")
         traceback.print_exc()
         return False
     finally:
@@ -542,7 +497,6 @@ def verify_otp(username, otp_code):
             except: 
                 pass
 
-# Google Drive Setup
 
 def setup_google_auth():
     try:
@@ -551,7 +505,7 @@ def setup_google_auth():
         refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN')
         
         if not all([client_id, client_secret, refresh_token]):
-            print("Warning: Google Drive credentials not configured")
+            app.logger.info("Warning: Google Drive credentials not configured")
             return None
         
         client_config = {"installed": {
@@ -586,18 +540,18 @@ def setup_google_auth():
         )
         gauth.credentials = credentials
         gauth.Refresh()
-        print("Google Drive authentication successful")
+        app.logger.info("Google Drive authentication successful")
         return gauth
     except Exception as e:
-        print(f"Google Drive auth error: {str(e)}")
+        app.logger.info(f"Google Drive auth error: {str(e)}")
         return None
 
 try:
     gauth = setup_google_auth()
     drive = GoogleDrive(gauth) if gauth else None
-    print("Google Drive initialized")
+    app.logger.info("Google Drive initialized")
 except Exception as e:
-    print(f"Google Drive initialization failed: {str(e)}")
+    app.logger.info(f"Google Drive initialization failed: {str(e)}")
     drive = None
 
 
@@ -639,7 +593,7 @@ def log_activity(action, details=""):
                 (user_id, action, details, now, ip_address))
         conn.commit()
     except Exception as e:
-        print(f"Error logging activity: {str(e)}")
+        app.logger.info(f"Error logging activity: {str(e)}")
     finally:
         if cur:
             try: 
@@ -659,7 +613,7 @@ def cleanup_temp_file(filepath):
             os.remove(filepath)
             return True
     except Exception as e:
-        print(f"Warning: Could not remove temp file: {str(e)}")
+        app.logger.info(f"Warning: Could not remove temp file: {str(e)}")
     return False
 
 
@@ -683,7 +637,7 @@ def role_required(required_role):
 def admin_required(f):
     return role_required('admin')(f)
 
-# ============= ROUTES =============
+
 
 @app.route('/')
 def index():
@@ -706,7 +660,6 @@ def login():
             flash('Please enter both username and password.', 'error')
             return render_template('login.html')
         
-        # No username restrictions - check against database
         conn = None
         cur = None
         try:
@@ -725,7 +678,6 @@ def login():
                     'email': user_row[4], 'failed_login_attempts': user_row[5], 'locked_until': user_row[6]} if user_row else None
             
             if user_dict:
-                # Check if account is locked
                 if user_dict['locked_until']:
                     try:
                         lock_time = user_dict['locked_until'] if USE_POSTGRESQL else datetime.strptime(str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
@@ -733,29 +685,22 @@ def login():
                             flash('Account locked. Try again later.', 'error')
                             return render_template('login.html')
                     except Exception as e:
-                        print(f"Lock check error: {e}")
+                        app.logger.info(f"Lock check error: {e}")
                 
-                # Verify password
                 if check_password_hash(user_dict['password'], password):
-                    # Generate and send OTP
                     otp_code = generate_otp()
                     
-                    # Use the email from database
                     email = user_dict['email']
                     if not email:
                         flash('No email configured for this account. Contact administrator.', 'error')
                         return render_template('login.html')
                     
-                    # Store OTP
                     if store_otp(username, otp_code):
-                        # Send OTP email
                         if send_otp_email(email, otp_code, username):
-                            # Store user info in session temporarily
                             session['pending_user_id'] = user_dict['id']
                             session['pending_username'] = user_dict['username']
                             session['pending_role'] = user_dict['role']
                             
-                            # Reset failed attempts
                             if USE_POSTGRESQL:
                                 cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = %s", (user_dict['id'],))
                             else:
@@ -769,7 +714,6 @@ def login():
                     else:
                         flash('Failed to generate OTP. Please try again.', 'error')
                 else:
-                    # Wrong password
                     failed_attempts = user_dict['failed_login_attempts'] + 1
                     lock_time = None
                     if failed_attempts >= 5:
@@ -787,10 +731,9 @@ def login():
                             (failed_attempts, lock_time_str, user_dict['id']))
                     conn.commit()
             else:
-                # Username not found
                 flash('Invalid username or password.', 'error')
         except Exception as e:
-            print(f"Login error: {str(e)}")
+            app.logger.info(f"Login error: {str(e)}")
             traceback.print_exc()
             flash('An error occurred. Please try again.', 'error')
         finally:
@@ -825,7 +768,6 @@ def verify_otp_page():
         username = session.get('pending_username')
         
         if verify_otp(username, otp_code):
-            # Login successful
             session['user_id'] = session.pop('pending_user_id')
             session['username'] = session.pop('pending_username')
             session['role'] = session.pop('pending_role')
@@ -844,10 +786,7 @@ def verify_otp_page():
 @limiter.limit("3 per minute")
 @csrf.exempt
 def resend_otp():
-    """
-    Resend OTP - FIXED VERSION
-    Properly handles email lookup from database
-    """
+    """Resend OTP - FIXED VERSION"""
     if 'pending_user_id' not in session:
         return jsonify({'success': False, 'error': 'Session expired. Please login again.'}), 400
     
@@ -860,7 +799,6 @@ def resend_otp():
         if not username or not user_id:
             return jsonify({'success': False, 'error': 'Session data incomplete'}), 400
         
-        # FIXED: Get email from database instead of using role-based lookup
         conn = get_db_connection()
         cur = conn.cursor()
         
@@ -875,12 +813,10 @@ def resend_otp():
         
         email = user[0]
         
-        # Generate new OTP
         otp_code = generate_otp()
         
-        print(f"Resending OTP to {email} for user {username}")
+        app.logger.info(f"Resending OTP to {email} for user {username}")
         
-        # Store and send OTP
         if store_otp(username, otp_code):
             if send_otp_email(email, otp_code, username):
                 log_activity("OTP_RESENT", f"OTP resent for {username}")
@@ -890,7 +826,7 @@ def resend_otp():
         else:
             return jsonify({'success': False, 'error': 'Failed to generate OTP'}), 500
     except Exception as e:
-        print(f"Resend OTP error: {str(e)}")
+        app.logger.info(f"Resend OTP error: {str(e)}")
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
@@ -976,7 +912,7 @@ def change_password():
             flash('Password changed successfully!', 'success')
             return redirect(url_for('dashboard'))
         except Exception as e:
-            print(f"Change password error: {str(e)}")
+            app.logger.info(f"Change password error: {str(e)}")
             flash('An error occurred. Please try again.', 'error')
             return render_template('change_password.html')
         finally:
@@ -992,6 +928,7 @@ def change_password():
                     pass
     
     return render_template('change_password.html')
+
 
 @app.route('/dashboard')
 @login_required
@@ -1009,18 +946,65 @@ def dashboard():
         cur.execute("SELECT COUNT(*) FROM users")
         total_users = cur.fetchone()[0]
         
+        cur.execute("""
+            SELECT document_type, COUNT(*) 
+            FROM documents 
+            GROUP BY document_type
+        """)
+        doc_distribution = cur.fetchall()
+        
+        if USE_POSTGRESQL:
+            cur.execute("""
+                SELECT c.name, c.created_at, COUNT(d.id) as doc_count
+                FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id
+                GROUP BY c.id, c.name, c.created_at
+                ORDER BY c.created_at DESC
+                LIMIT 5
+            """)
+        else:
+            cur.execute("""
+                SELECT c.name, c.created_at, COUNT(d.id) as doc_count
+                FROM clients c
+                LEFT JOIN documents d ON c.id = d.client_id
+                GROUP BY c.id
+                ORDER BY c.created_at DESC
+                LIMIT 5
+            """)
+        recent_clients = cur.fetchall()
+        
+        if USE_POSTGRESQL:
+            cur.execute("""
+                SELECT u.username, a.action, a.details, 
+                       TO_CHAR(a.timestamp, 'YYYY-MM-DD HH24:MI:SS') as formatted_time
+                FROM activity_logs a
+                LEFT JOIN users u ON a.user_id = u.id
+                ORDER BY a.timestamp DESC
+                LIMIT 10
+            """)
+        else:
+            cur.execute("""
+                SELECT u.username, a.action, a.details, a.timestamp
+                FROM activity_logs a
+                LEFT JOIN users u ON a.user_id = u.id
+                ORDER BY a.timestamp DESC
+                LIMIT 10
+            """)
+        recent_activity = cur.fetchall()
+        
         stats = {
             'total_clients': total_clients,
             'total_docs': total_docs,
             'total_users': total_users,
-            'recent_activity': [],
-            'doc_distribution': [],
-            'recent_clients': []
+            'doc_distribution': doc_distribution,
+            'recent_clients': recent_clients,
+            'recent_activity': recent_activity
         }
         
         return render_template('dashboard.html', stats=stats)
     except Exception as e:
-        print(f"Dashboard error: {str(e)}")
+        app.logger.info(f"Dashboard error: {str(e)}")
+        traceback.print_exc()
         flash(f"Error loading dashboard: {str(e)}", "error")
         return render_template('dashboard.html', stats={})
     finally:
@@ -1087,7 +1071,7 @@ def list_clients():
         return render_template('clients.html', clients=clients_list, sort_by=sort_by,
             order=order_sql.lower(), search_query=search_query, is_search=bool(search_query))
     except Exception as e:
-        print(f"List clients error: {str(e)}")
+        app.logger.info(f"List clients error: {str(e)}")
         traceback.print_exc()
         flash(f"Error: {str(e)}", "error")
         return render_template('clients.html', clients=[], is_search=False)
@@ -1211,7 +1195,7 @@ def upload():
         flash(f'Successfully uploaded {len(upload_results)} document(s)!', 'success')
         return render_template('upload.html', success=True, name=client_name, upload_results=upload_results)
     except Exception as e:
-        print(f"Upload error: {str(e)}")
+        app.logger.info(f"Upload error: {str(e)}")
         traceback.print_exc()
         flash(f'Upload error: {str(e)}', 'error')
         return redirect(url_for('upload_page'))
@@ -1226,6 +1210,7 @@ def upload():
                 conn.close()
             except: 
                 pass
+
 
 @app.route('/fetch_data', methods=['POST'])
 @login_required
@@ -1283,7 +1268,7 @@ def fetch_data():
         log_activity("DOCUMENTS_VIEWED", f"Viewed documents for {client_row[1]}")
         return render_template('fetch.html', client=client)
     except Exception as e:
-        print(f"Fetch data error: {str(e)}")
+        app.logger.info(f"Fetch data error: {str(e)}")
         traceback.print_exc()
         return render_template('fetch.html', error=str(e))
     finally:
@@ -1327,7 +1312,7 @@ def download_document():
         
         return response
     except Exception as e:
-        print(f"Download error: {str(e)}")
+        app.logger.info(f"Download error: {str(e)}")
         flash(f'Error downloading: {str(e)}', 'error')
         return redirect(url_for('fetch_page'))
 
@@ -1364,7 +1349,7 @@ def delete_document():
         flash('Document deleted successfully', 'success')
         return redirect(request.referrer or url_for('fetch_page'))
     except Exception as e:
-        print(f"Delete error: {str(e)}")
+        app.logger.info(f"Delete error: {str(e)}")
         flash(f'Error deleting document: {str(e)}', 'error')
         return redirect(request.referrer or url_for('fetch_page'))
     finally:
@@ -1424,7 +1409,7 @@ def delete_client():
         flash('Client and all documents deleted successfully', 'success')
         return redirect(url_for('list_clients'))
     except Exception as e:
-        print(f"Delete client error: {str(e)}")
+        app.logger.info(f"Delete client error: {str(e)}")
         flash(f'Error deleting client: {str(e)}', 'error')
         return redirect(url_for('list_clients'))
     finally:
@@ -1468,7 +1453,7 @@ def edit_client(client_id):
         log_activity("CLIENT_RENAMED", f"Renamed client to: {new_name}")
         return jsonify({'success': True, 'message': 'Client name updated successfully'})
     except Exception as e:
-        print(f"Edit client error: {str(e)}")
+        app.logger.info(f"Edit client error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
@@ -1487,17 +1472,28 @@ def edit_client(client_id):
 @login_required
 def manual_sync():
     try:
-        print("Starting manual Google Drive sync...")
+        app.logger.info("Starting manual Google Drive sync...")
         synced = sync_drive_to_database()
         flash(f'Synced {synced} documents from Google Drive', 'success')
         return redirect(url_for('list_clients'))
     except Exception as e:
-        print(f"Sync error: {str(e)}")
+        app.logger.info(f"Sync error: {str(e)}")
         traceback.print_exc()
         flash(f'Error during sync: {str(e)}', 'error')
         return redirect(url_for('list_clients'))
 
-# ============= API ROUTES =============
+
+@app.route('/view-document/<path:file_url>')
+@login_required
+def view_document(file_url):
+    try:
+        return redirect(file_url)
+    except Exception as e:
+        app.logger.info(f"View document error: {str(e)}")
+        flash(f'Error viewing document: {str(e)}', 'error')
+        return redirect(url_for('fetch_page'))
+
+
 
 @app.route('/api/quick_search', methods=['GET'])
 @login_required
@@ -1535,7 +1531,7 @@ def api_quick_search():
         
         return jsonify({'results': results})
     except Exception as e:
-        print(f"Quick search error: {str(e)}")
+        app.logger.info(f"Quick search error: {str(e)}")
         return jsonify({'results': [], 'error': str(e)})
     finally:
         if cur:
@@ -1579,7 +1575,7 @@ def get_client_documents(client_id):
         
         return jsonify({'success': True, 'documents': documents})
     except Exception as e:
-        print(f"Get documents error: {str(e)}")
+        app.logger.info(f"Get documents error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
@@ -1637,9 +1633,9 @@ def update_client_documents(client_id):
                     else:
                         cur.execute("DELETE FROM documents WHERE client_id = ? AND document_type = ?", (client_id, doc_type))
                     conn.commit()
-                    print(f"Deleted {doc_type} for client {client_id}")
+                    app.logger.info(f"Deleted {doc_type} for client {client_id}")
                 except Exception as e:
-                    print(f"Error deleting {doc_type}: {str(e)}")
+                    app.logger.info(f"Error deleting {doc_type}: {str(e)}")
             
             file = request.files.get(doc_type)
             if file and file.filename:
@@ -1685,9 +1681,9 @@ def update_client_documents(client_id):
                     
                     conn.commit()
                     updated_docs.append(doc_type)
-                    print(f"Updated {doc_type} for client {client_id}")
+                    app.logger.info(f"Updated {doc_type} for client {client_id}")
                 except Exception as e:
-                    print(f"Error uploading {doc_type}: {str(e)}")
+                    app.logger.info(f"Error uploading {doc_type}: {str(e)}")
         
         now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if USE_POSTGRESQL:
@@ -1704,7 +1700,7 @@ def update_client_documents(client_id):
             'updated': updated_docs
         })
     except Exception as e:
-        print(f"Update documents error: {str(e)}")
+        app.logger.info(f"Update documents error: {str(e)}")
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
     finally:
@@ -1720,18 +1716,15 @@ def update_client_documents(client_id):
                 pass
 
 
-@app.route('/view-document/<path:file_url>')
+@app.route('/api/user/role')
 @login_required
-def view_document(file_url):
-    try:
-        return redirect(file_url)
-    except Exception as e:
-        print(f"View document error: {str(e)}")
-        flash(f'Error viewing document: {str(e)}', 'error')
-        return redirect(url_for('fetch_page'))
+def get_user_role():
+    return jsonify({
+        'role': session.get('role', 'user'),
+        'username': session.get('username')
+    })
 
 
-# ============= ADMIN ROUTES =============
 
 @app.route('/admin/dashboard')
 @admin_required
@@ -1777,8 +1770,7 @@ def admin_dashboard():
         
         return render_template('admin_dashboard.html', users=users, stats=stats)
     except Exception as e:
-        print(f"Admin dashboard error: {str(e)}")
-        import traceback
+        app.logger.info(f"Admin dashboard error: {str(e)}")
         traceback.print_exc()
         flash('Error loading admin dashboard.', 'error')
         return redirect(url_for('dashboard'))
@@ -1837,7 +1829,7 @@ def admin_add_user():
         return jsonify({'success': True, 'message': f'User {username} created successfully'})
         
     except Exception as e:
-        print(f"Add user error: {str(e)}")
+        app.logger.info(f"Add user error: {str(e)}")
         return jsonify({'success': False, 'error': 'Username or email already exists'})
     finally:
         if cur:
@@ -1879,7 +1871,7 @@ def change_user_role(user_id):
         log_activity("ROLE_CHANGED", f"User role changed to {new_role} for user ID: {user_id}")
         return jsonify({'success': True, 'message': f'User role changed to {new_role}'})
     except Exception as e:
-        print(f"Change role error: {str(e)}")
+        app.logger.info(f"Change role error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
@@ -1927,7 +1919,7 @@ def admin_reset_password(user_id):
         log_activity("PASSWORD_RESET", f"Admin reset password for user: {username}")
         return jsonify({'success': True, 'message': f'Password reset for {username}'})
     except Exception as e:
-        print(f"Reset password error: {str(e)}")
+        app.logger.info(f"Reset password error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
@@ -1961,7 +1953,7 @@ def unlock_user(user_id):
         log_activity("USER_UNLOCKED", f"User ID {user_id} unlocked by admin")
         return jsonify({'success': True, 'message': 'User account unlocked'})
     except Exception as e:
-        print(f"Unlock user error: {str(e)}")
+        app.logger.info(f"Unlock user error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
@@ -2006,7 +1998,7 @@ def delete_user(user_id):
         log_activity("USER_DELETED", f"User deleted: {username}")
         return jsonify({'success': True, 'message': 'User account deleted'})
     except Exception as e:
-        print(f"Delete user error: {str(e)}")
+        app.logger.info(f"Delete user error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
     finally:
         if cur:
@@ -2065,7 +2057,7 @@ def user_activity(user_id):
         html += '</table></div></body></html>'
         return html
     except Exception as e:
-        print(f"User activity error: {str(e)}")
+        app.logger.info(f"User activity error: {str(e)}")
         flash('Error loading activity logs.', 'error')
         return redirect(url_for('admin_dashboard'))
     finally:
@@ -2080,37 +2072,20 @@ def user_activity(user_id):
             except: 
                 pass
 
-@app.route('/api/user/role')
-@login_required
-def get_user_role():
-    return jsonify({
-        'role': session.get('role', 'user'),
-        'username': session.get('username')
-    })
-
-
-@app.errorhandler(404)
-def not_found(e):
-    return render_template('404.html'), 404
-
-
-@app.errorhandler(403)
-def forbidden(e):
-    return render_template('404.html'), 403
 
 def sync_drive_to_database():
     if not drive:
-        print("Google Drive not initialized")
+        app.logger.info("Google Drive not initialized")
         return 0
     
     conn = None
     cur = None
     try:
-        print("Starting Google Drive sync...")
+        app.logger.info("Starting Google Drive sync...")
         synced_count = 0
         query = f"'{ROOT_FOLDER_ID}' in parents and trashed=false"
         folder_list = drive.ListFile({'q': query, 'maxResults': 1000}).GetList()
-        print(f"Found {len(folder_list)} folders in Google Drive")
+        app.logger.info(f"Found {len(folder_list)} folders in Google Drive")
         
         conn = get_db_connection()
         cur = conn.cursor()
@@ -2146,13 +2121,13 @@ def sync_drive_to_database():
                         cur.execute("INSERT INTO clients (name, folder_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
                             (folder_name, folder_id, created_date, modified_date))
                         client_id = cur.lastrowid
-                    print(f"  Added: {folder_name}")
+                    app.logger.info(f"  Added: {folder_name}")
                 
                 files_query = f"'{folder_id}' in parents and trashed=false"
                 try:
                     files_list = drive.ListFile({'q': files_query, 'maxResults': 1000}).GetList()
                 except Exception as e:
-                    print(f"  Skipping files for {folder_name}: {e}")
+                    app.logger.info(f"  Skipping files for {folder_name}: {e}")
                     files_list = []
                 
                 for file in files_list:
@@ -2198,14 +2173,14 @@ def sync_drive_to_database():
                         continue
                 conn.commit()
             except Exception as e:
-                print(f"Error syncing {folder.get('title', '?')}: {e}")
+                app.logger.info(f"Error syncing {folder.get('title', '?')}: {e}")
                 conn.rollback()
                 continue
         
-        print(f"Sync complete! {synced_count} documents synced")
+        app.logger.info(f"Sync complete! {synced_count} documents synced")
         return synced_count
     except Exception as e:
-        print(f"Sync error: {str(e)}")
+        app.logger.info(f"Sync error: {str(e)}")
         traceback.print_exc()
         return 0
     finally:
@@ -2221,15 +2196,14 @@ def sync_drive_to_database():
                 pass
 
 
-# ============= MAIN =============
 
 if __name__ == '__main__':
     try:
-        print("Starting initial sync on app startup...")
+        app.logger.info("Starting initial sync on app startup...")
         synced = sync_drive_to_database()
-        print(f"Sync complete: {synced} documents synced")
+        app.logger.info(f"Sync complete: {synced} documents synced")
     except Exception as e:
-        print(f"Sync warning: {e}")
+        app.logger.info(f"Sync warning: {e}")
     
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     port = int(os.getenv('PORT', 5000))
