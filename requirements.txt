@@ -26,7 +26,6 @@ pytz==2023.3
 
 # Production Server (recommended for production)
 gunicorn==21.2.0
-uwsgi==2.0.23
 
 # Monitoring and Logging (optional)
 sentry-sdk[flask]==1.39.1
