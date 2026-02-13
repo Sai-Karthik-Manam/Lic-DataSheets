@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verify OTP | LIC Manager</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
   <style>
     body {
       min-height: 100vh;
@@ -23,52 +24,48 @@
       padding: 35px 30px;
       border-radius: 20px;
       box-shadow: 0 15px 50px rgba(0,0,0,0.2);
-    }
-
-    .otp-header { text-align: center; margin-bottom: 25px; }
-    .otp-icon { font-size: 55px; margin-bottom: 12px; }
-
-    .otp-input {
-      width: 100%;
-      padding: 15px 20px;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
-      font-size: 24px;
       text-align: center;
-      letter-spacing: 8px;
-      font-weight: 600;
-      margin: 20px 0;
-      box-sizing: border-box;
     }
 
-    .otp-input:focus {
-      outline: none;
+    .otp-icon {
+      font-size: 50px;
+      margin-bottom: 10px;
+    }
+
+    .otp-boxes {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 25px 0;
+    }
+
+    .otp-box {
+      width: 50px;
+      height: 55px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      transition: 0.3s;
+    }
+
+    .otp-box:focus {
       border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+      outline: none;
     }
 
     .btn-verify {
       width: 100%;
-      padding: 15px;
+      padding: 14px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
       border-radius: 12px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-    }
-
-    .btn-verify:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .resend-section {
-      text-align: center;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #e0e0e0;
     }
 
     .btn-resend {
@@ -79,6 +76,7 @@
       cursor: pointer;
       font-size: 14px;
       text-decoration: underline;
+      margin-top: 15px;
     }
 
     .btn-resend:disabled {
@@ -90,12 +88,11 @@
     .timer {
       font-size: 13px;
       color: #666;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .back-link {
       display: block;
-      text-align: center;
       margin-top: 20px;
       color: #667eea;
       text-decoration: none;
@@ -104,14 +101,15 @@
     }
   </style>
 </head>
+
 <body>
   <div class="otp-container">
 
-    <div class="otp-header">
-      <div class="otp-icon">🔐</div>
-      <h1>Verify OTP</h1>
-      <p style="color:#666;font-size:13px;">Enter the 6-digit code sent to your email</p>
-    </div>
+    <div class="otp-icon">🔐</div>
+    <h2>Verify OTP</h2>
+    <p style="color:#666;font-size:13px;">
+      Enter the 6-digit code sent to your email
+    </p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -125,59 +123,86 @@
 
     <form method="POST" action="{{ url_for('verify_otp_page') }}" id="otpForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      
-      <input 
-        type="text"
-        id="otp_code"
-        name="otp_code"
-        class="otp-input"
-        maxlength="6"
-        pattern="[0-9]{6}"
-        required
-        placeholder="000000"
-        autocomplete="off"
-      >
+      <input type="hidden" name="otp_code" id="finalOtp">
+
+      <div class="otp-boxes">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+        <input type="text" maxlength="1" class="otp-box">
+      </div>
 
       <button type="submit" class="btn-verify" id="verifyBtn">
         ✓ Verify & Login
       </button>
     </form>
 
-    <div class="resend-section">
-      <p style="font-size:13px;color:#666;">Didn't receive the code?</p>
-      <button type="button" class="btn-resend" id="resendBtn">
-        📧 Resend OTP
-      </button>
-      <div class="timer" id="timer"></div>
-    </div>
+    <button type="button" class="btn-resend" id="resendBtn">
+      📧 Resend OTP
+    </button>
+    <div class="timer" id="timer"></div>
 
-    <a href="{{ url_for('login') }}" class="back-link">← Back to Login</a>
+    <a href="{{ url_for('login') }}" class="back-link">
+      ← Back to Login
+    </a>
+
   </div>
 
 <script>
-  const otpInput = document.getElementById('otp_code');
+  const otpBoxes = document.querySelectorAll('.otp-box');
+  const finalOtp = document.getElementById('finalOtp');
   const otpForm = document.getElementById('otpForm');
   const verifyBtn = document.getElementById('verifyBtn');
   const resendBtn = document.getElementById('resendBtn');
   const timerDiv = document.getElementById('timer');
 
-  // Only allow numbers
-  otpInput.addEventListener('input', () => {
-    otpInput.value = otpInput.value.replace(/[^0-9]/g, '');
+  // Auto move forward
+  otpBoxes.forEach((box, index) => {
+    box.addEventListener('input', (e) => {
+      box.value = box.value.replace(/[^0-9]/g, '');
+      if (box.value && index < otpBoxes.length - 1) {
+        otpBoxes[index + 1].focus();
+      }
+    });
+
+    box.addEventListener('keydown', (e) => {
+      if (e.key === "Backspace" && !box.value && index > 0) {
+        otpBoxes[index - 1].focus();
+      }
+    });
   });
 
-  // Verify submit
+  // Paste full OTP
+  otpBoxes[0].addEventListener('paste', (e) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').trim();
+    if (/^\d{6}$/.test(pasteData)) {
+      otpBoxes.forEach((box, i) => {
+        box.value = pasteData[i];
+      });
+      otpBoxes[5].focus();
+    }
+  });
+
+  // Submit
   otpForm.addEventListener('submit', function(e) {
-    if (otpInput.value.trim().length !== 6) {
+    let otp = '';
+    otpBoxes.forEach(box => otp += box.value);
+
+    if (otp.length !== 6) {
       e.preventDefault();
-      alert("Please enter a valid 6-digit OTP");
+      alert("Please enter complete 6-digit OTP");
       return;
     }
+
+    finalOtp.value = otp;
     verifyBtn.disabled = true;
     verifyBtn.textContent = "⏳ Verifying...";
   });
 
-  // Resend timer
+  // Resend Timer
   let timer = 30;
   let interval;
 
@@ -186,7 +211,7 @@
     timer = 30;
     interval = setInterval(() => {
       timer--;
-      timerDiv.textContent = "You can resend OTP in " + timer + " seconds";
+      timerDiv.textContent = "Resend available in " + timer + " seconds";
       if (timer <= 0) {
         clearInterval(interval);
         resendBtn.disabled = false;
@@ -195,7 +220,6 @@
     }, 1000);
   }
 
-  // Resend OTP
   resendBtn.addEventListener('click', async () => {
     resendBtn.disabled = true;
     resendBtn.textContent = "⏳ Sending...";
@@ -203,37 +227,29 @@
     try {
       const response = await fetch("{{ url_for('resend_otp') }}", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          csrf_token: "{{ csrf_token() }}"
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csrf_token: "{{ csrf_token() }}" })
       });
 
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error("Invalid server response");
-      }
+      const data = await response.json();
 
       if (data.success) {
         alert("✅ OTP sent successfully!");
         startTimer();
       } else {
-        alert("❌ " + (data.error || "Failed to resend OTP"));
+        alert("❌ " + (data.error || "Failed"));
         resendBtn.disabled = false;
       }
-    } catch (err) {
-      alert("❌ Network error. Try again.");
+
+    } catch {
+      alert("❌ Network error");
       resendBtn.disabled = false;
     }
 
     resendBtn.textContent = "📧 Resend OTP";
   });
 
-  // Start timer when page loads
+  otpBoxes[0].focus();
   startTimer();
 </script>
 
