@@ -8,6 +8,7 @@ import os
 import json
 import tempfile
 import traceback
+import threading
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -316,7 +317,7 @@ def send_otp_email(email, otp_code, username):
         
         msg.attach(MIMEText(body, 'html'))
         
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.send_message(msg)
@@ -696,21 +697,27 @@ def login():
                         return render_template('login.html')
                     
                     if store_otp(username, otp_code):
-                        if send_otp_email(email, otp_code, username):
-                            session['pending_user_id'] = user_dict['id']
-                            session['pending_username'] = user_dict['username']
-                            session['pending_role'] = user_dict['role']
-                            
-                            if USE_POSTGRESQL:
-                                cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = %s", (user_dict['id'],))
-                            else:
-                                cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user_dict['id'],))
-                            conn.commit()
-                            
-                            flash(f'OTP sent to {email}. Please check your email.', 'success')
-                            return redirect(url_for('verify_otp_page'))
+
+                        # Send email in background thread (NON-BLOCKING)
+                        threading.Thread(
+                            target=send_otp_email,
+                            args=(email, otp_code, username),
+                            daemon=True
+                        ).start()
+
+                        session['pending_user_id'] = user_dict['id']
+                        session['pending_username'] = user_dict['username']
+                        session['pending_role'] = user_dict['role']
+
+                        if USE_POSTGRESQL:
+                            cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = %s", (user_dict['id'],))
                         else:
-                            flash('Failed to send OTP. Please check email configuration.', 'error')
+                            cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user_dict['id'],))
+
+                        conn.commit()
+
+                        flash(f'OTP sent to {email}. Please check your email.', 'success')
+                        return redirect(url_for('verify_otp_page'))
                     else:
                         flash('Failed to generate OTP. Please try again.', 'error')
                 else:
@@ -818,11 +825,15 @@ def resend_otp():
         app.logger.info(f"Resending OTP to {email} for user {username}")
         
         if store_otp(username, otp_code):
-            if send_otp_email(email, otp_code, username):
-                log_activity("OTP_RESENT", f"OTP resent for {username}")
-                return jsonify({'success': True, 'message': 'OTP sent successfully'}), 200
-            else:
-                return jsonify({'success': False, 'error': 'Failed to send email'}), 500
+
+            threading.Thread(
+                target=send_otp_email,
+                args=(email, otp_code, username),
+                daemon=True
+            ).start()
+
+            log_activity("OTP_RESENT", f"OTP resent for {username}")
+            return jsonify({'success': True, 'message': 'OTP sent successfully'}), 200
         else:
             return jsonify({'success': False, 'error': 'Failed to generate OTP'}), 500
     except Exception as e:
