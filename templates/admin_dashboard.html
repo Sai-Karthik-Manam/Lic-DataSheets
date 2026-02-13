@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | LIC Manager</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | LIC Manager</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
     .admin-navbar {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -271,129 +271,144 @@
   </div>
 
   <div class="container" style="max-width: 1150px; padding: 25px 20px;">
-    <h1>🔧 Admin Control Panel</h1>
-    <p style="color: #666; margin-bottom: 25px;">Manage users, roles, and system settings</p>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+<h1>🔧 Admin Control Panel</h1>
+<p style="color:#666;">Manage users, roles, and system settings</p>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>👥 Total Users</h3>
-        <div class="stat-number">{{ stats.total_users or 0 }}</div>
-      </div>
-      <div class="stat-card">
-        <h3>👑 Admin Users</h3>
-        <div class="stat-number">{{ stats.admin_users or 0 }}</div>
-      </div>
-      <div class="stat-card">
-        <h3>👤 Regular Users</h3>
-        <div class="stat-number">{{ stats.regular_users or 0 }}</div>
-      </div>
-      <div class="stat-card">
-        <h3>📁 Total Clients</h3>
-        <div class="stat-number">{{ stats.total_clients or 0 }}</div>
-      </div>
-      <div class="stat-card">
-        <h3>📄 Total Documents</h3>
-        <div class="stat-number">{{ stats.total_documents or 0 }}</div>
-      </div>
-    </div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 35px;">
-      <h2 style="color: #333; margin: 0;">📋 All Users</h2>
-      <button class="add-user-btn" onclick="openAddUserModal()">➕ Add New User</button>
-    </div>
-    
-    <div class="table-container">
-      <div class="table-wrapper">
-        <table class="users-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Created</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for user in users %}
-            <tr>
-              <td>{{ loop.index }}</td>
-              <td><strong>{{ user[1] }}</strong></td>
-              <td>{{ user[2] or 'N/A' }}</td>
-              <td>
-                <span class="role-badge {% if user[3] == 'admin' %}role-admin{% else %}role-user{% endif %}">
-                  {{ user[3].upper() }}
-                </span>
-              </td>
-              <td>
-                {% if user[4] %}
-                  {% if user[4].__class__.__name__ == 'datetime' %}
-                    {{ user[4].strftime('%Y-%m-%d') }}
-                  {% else %}
-                    {{ user[4][:10] }}
-                  {% endif %}
-                {% else %}
-                  N/A
-                {% endif %}
-              </td>
-              <td>
-                {% if user[6] %}
-                  <span class="role-badge locked-badge">🔒 LOCKED</span>
-                {% else %}
-                  <span style="color: #28a745; font-weight: 600;">✓ ACTIVE</span>
-                {% endif %}
-              </td>
-              <td>
-                <div class="action-buttons">
-                  {% if user[3] == 'user' %}
-                  <button class="btn-small btn-promote" onclick="changeRole('{{ user[0] }}', 'admin')">
-                    ⬆ Promote
-                  </button>
-                  {% elif user[0] != session.get('user_id') %}
-                  <button class="btn-small btn-demote" onclick="changeRole('{{ user[0] }}', 'user')">
-                    ⬇ Demote
-                  </button>
-                  {% endif %}
-                  
-                  {% if user[6] %}
-                  <button class="btn-small btn-unlock" onclick="unlockUser('{{ user[0] }}')">
-                    🔓 Unlock
-                  </button>
-                  {% endif %}
-                  
-                  <button class="btn-small btn-password" onclick="resetPassword('{{ user[0] }}', '{{ user[1] }}')">
-                    🔑 Reset Pwd
-                  </button>
-                  
-                  <button class="btn-small btn-view" onclick="viewActivity('{{ user[0] }}')">
-                    📊 Activity
-                  </button>
-                  
-                  {% if user[0] != session.get('user_id') %}
-                  <button class="btn-small btn-delete" onclick="deleteUser('{{ user[0] }}', '{{ user[1] }}')">
-                    🗑️ Delete
-                  </button>
-                  {% endif %}
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <h3>Total Users</h3>
+    <div class="stat-number">{{ stats.total_users or 0 }}</div>
   </div>
+  <div class="stat-card">
+    <h3>Admin Users</h3>
+    <div class="stat-number">{{ stats.admin_users or 0 }}</div>
+  </div>
+  <div class="stat-card">
+    <h3>Regular Users</h3>
+    <div class="stat-number">{{ stats.regular_users or 0 }}</div>
+  </div>
+  <div class="stat-card">
+    <h3>Total Clients</h3>
+    <div class="stat-number">{{ stats.total_clients or 0 }}</div>
+  </div>
+  <div class="stat-card">
+    <h3>Total Documents</h3>
+    <div class="stat-number">{{ stats.total_documents or 0 }}</div>
+  </div>
+</div>
 
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:30px;">
+  <h2>📋 All Users</h2>
+  <button class="add-user-btn" onclick="openAddUserModal()">➕ Add New User</button>
+</div>
+
+<div class="table-container">
+<div class="table-wrapper">
+<table class="users-table">
+<thead>
+<tr>
+  <th>#</th>
+  <th>Username</th>
+  <th>Email</th>
+  <th>Role</th>
+  <th>Created</th>
+  <th>Status</th>
+  <th>Actions</th>
+</tr>
+</thead>
+<tbody>
+
+{% for user in users %}
+<tr>
+  <td>{{ loop.index }}</td>
+  <td><strong>{{ user[1] }}</strong></td>
+  <td>{{ user[2] or 'N/A' }}</td>
+
+  <td>
+    <span class="role-badge {% if user[3]=='admin' %}role-admin{% else %}role-user{% endif %}">
+      {{ user[3].upper() }}
+    </span>
+  </td>
+
+  <td>
+    {% if user[4] %}
+      {% if user[4].__class__.__name__ == 'datetime' %}
+        {{ user[4].strftime('%Y-%m-%d') }}
+      {% else %}
+        {{ user[4][:10] }}
+      {% endif %}
+    {% else %}
+      N/A
+    {% endif %}
+  </td>
+
+  <td>
+    {% if user[6] %}
+      <span class="role-badge locked-badge">🔒 LOCKED</span>
+    {% else %}
+      <span style="color:#28a745;font-weight:600;">✓ ACTIVE</span>
+    {% endif %}
+  </td>
+
+  <td>
+    <div class="action-buttons">
+
+      {% if user[3]=='user' %}
+      <button class="btn-small btn-promote"
+        onclick="changeRole('{{ user[0] }}','admin',this)">
+        ⬆ Promote
+      </button>
+      {% elif user[0] != session.get('user_id') %}
+      <button class="btn-small btn-demote"
+        onclick="changeRole('{{ user[0] }}','user',this)">
+        ⬇ Demote
+      </button>
+      {% endif %}
+
+      {% if user[6] %}
+      <button class="btn-small btn-unlock"
+        onclick="unlockUser('{{ user[0] }}',this)">
+        🔓 Unlock
+      </button>
+      {% endif %}
+
+      <button class="btn-small btn-password"
+        onclick="resetPassword('{{ user[0] }}','{{ user[1] }}')">
+        🔑 Reset
+      </button>
+
+      <button class="btn-small btn-view"
+        onclick="viewActivity('{{ user[0] }}')">
+        📊 Activity
+      </button>
+
+      {% if user[0] != session.get('user_id') %}
+      <button class="btn-small btn-delete"
+        onclick="deleteUser('{{ user[0] }}','{{ user[1] }}',this)">
+        🗑 Delete
+      </button>
+      {% endif %}
+
+    </div>
+  </td>
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
   <!-- Add User Modal -->
   <div id="addUserModal" class="modal">
     <div class="modal-content">
@@ -445,167 +460,196 @@
   </div>
 
   <script>
-    function openAddUserModal() {
-      document.getElementById('addUserModal').classList.add('active');
-      document.body.style.overflow = 'hidden';
+
+/* ================================
+   GLOBAL SAFE POST FUNCTION
+================================ */
+
+function safePost(url, formData, button = null) {
+
+  if (button) {
+    button.disabled = true;
+    button.style.opacity = '0.6';
+  }
+
+  fetch(url, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) throw new Error("Server error");
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + (data.error || 'Operation failed'));
     }
-
-    function closeAddUserModal() {
-      document.getElementById('addUserModal').classList.remove('active');
-      document.body.style.overflow = '';
-      document.getElementById('addUserForm').reset();
+  })
+  .catch(error => {
+    console.error(error);
+    alert('❌ Network or server error.');
+  })
+  .finally(() => {
+    if (button) {
+      button.disabled = false;
+      button.style.opacity = '';
     }
+  });
+}
 
-    function openResetPasswordModal(userId, username) {
-      document.getElementById('reset_user_id').value = userId;
-      document.getElementById('resetPasswordTitle').textContent = '🔑 Reset Password for ' + username;
-      document.getElementById('resetPasswordModal').classList.add('active');
-      document.body.style.overflow = 'hidden';
+/* ================================
+   ROLE CHANGE
+================================ */
+
+function changeRole(userId, newRole, btn) {
+
+  if (!confirm('Change role to ' + newRole.toUpperCase() + '?')) return;
+
+  const formData = new FormData();
+  formData.append('role', newRole);
+  formData.append('csrf_token', '{{ csrf_token() }}');
+
+  safePost('/admin/user/' + userId + '/role', formData, btn);
+}
+
+/* ================================
+   UNLOCK USER
+================================ */
+
+function unlockUser(userId, btn) {
+
+  if (!confirm('Unlock this user account?')) return;
+
+  const formData = new FormData();
+  formData.append('csrf_token', '{{ csrf_token() }}');
+
+  safePost('/admin/user/' + userId + '/unlock', formData, btn);
+}
+
+/* ================================
+   DELETE USER
+================================ */
+
+function deleteUser(userId, username, btn) {
+
+  if (!confirm('⚠️ DELETE user "' + username + '"? This cannot be undone!')) return;
+
+  const confirmName = prompt('Type "' + username + '" to confirm deletion:');
+  if (confirmName !== username) {
+    alert('Deletion cancelled. Name did not match.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('csrf_token', '{{ csrf_token() }}');
+
+  safePost('/admin/user/' + userId + '/delete', formData, btn);
+}
+
+/* ================================
+   RESET PASSWORD
+================================ */
+
+function resetPassword(userId, username) {
+
+  const newPassword = prompt('Enter new password for ' + username + ':');
+
+  if (!newPassword) return;
+
+  if (newPassword.length < 6) {
+    alert('Password must be at least 6 characters.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('csrf_token', '{{ csrf_token() }}');
+  formData.append('new_password', newPassword);
+
+  safePost('/admin/user/' + userId + '/password', formData);
+}
+
+/* ================================
+   VIEW ACTIVITY
+================================ */
+
+function viewActivity(userId) {
+  window.location.href = '/admin/user/' + userId + '/activity';
+}
+
+/* ================================
+   ADD USER MODAL CONTROL
+================================ */
+
+function openAddUserModal() {
+  document.getElementById('addUserModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAddUserModal() {
+  document.getElementById('addUserModal').classList.remove('active');
+  document.body.style.overflow = '';
+  const form = document.getElementById('addUserForm');
+  if (form) form.reset();
+}
+
+/* ================================
+   ADD USER
+================================ */
+
+function addUser(event) {
+
+  event.preventDefault();
+
+  const username = document.getElementById('new_username').value.trim();
+  const email = document.getElementById('new_email').value.trim();
+  const password = document.getElementById('new_password').value.trim();
+  const role = document.getElementById('new_role').value;
+
+  if (!username || !email || !password) {
+    alert('Please fill all fields.');
+    return;
+  }
+
+  if (password.length < 6) {
+    alert('Password must be at least 6 characters.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('csrf_token', '{{ csrf_token() }}');
+  formData.append('username', username);
+  formData.append('email', email);
+  formData.append('password', password);
+  formData.append('role', role);
+
+  safePost('/admin/user/add', formData);
+}
+
+/* ================================
+   ESC KEY CLOSE MODALS
+================================ */
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    closeAddUserModal();
+  }
+});
+
+/* ================================
+   BACKDROP CLICK CLOSE
+================================ */
+
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', function (e) {
+    if (e.target === this) {
+      closeAddUserModal();
     }
+  });
+});
 
-    function closeResetPasswordModal() {
-      document.getElementById('resetPasswordModal').classList.remove('active');
-      document.body.style.overflow = '';
-      document.getElementById('resetPasswordForm').reset();
-    }
-
-    function addUser(e) {
-      e.preventDefault();
-      
-      const formData = new FormData();
-      formData.append('csrf_token', '{{ csrf_token() }}');
-      formData.append('username', document.getElementById('new_username').value);
-      formData.append('email', document.getElementById('new_email').value);
-      formData.append('password', document.getElementById('new_password').value);
-      formData.append('role', document.getElementById('new_role').value);
-
-      fetch('/admin/user/add', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            alert('✅ ' + data.message);
-            closeAddUserModal();
-            location.reload();
-          } else {
-            alert('❌ Error: ' + data.error);
-          }
-        })
-        .catch(err => alert('❌ Error: ' + err.message));
-    }
-
-    function changeRole(userId, newRole) {
-      if (!confirm('Change user role to ' + newRole.toUpperCase() + '?')) return;
-
-      const formData = new FormData();
-      formData.append('role', newRole);
-      formData.append('csrf_token', '{{ csrf_token() }}');
-
-      fetch('/admin/user/' + userId + '/role', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            alert('✅ ' + data.message);
-            location.reload();
-          } else {
-            alert('❌ Error: ' + data.error);
-          }
-        })
-        .catch(err => alert('❌ Error: ' + err.message));
-    }
-
-    function resetPassword(userId, username) {
-      openResetPasswordModal(userId, username);
-    }
-
-    function submitResetPassword(e) {
-      e.preventDefault();
-      
-      const userId = document.getElementById('reset_user_id').value;
-      const newPassword = document.getElementById('reset_new_password').value;
-
-      const formData = new FormData();
-      formData.append('csrf_token', '{{ csrf_token() }}');
-      formData.append('new_password', newPassword);
-
-      fetch('/admin/user/' + userId + '/password', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            alert('✅ ' + data.message);
-            closeResetPasswordModal();
-            location.reload();
-          } else {
-            alert('❌ Error: ' + data.error);
-          }
-        })
-        .catch(err => alert('❌ Error: ' + err.message));
-    }
-
-    function unlockUser(userId) {
-      if (!confirm('Unlock this user account?')) return;
-
-      const formData = new FormData();
-      formData.append('csrf_token', '{{ csrf_token() }}');
-
-      fetch('/admin/user/' + userId + '/unlock', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            alert('✅ ' + data.message);
-            location.reload();
-          } else {
-            alert('❌ Error: ' + data.error);
-          }
-        })
-        .catch(err => alert('❌ Error: ' + err.message));
-    }
-
-    function deleteUser(userId, username) {
-      if (!confirm('⚠️ DELETE user "' + username + '"? This cannot be undone!')) return;
-      
-      const confirmDelete = prompt('Type "' + username + '" to confirm deletion:');
-      if (confirmDelete !== username) {
-        alert('Deletion cancelled. Name did not match.');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('csrf_token', '{{ csrf_token() }}');
-
-      fetch('/admin/user/' + userId + '/delete', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            alert('✅ ' + data.message);
-            location.reload();
-          } else {
-            alert('❌ Error: ' + data.error);
-          }
-        })
-        .catch(err => alert('❌ Error: ' + err.message));
-    }
-
-    function viewActivity(userId) {
-      window.location.href = '/admin/user/' + userId + '/activity';
-    }
-
-    // Close modals on ESC key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        closeAddUserModal();
-        closeResetPasswordModal();
-      }
-    });
-
-    // Close modals on backdrop click
-    document.querySelectorAll('.modal').forEach(modal => {
-      modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-          closeAddUserModal();
-          closeResetPasswordModal();
-        }
-      });
-    });
-  </script>
+</script>
 </body>
 </html>

@@ -79,12 +79,6 @@
     .hero {
       text-align: center;
       margin-bottom: 60px;
-      animation: fadeInUp 0.8s ease;
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .hero h1 {
@@ -92,7 +86,6 @@
       color: white;
       margin: 0 0 16px;
       font-weight: 800;
-      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
     }
 
     .hero p {
@@ -121,27 +114,9 @@
       border-radius: 18px;
       padding: 35px 25px;
       text-align: center;
-      transition: all 0.4s ease;
+      transition: all 0.3s ease;
       cursor: pointer;
       border: 2px solid transparent;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      transform: scaleX(0);
-      transition: transform 0.4s ease;
-    }
-
-    .feature-card:hover::before {
-      transform: scaleX(1);
     }
 
     .feature-card:hover {
@@ -176,21 +151,6 @@
       border-radius: 20px;
       font-size: 13px;
       font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-    }
-
-    .feature-action:hover {
-      transform: scale(1.05);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .lock-icon {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 18px;
-      opacity: 0.3;
     }
 
     .stats-section {
@@ -209,17 +169,12 @@
       text-align: center;
     }
 
-    .stat-item {
-      padding: 15px;
-    }
+    .stat-item { padding: 15px; }
 
     .stat-number {
       font-size: 42px;
       font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #667eea;
       margin-bottom: 8px;
     }
 
@@ -235,61 +190,24 @@
       color: rgba(255, 255, 255, 0.8);
       font-size: 13px;
     }
-
-    @media (max-width: 768px) {
-      .top-nav {
-        padding: 12px 18px;
-      }
-
-      .logo { font-size: 18px; }
-
-      .nav-btn {
-        padding: 8px 16px;
-        font-size: 12px;
-      }
-
-      .hero h1 { font-size: 32px; }
-      .hero p { font-size: 17px; }
-
-      .features-grid {
-        grid-template-columns: 1fr;
-        gap: 18px;
-      }
-
-      .feature-card { padding: 28px 20px; }
-      .feature-icon { font-size: 45px; }
-      .feature-title { font-size: 18px; }
-
-      .landing-container {
-        padding: 90px 15px 40px;
-      }
-
-      .stats-section { padding: 25px 20px; }
-      .stat-number { font-size: 32px; }
-    }
-
-    @media (max-width: 480px) {
-      .hero h1 { font-size: 26px; }
-      .hero p { font-size: 15px; }
-      .stat-number { font-size: 28px; }
-    }
   </style>
 </head>
 <body>
+
   <nav class="top-nav">
     <div class="logo">
-      <span>ðŸ"Š</span>
-      <span>LIC Manager</span>
+      📊 LIC Manager
     </div>
     <div class="nav-buttons">
-      <a href="/login" class="nav-btn btn-login">ðŸ" Login</a>
+      <a href="/login" class="nav-btn btn-login">🔐 Login</a>
     </div>
   </nav>
 
   <div class="landing-container">
+
     <div class="hero">
-      <h1>ðŸ"Š LIC Document Manager</h1>
-      <p>Secure â€¢ Organized â€¢ Efficient</p>
+      <h1>📊 LIC Document Manager</h1>
+      <p>Secure • Organized • Efficient</p>
       <p class="hero-tagline">
         Professional document management for LIC agents<br>
         Manage all your client documents in one secure place
@@ -297,86 +215,81 @@
     </div>
 
     <div class="features-grid">
-      <div class="feature-card" onclick="handleFeatureClick('upload')">
-        <div class="lock-icon">ðŸ"'</div>
-        <div class="feature-icon">ðŸ"¤</div>
+
+      <div class="feature-card" onclick="handleFeatureClick()">
+        <div class="feature-icon">📤</div>
         <h3 class="feature-title">Upload Documents</h3>
         <p class="feature-description">
-          Upload multiple documents for each client. Supports Datasheet, Aadhaar, PAN, and Bank documents.
+          Upload Datasheet, Aadhaar, PAN, and Bank documents securely.
         </p>
-        <span class="feature-action">Get Started â†'</span>
+        <span class="feature-action">Get Started →</span>
       </div>
 
-      <div class="feature-card" onclick="handleFeatureClick('search')">
-        <div class="lock-icon">ðŸ"'</div>
-        <div class="feature-icon">ðŸ"</div>
+      <div class="feature-card" onclick="handleFeatureClick()">
+        <div class="feature-icon">🔍</div>
         <h3 class="feature-title">Search Documents</h3>
         <p class="feature-description">
-          Instantly find any client's documents. Fast search with real-time results and preview.
+          Instantly find any client's documents with fast search.
         </p>
-        <span class="feature-action">Start Searching â†'</span>
+        <span class="feature-action">Start Searching →</span>
       </div>
 
-      <div class="feature-card" onclick="handleFeatureClick('clients')">
-        <div class="lock-icon">ðŸ"'</div>
-        <div class="feature-icon">ðŸ'¥</div>
+      <div class="feature-card" onclick="handleFeatureClick()">
+        <div class="feature-icon">👥</div>
         <h3 class="feature-title">Manage Clients</h3>
         <p class="feature-description">
-          View all clients, sort by date or name, and manage client information easily.
+          View and manage all client records easily.
         </p>
-        <span class="feature-action">View Clients â†'</span>
+        <span class="feature-action">View Clients →</span>
       </div>
 
-      <div class="feature-card" onclick="handleFeatureClick('dashboard')">
-        <div class="lock-icon">ðŸ"'</div>
-        <div class="feature-icon">ðŸ"ˆ</div>
+      <div class="feature-card" onclick="handleFeatureClick()">
+        <div class="feature-icon">📈</div>
         <h3 class="feature-title">Dashboard</h3>
         <p class="feature-description">
-          Get insights with statistics, recent activity, and performance metrics.
+          View statistics and recent activity insights.
         </p>
-        <span class="feature-action">View Stats â†'</span>
+        <span class="feature-action">View Stats →</span>
       </div>
+
     </div>
 
     <div class="stats-section">
-      <h2 style="text-align: center; color: #333; margin-bottom: 25px;">âœ¨ Why Choose LIC Manager?</h2>
+      <h2 style="text-align:center;color:#333;margin-bottom:25px;">✨ Why Choose LIC Manager?</h2>
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-number">âš¡</div>
+          <div class="stat-number">⚡</div>
           <div class="stat-label">Lightning Fast</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">ðŸ"</div>
+          <div class="stat-number">🔒</div>
           <div class="stat-label">100% Secure</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">â˜ï¸</div>
+          <div class="stat-number">☁️</div>
           <div class="stat-label">Cloud Backup</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">ðŸ"±</div>
+          <div class="stat-number">📱</div>
           <div class="stat-label">Mobile Ready</div>
         </div>
       </div>
     </div>
 
     <div class="landing-footer">
-      <p>Â© 2025 LIC Manager. Powered by Google Drive â€¢ Secure â€¢ Reliable</p>
-      <p style="margin-top: 8px; font-size: 11px; opacity: 0.8;">
-        All documents safely stored on Google Drive with enterprise-grade security
-      </p>
-      <p style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-        ðŸ"' Two-Factor Authentication (OTP) enabled for enhanced security
-      </p>
+      <p>© 2025 LIC Manager • Secure • Reliable</p>
+      <p style="margin-top:10px;">🔐 Two-Factor Authentication (OTP) Enabled</p>
     </div>
+
   </div>
 
   <script>
-    function handleFeatureClick(feature) {
-      if (confirm('ðŸ" You need to login to access this feature.\n\nClick OK to go to the login page.')) {
+    function handleFeatureClick() {
+      if (confirm('You need to login to access this feature.\n\nClick OK to go to login page.')) {
         window.location.href = '/login';
       }
     }
   </script>
+
 </body>
 </html>

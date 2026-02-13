@@ -600,7 +600,7 @@
     function openEditModal(clientId, clientName) {
       document.getElementById('clientIdField').value = clientId;
       selectedFiles = {};
-      
+
       fetch('/api/client/' + clientId + '/documents')
         .then(r => r.json())
         .then(data => {
@@ -609,14 +609,15 @@
             document.getElementById('editModal').classList.add('active');
             document.body.style.overflow = 'hidden';
           } else {
-            alert('Error: ' + data.error);
+            alert('Error: ' + (data.error || 'Failed to load documents'));
           }
         })
-        .catch(err => alert('Error loading documents'));
+        .catch(() => alert('Error loading documents'));
     }
 
     function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
+      const modal = document.getElementById('editModal');
+      modal.classList.remove('active');
       document.body.style.overflow = '';
       selectedFiles = {};
       document.getElementById('editDocForm').reset();
@@ -635,61 +636,67 @@
       ];
 
       docTypes.forEach(doc => {
-        const existing = documents[doc.key];
-        const hasDoc = existing ? true : false;
+        const hasDoc = !!documents[doc.key];
 
         const card = document.createElement('div');
         card.className = 'doc-type-card';
+        card.setAttribute('data-doc', doc.key);
+
         card.innerHTML = `
           <div class="doc-type-name">${doc.icon} ${doc.name}</div>
           <div class="doc-type-status ${hasDoc ? 'status-exists' : 'status-empty'}">
             ${hasDoc ? '✅ Exists' : '⚠️ Empty'}
           </div>
-          <input type="file" id="file_${doc.key}" accept="image/*,application/pdf" 
+          <input type="file" id="file_${doc.key}" accept="image/*,application/pdf"
             onchange="selectFile('${doc.key}', this)" style="display:none;">
-          <button type="button" class="btn-upload-file" onclick="document.getElementById('file_${doc.key}').click()">
+          <button type="button" class="btn-upload-file"
+            onclick="document.getElementById('file_${doc.key}').click()">
             📤 ${hasDoc ? 'Replace' : 'Upload'}
           </button>
-          ${hasDoc ? `<button type="button" class="btn-remove-file show" onclick="removeFile('${doc.key}')">🗑️ Remove</button>` : ''}
+          ${hasDoc ? `<button type="button" class="btn-remove-file show"
+            onclick="removeFile('${doc.key}')">🗑️ Remove</button>` : ''}
         `;
+
         grid.appendChild(card);
       });
     }
 
     function selectFile(docType, input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.size > 10 * 1024 * 1024) {
-          alert('File too large! Max 10MB.');
-          input.value = '';
-          return;
-        }
-        selectedFiles[docType] = file;
-        const card = input.closest('.doc-type-card');
-        const status = card.querySelector('.doc-type-status');
-        status.textContent = '📄 Ready to upload';
-        status.className = 'doc-type-status status-ready';
+      if (!input.files || !input.files[0]) return;
+
+      const file = input.files[0];
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File too large! Max 10MB.');
+        input.value = '';
+        return;
       }
+
+      selectedFiles[docType] = file;
+
+      const card = document.querySelector(`[data-doc="${docType}"]`);
+      const status = card.querySelector('.doc-type-status');
+
+      status.textContent = '📄 Ready to upload';
+      status.className = 'doc-type-status status-ready';
     }
 
     function removeFile(docType) {
-      if (confirm('Remove this document?')) {
-        selectedFiles[docType] = 'DELETE';
-        const cards = document.querySelectorAll('.doc-type-card');
-        cards.forEach(card => {
-          if (card.querySelector('#file_' + docType) || card.innerHTML.includes('file_' + docType)) {
-            const status = card.querySelector('.doc-type-status');
-            if (status) {
-              status.textContent = '🗑️ Will remove';
-              status.className = 'doc-type-status status-empty';
-            }
-          }
-        });
-      }
+      if (!confirm('Remove this document?')) return;
+
+      selectedFiles[docType] = 'DELETE';
+
+      const card = document.querySelector(`[data-doc="${docType}"]`);
+      if (!card) return;
+
+      const status = card.querySelector('.doc-type-status');
+      status.textContent = '🗑️ Will remove';
+      status.className = 'doc-type-status status-empty';
     }
 
     async function saveDocuments(e) {
       e.preventDefault();
+
       if (Object.keys(selectedFiles).length === 0) {
         alert('Select at least one document to update.');
         return;
@@ -716,12 +723,22 @@
           method: 'POST',
           body: formData
         });
-        const data = await response.json();
+
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error('Invalid server response');
+        }
+
         if (data.success) {
           document.getElementById('successMsg').classList.add('show');
-          setTimeout(() => { closeEditModal(); location.reload(); }, 1200);
+          setTimeout(() => {
+            closeEditModal();
+            location.reload();
+          }, 1200);
         } else {
-          alert('Error: ' + data.error);
+          alert('Error: ' + (data.error || 'Update failed'));
         }
       } catch (err) {
         alert('Error: ' + err.message);
@@ -731,14 +748,24 @@
       }
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditModal(); });
-    document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEditModal(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeEditModal();
+    });
+
+    document.getElementById('editModal')
+      .addEventListener('click', e => {
+        if (e.target.id === 'editModal') closeEditModal();
+      });
 
     function viewClientData(clientName) {
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
-      form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="' + clientName + '">';
+
+      form.innerHTML =
+        '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">' +
+        '<input type="hidden" name="name" value="' + clientName + '">';
+
       document.body.appendChild(form);
       form.submit();
     }

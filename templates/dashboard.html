@@ -565,7 +565,7 @@
               <div class="recent-client-name">{{ client[0] }}</div>
               <div class="recent-client-meta">
                 <span>📄 {{ client[2] }} documents</span>
-                <span>📅 {{ client[1][:10] if client[1] else 'N/A' }}</span>
+                <span>📅 {{ client[1].strftime('%Y-%m-%d') if client[1] else 'N/A' }}</span>
               </div>
             </div>
           {% endfor %}
@@ -597,17 +597,27 @@
     let searchTimeout;
 
     function openQuickSearch() {
-      document.getElementById('quickSearchModal').classList.add('active');
-      document.getElementById('quickSearchInput').focus();
+      const modal = document.getElementById('quickSearchModal');
+      const input = document.getElementById('quickSearchInput');
+
+      modal.classList.add('active');
       document.body.style.overflow = 'hidden';
+
+      setTimeout(() => {
+        if (input) input.focus();
+      }, 100);
     }
 
     function closeQuickSearch(event) {
-      if (event && event.target.id !== 'quickSearchModal') return;
-      document.getElementById('quickSearchModal').classList.remove('active');
-      document.getElementById('quickSearchInput').value = '';
-      document.getElementById('quickSearchResults').innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">🔍</div><p>Start typing to search clients...</p></div>';
-      document.body.style.overflow = '';
+      const modal = document.getElementById('quickSearchModal');
+
+      if (!event || event.target.id === 'quickSearchModal') {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        document.getElementById('quickSearchInput').value = '';
+        document.getElementById('quickSearchResults').innerHTML =
+          '<div class="quick-search-empty"><div class="quick-search-empty-icon">🔍</div><p>Start typing to search clients...</p></div>';
+      }
     }
 
     function performQuickSearch() {
@@ -615,29 +625,47 @@
       const resultsContainer = document.getElementById('quickSearchResults');
 
       if (query.length < 2) {
-        resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">🔍</div><p>Type at least 2 characters...</p></div>';
+        resultsContainer.innerHTML =
+          '<div class="quick-search-empty"><div class="quick-search-empty-icon">🔍</div><p>Type at least 2 characters...</p></div>';
         return;
       }
 
       clearTimeout(searchTimeout);
+
       searchTimeout = setTimeout(() => {
-        resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">⏳</div><p>Searching...</p></div>';
+        resultsContainer.innerHTML =
+          '<div class="quick-search-empty"><div class="quick-search-empty-icon">⏳</div><p>Searching...</p></div>';
 
         fetch('/api/quick_search?q=' + encodeURIComponent(query))
           .then(r => r.json())
           .then(data => {
             if (data.results && data.results.length > 0) {
               let html = '';
+
               data.results.forEach(r => {
-                html += '<div class="quick-search-item" onclick="selectClient(\'' + r.name.replace(/'/g, "\\'") + '\')"><div><div class="quick-search-item-name">' + r.name + '</div><div class="quick-search-item-meta">📄 ' + r.doc_count + ' docs • 📅 ' + r.updated_at + '</div></div><div style="color:#667eea;font-size:18px;">→</div></div>';
+                const safeName = r.name.replace(/'/g, "\\'");
+                html += `
+                  <div class="quick-search-item" onclick="selectClient('${safeName}')">
+                    <div>
+                      <div class="quick-search-item-name">${r.name}</div>
+                      <div class="quick-search-item-meta">
+                        📄 ${r.doc_count} docs • 📅 ${r.updated_at}
+                      </div>
+                    </div>
+                    <div style="color:#667eea;font-size:18px;">→</div>
+                  </div>
+                `;
               });
+
               resultsContainer.innerHTML = html;
             } else {
-              resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">😕</div><p>No clients found</p></div>';
+              resultsContainer.innerHTML =
+                '<div class="quick-search-empty"><div class="quick-search-empty-icon">😕</div><p>No clients found</p></div>';
             }
           })
-          .catch(err => {
-            resultsContainer.innerHTML = '<div class="quick-search-empty"><div class="quick-search-empty-icon">❌</div><p>Error searching</p></div>';
+          .catch(() => {
+            resultsContainer.innerHTML =
+              '<div class="quick-search-empty"><div class="quick-search-empty-icon">❌</div><p>Error searching</p></div>';
           });
       }, 300);
     }
@@ -646,7 +674,12 @@
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/fetch_data';
-      form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="' + name + '">';
+
+      form.innerHTML = `
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="name" value="${name}">
+      `;
+
       document.body.appendChild(form);
       form.submit();
     }
@@ -660,6 +693,7 @@
         e.preventDefault();
         openQuickSearch();
       }
+
       if (e.key === 'Escape') {
         closeQuickSearch({ target: { id: 'quickSearchModal' } });
       }
