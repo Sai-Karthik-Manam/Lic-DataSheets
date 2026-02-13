@@ -40,7 +40,11 @@ app.config.update(
 )
 
 csrf = CSRFProtect(app)
-limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["200 per day", "50 per hour"], storage_uri="memory://")
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["500 per day", "100 per hour"],
+)
+limiter.init_app(app)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'pdf'}
 MAX_FILE_SIZE = 10 * 1024 * 1024
