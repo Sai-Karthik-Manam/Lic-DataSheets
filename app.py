@@ -16,11 +16,12 @@ from functools import wraps
 import secrets
 import re
 from datetime import datetime, timedelta
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import pytz
 import bleach
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 load_dotenv()
 app = Flask(__name__)
@@ -289,49 +290,28 @@ try:
 except Exception as e:
     app.logger.info(f"Database initialization warning: {e}")
 
+
 def send_otp_email(email, otp_code, username):
-    """Send OTP code via email"""
     try:
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_USERNAME
-        msg['To'] = email
-        msg['Subject'] = 'LIC Manager - Your Login OTP Code'
-        
-        body = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2 style="color: #667eea;">LIC Manager - Login Verification</h2>
-            <p>Hello <strong>{username}</strong>,</p>
-            <p>Your One-Time Password (OTP) for login is:</p>
-            <h1 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                       color: white; padding: 20px; text-align: center; 
-                       border-radius: 10px; letter-spacing: 5px;">{otp_code}</h1>
-            <p><strong>Important:</strong></p>
-            <ul>
-                <li>This OTP is valid for <strong>5 minutes</strong></li>
-                <li>Do not share this code with anyone</li>
-                <li>If you didn't request this, please ignore this email</li>
-            </ul>
-            <p style="color: #666; font-size: 12px; margin-top: 30px;">
-                This is an automated email from LIC Manager. Please do not reply.
-            </p>
-        </body>
-        </html>
-        """
-        
-        msg.attach(MIMEText(body, 'html'))
-        
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.send_message(msg)
-        
+        message = Mail(
+            from_email=SMTP_USERNAME,
+            to_emails=email,
+            subject='LIC Manager - Your Login OTP Code',
+            html_content=f"""
+                <h2>LIC Manager - Login Verification</h2>
+                <p>Hello <strong>{username}</strong>,</p>
+                <h1 style="font-size:32px;">{otp_code}</h1>
+                <p>This OTP is valid for 5 minutes.</p>
+            """
+        )
+
+        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
+        sg.send(message)
+
         return True
     except Exception as e:
-        app.logger.info(f"Email send error: {str(e)}")
-        traceback.print_exc()
+        app.logger.info(f"SendGrid error: {e}")
         return False
-
 
 def generate_otp():
     """Generate 6-digit OTP"""
