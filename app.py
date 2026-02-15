@@ -33,7 +33,7 @@ if not SECRET_KEY:
 app.secret_key = SECRET_KEY
 
 app.config.update(
-    SESSION_COOKIE_SECURE=False,  # Set to True in production with HTTPS
+    SESSION_COOKIE_SECURE=True,  # Set to True in production with HTTPS
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
     SESSION_COOKIE_SAMESITE='Lax',  # CSRF protection
     PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
