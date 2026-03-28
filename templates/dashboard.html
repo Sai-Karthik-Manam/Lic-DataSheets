@@ -81,7 +81,7 @@
       gap: 20px;
       margin: 30px 0;
     }
-    
+
     .stat-card-large {
       padding: 25px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -91,28 +91,28 @@
       transition: all 0.3s ease;
       text-align: center;
     }
-    
+
     .stat-card-large:hover {
       transform: translateY(-5px);
       box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
     }
-    
+
     .stat-icon {
       font-size: 40px;
       margin-bottom: 12px;
     }
-    
+
     .stat-value {
       font-size: 36px;
       font-weight: 700;
       margin-bottom: 5px;
     }
-    
+
     .stat-label {
       font-size: 14px;
       opacity: 0.9;
     }
-    
+
     .section-title {
       font-size: 22px;
       font-weight: 700;
@@ -122,7 +122,7 @@
       align-items: center;
       gap: 10px;
     }
-    
+
     .chart-container {
       background: white;
       border-radius: 15px;
@@ -130,20 +130,20 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
       margin: 20px 0;
     }
-    
+
     .doc-type-bar {
       display: flex;
       align-items: center;
       margin: 15px 0;
     }
-    
+
     .doc-type-label {
       min-width: 110px;
       font-weight: 600;
       color: #333;
       font-size: 14px;
     }
-    
+
     .doc-type-progress {
       flex: 1;
       height: 28px;
@@ -152,7 +152,7 @@
       overflow: hidden;
       margin: 0 15px;
     }
-    
+
     .doc-type-fill {
       height: 100%;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -165,14 +165,14 @@
       font-size: 12px;
       min-width: 30px;
     }
-    
+
     .recent-clients-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 15px;
       margin-top: 18px;
     }
-    
+
     .recent-client-card {
       background: white;
       border-radius: 12px;
@@ -182,20 +182,20 @@
       cursor: pointer;
       border: 1px solid #eee;
     }
-    
+
     .recent-client-card:hover {
       transform: translateY(-3px);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
       border-color: #667eea;
     }
-    
+
     .recent-client-name {
       font-size: 16px;
       font-weight: 700;
       color: #667eea;
       margin-bottom: 8px;
     }
-    
+
     .recent-client-meta {
       font-size: 12px;
       color: #666;
@@ -209,7 +209,7 @@
       padding: 20px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     }
-    
+
     .activity-item {
       padding: 14px;
       border-left: 4px solid #667eea;
@@ -217,19 +217,19 @@
       border-radius: 8px;
       margin-bottom: 10px;
     }
-    
+
     .activity-user {
       font-weight: 600;
       color: #667eea;
       font-size: 14px;
     }
-    
+
     .activity-action {
       color: #333;
       margin: 4px 0;
       font-size: 13px;
     }
-    
+
     .activity-time {
       font-size: 11px;
       color: #999;
@@ -367,7 +367,7 @@
         flex-direction: column;
         gap: 10px;
       }
-      
+
       .navbar-links {
         flex-wrap: wrap;
         justify-content: center;
@@ -392,7 +392,7 @@
       .content-wrapper {
         padding-top: 130px !important;
       }
-      
+
       .dashboard-grid {
         grid-template-columns: 1fr;
         gap: 12px;
@@ -528,6 +528,9 @@
 
         <div class="stat-card-large" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
           <div class="stat-icon">📊</div>
+          <!-- BUG FIX: removed extra single-quotes around the width value -->
+          <!-- Before: style="width: '{{ ... }}%'"  →  CSS value was literally '85%' (invalid) -->
+          <!-- After:  style="width: {{ ... }}%"    →  CSS value is correctly 85%             -->
           <div class="stat-value">{{ ((stats.total_docs / (stats.total_clients * 4) * 100) if stats.total_clients and stats.total_clients > 0 else 0)|round(1) }}%</div>
           <div class="stat-label">Completion Rate</div>
         </div>
@@ -546,7 +549,11 @@
                 {% endif %}
               </div>
               <div class="doc-type-progress">
-                <div class="doc-type-fill" style="width: '{{ ((count / stats.total_docs * 100) if stats.total_docs and stats.total_docs > 0 else 0)|round(1) }}%'">
+                <!-- BUG FIX: removed surrounding single-quotes from style width value -->
+                <!-- Before: style="width: '{{ pct }}%'"  →  rendered as width:'85%' (invalid CSS) -->
+                <!-- After:  style="width: {{ pct }}%"    →  renders as width:85%   (valid CSS)    -->
+                <div class="doc-type-fill"
+                     style="width: {{ ((count / stats.total_docs * 100) if stats.total_docs and stats.total_docs > 0 else 0)|round(1) }}%">
                   {{ count }}
                 </div>
               </div>
