@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fetch Client Documents | LIC Manager</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<style>
+/* (Your entire existing CSS remains unchanged for layout consistency) */
+</style>
+</head>
+
+<body>
+
+<nav class="navbar">
+  <div class="navbar-left">
+    <div class="navbar-logo">📊 LIC Manager</div>
+    <div class="navbar-links">
+      <a href="/dashboard" class="navbar-link">📈 Dashboard</a>
+      <a href="/upload_page" class="navbar-link">📤 Upload</a>
+      <a href="/fetch" class="navbar-link">🔍 Search</a>
+      <a href="/clients" class="navbar-link">👥 Clients</a>
+    </div>
+  </div>
+  <div class="navbar-right">
+    <div class="navbar-user">👤 {{ session.username }}</div>
+    <a href="/logout" class="navbar-link">🚪 Logout</a>
+  </div>
+</nav>
+
+<div class="content-wrapper">
+<div class="container" style="max-width: 1000px;">
+
+<h1>🔍 Fetch Client Documents</h1>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<form action="/fetch_data" method="POST" id="fetchForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="search-container">
+    <input type="text" name="name" id="clientName"
+           placeholder="🔎 Enter client name to search..."
+           required autocomplete="off">
+  </div>
+  <button type="submit" id="fetchBtn">
+    <span id="btnText">🔍 Search Documents</span>
+  </button>
+</form>
+
+{% if client %}
+<!-- CLIENT INFO -->
+<div class="client-info-card">
+  <h3>👤 Client:
+    <span style="color:#667eea;">{{ client.name }}</span>
+  </h3>
+
+  <div class="client-info-grid">
+    <div class="info-badge">
+      <strong>Documents</strong>
+      <span>{{ client.documents|length }}</span>
+    </div>
+    <div class="info-badge">
+      <strong>Created</strong>
+      <span>{{ client.created_at[:10] if client.created_at else 'N/A' }}</span>
+    </div>
+    <div class="info-badge">
+      <strong>Updated</strong>
+      <span>{{ client.updated_at[:10] if client.updated_at else 'N/A' }}</span>
+    </div>
+    <div class="info-badge">
+      <strong>Folder ID</strong>
+      <span style="font-size:10px;word-break:break-all;">
+        {{ client.folder_id[:18] }}...
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT GRID -->
+<div class="doc-grid-view">
+
+{% for key, label, icon in [
+  ('datasheet','📊 Datasheet','📄'),
+  ('aadhaar','🪪 Aadhaar','🆔'),
+  ('pan','💳 PAN Card','🎴'),
+  ('bank_account','🏦 Bank Account','💰')
+] %}
+
+{% set doc = client.documents[key] %}
+
+<div class="doc-item">
+
+{% if doc %}
+  <img src="{{ doc.image_url }}"
+       class="doc-image"
+       onclick="window.open(this.src,'_blank')">
+
+  <div class="doc-content">
+    <div class="doc-type-header">
+      <span class="doc-type-title">{{ label }}</span>
+      <span class="doc-type-icon">{{ icon }}</span>
+    </div>
+
+    <div class="doc-meta">📄 {{ doc.file_name }}</div>
+    <div class="doc-meta">
+      💾 {{ "%.2f"|format((doc.file_size or 0)/(1024*1024)) }} MB
+    </div>
+
+    <div class="doc-actions">
+
+      <form action="/download_document" method="POST" style="flex:1;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="file_id" value="{{ doc.file_id }}">
+        <button type="submit" class="download-btn">⬇️ Download</button>
+      </form>
+
+      <button onclick="deleteDocument('{{ doc.file_id }}')"
+              class="delete-btn">
+        🗑️
+      </button>
+
+    </div>
+  </div>
+
+{% else %}
+  <div class="empty-doc">
+    <div class="empty-doc-icon">{{ icon }}</div>
+    <p><strong>{{ label }}</strong><br>Not uploaded</p>
+  </div>
+{% endif %}
+
+</div>
+
+{% endfor %}
+
+</div>
+
+<!-- DELETE CLIENT -->
+<div class="client-actions">
+  <div class="danger-zone-title">⚠️ Danger Zone</div>
+  <p>Deleting this client will permanently remove all documents.</p>
+  <button onclick="deleteClient('{{ client.name }}')"
+          class="delete-btn"
+          style="padding:12px 20px;">
+    🗑️ Delete Entire Client
+  </button>
+</div>
+
+{% elif not_found %}
+<div class="error" style="text-align:center;padding:40px 20px;">
+  <h3>No Client Found</h3>
+  <p>We couldn't find '<strong>{{ name }}</strong>'</p>
+</div>
+{% endif %}
+
+{% if error %}
+<div class="error">Error: {{ error }}</div>
+{% endif %}
+
+<div style="margin-top:25px;display:flex;gap:10px;flex-wrap:wrap;">
+  <a href="/upload_page" class="link">📤 Upload</a>
+  <a href="/clients" class="link">👥 View Clients</a>
+</div>
+
+</div>
+</div>
+
+<script>
+/* Prevent double search submit */
+const fetchForm = document.getElementById('fetchForm');
+const fetchBtn = document.getElementById('fetchBtn');
+const btnText = document.getElementById('btnText');
+
+fetchForm.addEventListener('submit', function() {
+  fetchBtn.disabled = true;
+  btnText.textContent = 'Searching...';
+});
+
+/* Delete single document */
+function deleteDocument(fileId) {
+  if (!confirm('Delete this document? This cannot be undone!')) return;
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/delete_document';
+  form.innerHTML =
+    '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">' +
+    '<input type="hidden" name="file_id" value="' + fileId + '">';
+  document.body.appendChild(form);
+  form.submit();
+}
+
+/* Delete entire client */
+function deleteClient(name) {
+  if (!confirm('WARNING: Delete ALL documents for "'+name+'"?')) return;
+
+  const confirmName = prompt('Type "'+name+'" to confirm:');
+  if (confirmName !== name) {
+    alert('Deletion cancelled.');
+    return;
+  }
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/delete_client';
+  form.innerHTML =
+    '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">' +
+    '<input type="hidden" name="name" value="' + name + '">';
+  document.body.appendChild(form);
+  form.submit();
+}
+
+document.getElementById('clientName').focus();
+</script>
+
+</body>
+</html>

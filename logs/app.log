@@ -1,0 +1,347 @@
+2026-02-08 11:48:36,738 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 11:48:36,792 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 11:48:36,792 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 11:48:37,897 - __main__ - ERROR - Database initialization error: column "username" does not exist
+
+2026-02-08 11:54:00,875 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 11:54:00,888 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 11:54:00,888 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 11:54:01,353 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-08 11:54:02,091 - __main__ - WARNING - Index creation warning (non-critical): column "username" does not exist
+
+2026-02-08 11:54:02,926 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-08 11:54:02,926 - __main__ - INFO - Starting Google Drive sync...
+2026-02-08 11:54:15,608 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-08 11:54:15,609 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-08 11:54:16,919 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-08 11:55:10,821 - __main__ - INFO - Sync complete! 86 documents synced
+2026-02-08 11:55:10,824 - __main__ - INFO - Initial sync complete: 86 documents synced
+2026-02-08 11:55:10,825 - __main__ - INFO - Starting Flask app on port 5000 (debug=True)
+2026-02-08 11:55:10,853 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.0.197:5000
+2026-02-08 11:55:10,854 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 11:55:10,858 - werkzeug - INFO -  * Restarting with stat
+2026-02-08 11:55:11,592 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 11:55:11,606 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 11:55:11,606 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 11:55:12,149 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-08 11:55:13,050 - __main__ - WARNING - Index creation warning (non-critical): column "username" does not exist
+
+2026-02-08 11:55:13,258 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-08 11:55:13,259 - __main__ - INFO - Starting Google Drive sync...
+2026-02-08 11:58:02,371 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-08 11:58:02,373 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-08 11:58:03,590 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-08 11:58:55,972 - __main__ - INFO - Sync complete! 86 documents synced
+2026-02-08 11:58:55,974 - __main__ - INFO - Initial sync complete: 86 documents synced
+2026-02-08 11:58:55,975 - __main__ - INFO - Starting Flask app on port 5000 (debug=True)
+2026-02-08 11:58:56,006 - werkzeug - WARNING -  * Debugger is active!
+2026-02-08 11:58:56,012 - werkzeug - INFO -  * Debugger PIN: 117-119-854
+2026-02-08 12:01:40,845 - werkzeug - INFO -  * Detected change in 'F:\\lic\\app.py', reloading
+2026-02-08 12:01:40,971 - werkzeug - INFO -  * Restarting with stat
+2026-02-08 12:01:41,774 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 12:01:41,788 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 12:01:41,788 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 12:01:42,333 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-08 12:01:44,384 - __main__ - WARNING - Index creation warning (non-critical): column "username" does not exist
+
+2026-02-08 12:01:44,566 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-08 12:01:44,566 - __main__ - INFO - Starting Google Drive sync...
+2026-02-08 12:01:51,370 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-08 12:01:51,371 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-08 12:01:52,565 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-08 21:55:55,390 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 21:55:55,453 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 21:55:55,453 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 21:55:55,964 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-08 21:55:56,107 - __main__ - INFO - [OK] Users table ready
+2026-02-08 21:55:56,160 - __main__ - INFO - [OK] Clients table ready
+2026-02-08 21:55:56,213 - __main__ - INFO - [OK] Documents table ready
+2026-02-08 21:55:56,266 - __main__ - INFO - [OK] Activity logs table ready
+2026-02-08 21:55:56,321 - __main__ - INFO - [OK] OTPs table ready
+2026-02-08 21:55:57,011 - __main__ - INFO - [OK] Database indexes created
+2026-02-08 21:55:57,066 - __main__ - INFO - [OK] Database initialized successfully
+2026-02-08 21:55:57,203 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-08 21:55:57,204 - __main__ - INFO - Starting Google Drive sync...
+2026-02-08 21:56:08,243 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-08 21:56:08,244 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-08 21:56:10,345 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-08 21:56:10,897 - __main__ - INFO - Added client: Yamana umadevi
+2026-02-08 21:56:11,666 - __main__ - INFO - Added client: BANDARU SHANMUKA SATYA KRISHNA
+2026-02-08 21:56:12,394 - __main__ - INFO - Added client: Battula satyavathi
+2026-02-08 21:56:13,119 - __main__ - INFO - Added client: Barla Manga
+2026-02-08 21:56:13,874 - __main__ - INFO - Added client: BANDARU VEERABABU
+2026-02-08 21:56:14,687 - __main__ - INFO - Added client: Bandi Arjamma
+2026-02-08 21:56:15,412 - __main__ - INFO - Added client: Chavvakula Annapurna
+2026-02-08 21:56:16,125 - __main__ - INFO - Added client: Chintala Jagadhamba
+2026-02-08 21:56:16,834 - __main__ - INFO - Added client: Egala suryakantham
+2026-02-08 21:56:17,556 - __main__ - INFO - Added client: Gandikota Kanakalakshmi
+2026-02-08 21:56:18,282 - __main__ - INFO - Added client: Desiraju Sanyasiraju
+2026-02-08 21:56:19,057 - __main__ - INFO - Added client: Egala Nagababu
+2026-02-08 21:56:19,786 - __main__ - INFO - Added client: Ganta Praveen kumar
+2026-02-08 21:56:20,769 - __main__ - INFO - Added client: GUDDATI LAKSHMI
+2026-02-08 21:56:21,567 - __main__ - INFO - Added client: Gotteda Navateja
+2026-02-08 21:56:22,445 - __main__ - INFO - Added client: Gomu Krishna
+2026-02-08 21:56:23,160 - __main__ - INFO - Added client: Gotteda Sandyakumari
+2026-02-08 21:56:23,928 - __main__ - INFO - Added client: Gudivada Veeramani
+2026-02-08 21:56:24,725 - __main__ - INFO - Added client: KARRI RAMESH
+2026-02-08 21:56:25,451 - __main__ - INFO - Added client: Kontham Padma
+2026-02-08 21:56:26,371 - __main__ - INFO - Added client: Karumuri harshitha
+2026-02-08 21:56:27,084 - __main__ - INFO - Added client: Kinthada Lakshmi
+2026-02-08 21:56:27,802 - __main__ - INFO - Added client: Kollabattula Sujatha
+2026-02-08 21:56:28,722 - __main__ - INFO - Added client: Kollu venkataramana
+2026-02-08 21:56:29,432 - __main__ - INFO - Added client: KOVVURU RAMAREDDY
+2026-02-08 21:56:30,306 - __main__ - INFO - Added client: Kesanakurthy sathibabu
+2026-02-08 21:56:31,065 - __main__ - INFO - Added client: KANIGIRI SATHIBABU
+2026-02-08 21:56:31,808 - __main__ - INFO - Added client: Kachala Sohotha
+2026-02-08 21:56:32,872 - __main__ - INFO - Added client: Krnidi Satyaveni
+2026-02-08 21:56:33,615 - __main__ - INFO - Added client: Marisetti Ganapathi
+2026-02-08 21:56:34,352 - __main__ - INFO - Added client: Kuramdasu Supriya
+2026-02-08 21:56:35,088 - __main__ - INFO - Added client: NARALA GOVINDARAO
+2026-02-08 21:56:35,831 - __main__ - INFO - Added client: Nakka swamy
+2026-02-08 21:56:36,593 - __main__ - INFO - Added client: Nadipalli Nageswrararao
+2026-02-08 21:56:37,446 - __main__ - INFO - Added client: NAKKA APPALASWAMY APPANNA
+2026-02-08 21:56:38,757 - __main__ - INFO - Added client: Narise Srinu
+2026-02-08 21:56:39,594 - __main__ - INFO - Added client: MATURI SUBRAMANYA SAGAR
+2026-02-08 21:56:40,312 - __main__ - INFO - Added client: Nalam Lakshmi raj kumar
+2026-02-08 21:56:41,052 - __main__ - INFO - Added client: Padala sankara satyamurthy
+2026-02-08 21:56:41,818 - __main__ - INFO - Added client: Palla Nagamani
+2026-02-08 21:56:42,535 - __main__ - INFO - Added client: Penke Sivasri
+2026-02-08 21:56:43,464 - __main__ - INFO - Added client: Paidipalli Seethalakshmi
+2026-02-08 21:56:44,443 - __main__ - INFO - Added client: Palla Srinivas
+2026-02-08 21:56:45,198 - __main__ - INFO - Added client: Pervela NVSV Sharma
+2026-02-08 21:56:46,023 - __main__ - INFO - Added client: PEKETI APPALASWAMY
+2026-02-08 21:56:46,826 - __main__ - INFO - Added client: Poluparthi Mahalakshmi
+2026-02-08 21:56:47,556 - __main__ - INFO - Added client: Poluparthi Manikyam
+2026-02-08 21:56:48,278 - __main__ - INFO - Added client: Potubandi Nagaraju
+2026-02-08 21:56:49,182 - __main__ - INFO - Added client: Pulugu Yesubabu
+2026-02-08 21:56:49,898 - __main__ - INFO - Added client: Ramoju Satyaveni
+2026-02-08 21:56:50,619 - __main__ - INFO - Added client: Sathireddy chinna
+2026-02-08 21:56:51,307 - __main__ - INFO - Added client: Repaka venkataramana
+2026-02-08 21:56:52,082 - __main__ - INFO - Added client: Samayamantula satya
+2026-02-08 21:56:52,758 - __main__ - INFO - Added client: Senapathi Satyaveni
+2026-02-08 21:56:53,466 - __main__ - INFO - Added client: Senapathi Apparao
+2026-02-08 21:56:54,177 - __main__ - INFO - Added client: Sattireddy Chitti
+2026-02-08 21:56:54,963 - __main__ - INFO - Added client: Senapathi Ganga
+2026-02-08 21:56:55,665 - __main__ - INFO - Added client: Simhadri Vinodh kumar
+2026-02-08 21:56:56,379 - __main__ - INFO - Added client: Urlankala trimurthulu
+2026-02-08 21:56:57,105 - __main__ - INFO - Added client: Vasam Nookaratnam
+2026-02-08 21:56:57,904 - __main__ - INFO - Added client: Yalamanchili kondababu
+2026-02-08 21:56:58,717 - __main__ - INFO - Added client: Urukutti Chantibabu
+2026-02-08 21:56:59,439 - __main__ - INFO - Added client: Uppalapati venkataramana
+2026-02-08 21:57:00,251 - __main__ - INFO - Added client: Yamana NV Umadevi
+2026-02-08 21:57:01,073 - __main__ - INFO - Added client: Yannapu Srinu
+2026-02-08 21:57:01,845 - __main__ - INFO - Added client: YISARAPU VEERAMANAI
+2026-02-08 21:57:02,607 - __main__ - INFO - Added client: Yadala Lakshmi
+2026-02-08 21:57:03,194 - __main__ - INFO - Sync complete! 86 documents synced
+2026-02-08 21:57:03,196 - __main__ - INFO - Initial sync complete: 86 documents synced
+2026-02-08 21:57:03,197 - __main__ - INFO - Starting Flask app on port 5000 (debug=True)
+2026-02-08 21:57:03,319 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.0.197:5000
+2026-02-08 21:57:03,325 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 21:57:08,294 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:08] "[32mGET / HTTP/1.1[0m" 302 -
+2026-02-08 21:57:08,669 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:08] "GET /login HTTP/1.1" 200 -
+2026-02-08 21:57:09,075 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:09] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 21:57:09,494 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:09] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-08 21:57:28,287 - __main__ - INFO - Activity logged: login by admin
+2026-02-08 21:57:28,297 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:28] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-02-08 21:57:31,579 - __main__ - ERROR - Dashboard error: 'stats' is undefined
+2026-02-08 21:57:32,450 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:32] "[35m[1mGET /dashboard HTTP/1.1[0m" 500 -
+2026-02-08 21:57:32,687 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:32] "GET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2026-02-08 21:57:32,731 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:32] "GET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2026-02-08 21:57:33,053 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:33] "GET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2026-02-08 21:57:33,123 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 21:57:33] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2026-02-08 22:00:39,466 - __main__ - ERROR - Dashboard error: 'stats' is undefined
+2026-02-08 22:00:39,725 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:00:39] "[35m[1mGET /dashboard HTTP/1.1[0m" 500 -
+2026-02-08 22:00:39,801 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:00:39] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:00:39,821 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:00:39] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2026-02-08 22:00:39,883 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:00:39] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2026-02-08 22:00:39,901 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:00:39] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2026-02-08 22:00:51,832 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 22:00:51,866 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 22:00:51,866 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 22:00:52,301 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-08 22:00:52,499 - __main__ - INFO - [OK] Users table ready
+2026-02-08 22:00:52,552 - __main__ - INFO - [OK] Clients table ready
+2026-02-08 22:00:52,605 - __main__ - INFO - [OK] Documents table ready
+2026-02-08 22:00:52,658 - __main__ - INFO - [OK] Activity logs table ready
+2026-02-08 22:00:52,713 - __main__ - INFO - [OK] OTPs table ready
+2026-02-08 22:00:53,185 - __main__ - INFO - [OK] Database indexes created
+2026-02-08 22:00:53,238 - __main__ - INFO - [OK] Database initialized successfully
+2026-02-08 22:00:53,349 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-08 22:00:53,350 - __main__ - INFO - Starting Google Drive sync...
+2026-02-08 22:01:04,998 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-08 22:01:05,000 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-08 22:01:07,275 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-08 22:02:05,347 - __main__ - INFO - Sync complete! 86 documents synced
+2026-02-08 22:02:05,351 - __main__ - INFO - Initial sync complete: 86 documents synced
+2026-02-08 22:02:05,352 - __main__ - INFO - Starting Flask app on port 5000 (debug=True)
+2026-02-08 22:02:05,449 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.0.197:5000
+2026-02-08 22:02:05,451 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 22:02:19,996 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:19] "[32mGET / HTTP/1.1[0m" 302 -
+2026-02-08 22:02:20,840 - __main__ - ERROR - Dashboard error: 'dict object' has no attribute 'total_docs'
+2026-02-08 22:02:20,863 - __main__ - ERROR - Traceback (most recent call last):
+  File "F:\lic\app.py", line 1288, in dashboard
+    return render_template(
+        'dashboard.html',
+        stats=stats,
+        recent_activity=recent_activity
+    )
+  File "F:\lic\env\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+  File "F:\lic\env\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+  File "F:\lic\env\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "F:\lic\env\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "F:\lic\templates\dashboard.html", line 531, in top-level template code
+    <div class="stat-value">{{ ((stats.total_docs / (stats.total_clients * 4) * 100) if stats.total_clients and stats.total_clients > 0 else 0)|round(1) }}%</div>
+    ^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'dict object' has no attribute 'total_docs'
+
+2026-02-08 22:02:20,874 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:20] "GET /dashboard HTTP/1.1" 200 -
+2026-02-08 22:02:21,059 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:21] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:02:45,970 - __main__ - ERROR - Admin dashboard error: 'stats' is undefined
+2026-02-08 22:02:46,097 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:46] "[35m[1mGET /admin/dashboard HTTP/1.1[0m" 500 -
+2026-02-08 22:02:46,159 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:46] "GET /admin/dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2026-02-08 22:02:46,164 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:46] "GET /admin/dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2026-02-08 22:02:46,187 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:46] "GET /admin/dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2026-02-08 22:02:46,272 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:46] "[36mGET /admin/dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2026-02-08 22:02:59,690 - __main__ - ERROR - Dashboard error: 'dict object' has no attribute 'total_docs'
+2026-02-08 22:02:59,704 - __main__ - ERROR - Traceback (most recent call last):
+  File "F:\lic\app.py", line 1288, in dashboard
+    return render_template(
+        'dashboard.html',
+        stats=stats,
+        recent_activity=recent_activity
+    )
+  File "F:\lic\env\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+  File "F:\lic\env\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+  File "F:\lic\env\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "F:\lic\env\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "F:\lic\templates\dashboard.html", line 531, in top-level template code
+    <div class="stat-value">{{ ((stats.total_docs / (stats.total_clients * 4) * 100) if stats.total_clients and stats.total_clients > 0 else 0)|round(1) }}%</div>
+    ^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'dict object' has no attribute 'total_docs'
+
+2026-02-08 22:02:59,718 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:59] "GET /dashboard HTTP/1.1" 200 -
+2026-02-08 22:02:59,797 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:02:59] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:03:03,884 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:03:03] "GET /clients HTTP/1.1" 200 -
+2026-02-08 22:03:03,955 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:03:03] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:03:07,035 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:03:07] "[33mPOST /fetch_data HTTP/1.1[0m" 404 -
+2026-02-08 22:03:07,119 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:03:07] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:07:07,807 - __main__ - INFO - Using PostgreSQL database
+2026-02-08 22:07:07,840 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-08 22:07:07,840 - __main__ - INFO - Google Drive initialized successfully
+2026-02-08 22:07:08,404 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-08 22:07:08,530 - __main__ - INFO - [OK] Users table ready
+2026-02-08 22:07:08,588 - __main__ - INFO - [OK] Clients table ready
+2026-02-08 22:07:08,650 - __main__ - INFO - [OK] Documents table ready
+2026-02-08 22:07:08,707 - __main__ - INFO - [OK] Activity logs table ready
+2026-02-08 22:07:08,764 - __main__ - INFO - [OK] OTPs table ready
+2026-02-08 22:07:09,272 - __main__ - INFO - [OK] Database indexes created
+2026-02-08 22:07:09,329 - __main__ - INFO - [OK] Database initialized successfully
+2026-02-08 22:07:09,449 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-08 22:07:09,450 - __main__ - INFO - Starting Google Drive sync...
+2026-02-08 22:07:42,894 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-08 22:07:42,896 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-08 22:07:44,914 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-08 22:08:40,612 - __main__ - INFO - Sync complete! 86 documents synced
+2026-02-08 22:08:40,615 - __main__ - INFO - Initial sync complete: 86 documents synced
+2026-02-08 22:08:40,616 - __main__ - INFO - Starting Flask app on port 5000 (debug=True)
+2026-02-08 22:08:40,690 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.0.197:5000
+2026-02-08 22:08:40,692 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-08 22:09:29,237 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:09:29] "[32mGET / HTTP/1.1[0m" 302 -
+2026-02-08 22:09:30,026 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:09:30] "GET /dashboard HTTP/1.1" 200 -
+2026-02-08 22:09:30,251 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:09:30] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:09:35,241 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:09:35] "GET /admin/dashboard HTTP/1.1" 200 -
+2026-02-08 22:09:35,311 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:09:35] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:11:29,938 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:11:29] "[33mPOST /admin/user/add HTTP/1.1[0m" 404 -
+2026-02-08 22:11:38,742 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:11:38] "[33mPOST /admin/user/add HTTP/1.1[0m" 404 -
+2026-02-08 22:12:01,991 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:12:01] "GET /clients HTTP/1.1" 200 -
+2026-02-08 22:12:02,085 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:12:02] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-08 22:12:04,222 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:12:04] "[33mPOST /fetch_data HTTP/1.1[0m" 404 -
+2026-02-08 22:12:04,329 - werkzeug - INFO - 127.0.0.1 - - [08/Feb/2026 22:12:04] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-09 23:42:49,379 - __main__ - INFO - Using PostgreSQL database
+2026-02-09 23:42:49,442 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-09 23:42:49,443 - __main__ - INFO - Google Drive initialized successfully
+2026-02-10 22:24:01,087 - __main__ - INFO - Using PostgreSQL database
+2026-02-10 22:24:01,131 - __main__ - INFO - No stored credentials. Please authenticate manually.
+2026-02-10 22:24:01,131 - __main__ - INFO - Google Drive initialized successfully
+2026-02-10 22:24:01,543 - __main__ - INFO - Creating PostgreSQL tables...
+2026-02-10 22:24:01,678 - __main__ - INFO - [OK] Users table ready
+2026-02-10 22:24:01,732 - __main__ - INFO - [OK] Clients table ready
+2026-02-10 22:24:01,786 - __main__ - INFO - [OK] Documents table ready
+2026-02-10 22:24:01,839 - __main__ - INFO - [OK] Activity logs table ready
+2026-02-10 22:24:01,893 - __main__ - INFO - [OK] OTPs table ready
+2026-02-10 22:24:02,387 - __main__ - INFO - [OK] Database indexes created
+2026-02-10 22:24:02,444 - __main__ - INFO - [OK] Database initialized successfully
+2026-02-10 22:24:02,553 - __main__ - INFO - Starting initial sync on app startup...
+2026-02-10 22:24:02,553 - __main__ - INFO - Starting Google Drive sync...
+2026-02-10 22:24:14,162 - oauth2client.client - INFO - Received token response with no refresh_token. Consider reauthenticating with prompt='consent'.
+2026-02-10 22:24:14,163 - oauth2client.client - INFO - Successfully retrieved access token
+2026-02-10 22:24:16,217 - __main__ - INFO - Found 67 folders in Google Drive
+2026-02-10 22:25:16,549 - __main__ - INFO - Sync complete! 86 documents synced
+2026-02-10 22:25:16,551 - __main__ - INFO - Initial sync complete: 86 documents synced
+2026-02-10 22:25:16,551 - __main__ - INFO - Starting Flask app on port 5000 (debug=True)
+2026-02-10 22:25:16,611 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.0.197:5000
+2026-02-10 22:25:16,612 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-10 22:25:26,040 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:26] "[32mGET / HTTP/1.1[0m" 302 -
+2026-02-10 22:25:26,161 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:26] "GET /login HTTP/1.1" 200 -
+2026-02-10 22:25:26,372 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:26] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:25:26,931 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:26] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-02-10 22:25:45,708 - __main__ - INFO - Activity logged: login by karthik
+2026-02-10 22:25:45,711 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:45] "[32mPOST /login HTTP/1.1[0m" 302 -
+2026-02-10 22:25:46,562 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:46] "GET /dashboard HTTP/1.1" 200 -
+2026-02-10 22:25:46,640 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:46] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:25:51,917 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:51] "[33mGET /change_password HTTP/1.1[0m" 404 -
+2026-02-10 22:25:51,985 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:25:51] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:26:01,746 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:26:01] "GET /admin/dashboard HTTP/1.1" 200 -
+2026-02-10 22:26:01,792 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:26:01] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:26:12,219 - __main__ - INFO - Activity logged: user_delete by karthik
+2026-02-10 22:26:12,220 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:26:12] "[32mPOST /admin/user/1/delete HTTP/1.1[0m" 302 -
+2026-02-10 22:26:12,922 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:26:12] "GET /admin/dashboard HTTP/1.1" 200 -
+2026-02-10 22:26:52,959 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:26:52] "[33mGET /admin/user/2/activity HTTP/1.1[0m" 404 -
+2026-02-10 22:26:53,009 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:26:53] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:27:14,800 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:14] "GET /clients HTTP/1.1" 200 -
+2026-02-10 22:27:14,844 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:14] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:27:16,646 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:16] "[33mPOST /fetch_data HTTP/1.1[0m" 404 -
+2026-02-10 22:27:16,701 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:16] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:27:19,580 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:19] "[33mGET /api/client/2/documents HTTP/1.1[0m" 404 -
+2026-02-10 22:27:22,027 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:22] "[33mGET /api/client/5/documents HTTP/1.1[0m" 404 -
+2026-02-10 22:27:24,980 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:24] "GET /dashboard HTTP/1.1" 200 -
+2026-02-10 22:27:25,065 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:27:25] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:00,543 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:00] "GET /dashboard HTTP/1.1" 200 -
+2026-02-10 22:39:00,600 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:00] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:02,955 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:02] "GET /admin/dashboard HTTP/1.1" 200 -
+2026-02-10 22:39:03,015 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:03] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:09,501 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:09] "GET /dashboard HTTP/1.1" 200 -
+2026-02-10 22:39:09,563 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:09] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:11,433 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:11] "[33mGET /upload_page HTTP/1.1[0m" 404 -
+2026-02-10 22:39:11,477 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:11] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:14,281 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:14] "[33mGET /fetch HTTP/1.1[0m" 404 -
+2026-02-10 22:39:14,325 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:14] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:17,256 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:17] "GET /clients HTTP/1.1" 200 -
+2026-02-10 22:39:17,355 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:17] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2026-02-10 22:39:19,098 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:19] "[33mPOST /fetch_data HTTP/1.1[0m" 404 -
+2026-02-10 22:39:19,165 - werkzeug - INFO - 127.0.0.1 - - [10/Feb/2026 22:39:19] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
