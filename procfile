@@ -1,5 +1,2 @@
-<<<<<<< HEAD
+
 web: gunicorn app:app --workers 1 --timeout 120 --threads 2
-=======
-web: gunicorn app:app --workers 1 --timeout 120 --threads 2
->>>>>>> 7146630f9a2c50096166401463c66d988667f83d
