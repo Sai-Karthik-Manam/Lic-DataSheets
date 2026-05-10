@@ -1,0 +1,47 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Google OAuth
+client_secrets.json
+token.json
+credentials.json
+*_token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+venv/
+env/
+ENV/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads / temp
+uploads/
+downloads/
+temp/
+
+# Node / React
+node_modules/
+frontend/node_modules/
+frontend/dist/
+static/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
