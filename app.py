@@ -330,52 +330,83 @@ except Exception as e:
 # ─── OTP Helpers ─────────────────────────────────────────────────────────────
 
 def send_otp_email(email, otp_code, username):
-    # Always print OTP to console so you can log in even without email
-    print(f"" + "="*50)
+    """
+    Send OTP email. Tries Gmail SMTP TLS (port 587) first,
+    then SSL (port 465), then SendGrid as fallback.
+    Always prints OTP to console for development/debugging.
+    """
+    # Always print OTP to console so you can log in even without email configured
+    print(f"\n{'='*50}")
     print(f"  OTP FOR {username}: {otp_code}")
-    print("="*50 + "")
+    print(f"{'='*50}\n")
     app.logger.info(f"OTP for {username}: {otp_code}")
 
-    # Try Gmail SMTP (add SMTP_USERNAME + SMTP_PASSWORD to .env)
+    if not email:
+        app.logger.error("send_otp_email: No email address provided")
+        return False
+
     smtp_user = os.getenv("SMTP_USERNAME")
     smtp_pass = os.getenv("SMTP_PASSWORD")
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+
+    html_body = f"""<div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;
+                    padding:32px;border-radius:12px;border:1px solid #e5e7eb;">
+      <h2 style="color:#4040c8;">LIC Manager - OTP Login</h2>
+      <p>Hello <strong>{username}</strong>, your one-time password is:</p>
+      <div style="font-size:38px;font-weight:900;letter-spacing:10px;
+                  color:#4040c8;padding:20px;background:#f0f0ff;
+                  border-radius:10px;text-align:center;margin:20px 0;">{otp_code}</div>
+      <p>Valid for <strong>5 minutes</strong>. Do not share with anyone.</p>
+      <p style="color:#9ca3af;font-size:13px;">If you did not request this, ignore this email.</p>
+    </div>"""
+
     if smtp_user and smtp_pass:
-        try:
-            import smtplib
-            from email.mime.multipart import MIMEMultipart
-            from email.mime.text import MIMEText
-            html = f"""<div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;
-                        padding:32px;border-radius:12px;border:1px solid #e5e7eb;">
-              <h2 style="color:#4040c8;">LIC Manager - OTP Login</h2>
-              <p>Hello <strong>{username}</strong>, your one-time password is:</p>
-              <div style="font-size:38px;font-weight:900;letter-spacing:10px;
-                          color:#4040c8;padding:20px;background:#f0f0ff;
-                          border-radius:10px;text-align:center;margin:20px 0;">{otp_code}</div>
-              <p style="color:#9ca3af;font-size:13px;">Valid for 5 minutes. Do not share.</p>
-            </div>"""
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        def _make_msg():
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"LIC Manager - OTP: {otp_code}"
+            msg["Subject"] = f"LIC Manager - Your OTP: {otp_code}"
             msg["From"] = smtp_user
             msg["To"] = email
-            msg.attach(MIMEText(html, "html"))
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            msg.attach(MIMEText(html_body, "html"))
+            return msg
+
+        # ── Try TLS (port 587) first – works for Gmail App Passwords ──
+        try:
+            with smtplib.SMTP(smtp_host, 587, timeout=15) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
                 server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, email, msg.as_string())
-            app.logger.info(f"OTP sent via Gmail to {email}")
+                server.sendmail(smtp_user, email, _make_msg().as_string())
+            app.logger.info(f"OTP sent via SMTP TLS (587) to {email}")
             return True
         except Exception as e:
-            app.logger.error(f"Gmail SMTP error: {e}")
+            app.logger.warning(f"SMTP TLS (587) failed: {e}. Trying SSL (465)...")
 
-    # Try SendGrid as fallback
-    sendgrid_key = os.getenv("SENDGRID_API_KEY")
-    if sendgrid_key and sendgrid_key != "your_sendgrid_api_key":
+        # ── Fallback: SSL (port 465) ──
         try:
+            with smtplib.SMTP_SSL(smtp_host, 465, timeout=15) as server:
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_user, email, _make_msg().as_string())
+            app.logger.info(f"OTP sent via SMTP SSL (465) to {email}")
+            return True
+        except Exception as e:
+            app.logger.error(f"SMTP SSL (465) also failed: {e}")
+
+    # ── Final fallback: SendGrid ──
+    sendgrid_key = os.getenv("SENDGRID_API_KEY", "")
+    if sendgrid_key and sendgrid_key not in ("your_sendgrid_api_key", ""):
+        try:
+            from_addr = os.getenv("SENDGRID_FROM_EMAIL", smtp_user or "noreply@licmanager.com")
             sg = SendGridAPIClient(sendgrid_key)
             message = Mail(
-                from_email=smtp_user or "noreply@licmanager.com",
+                from_email=from_addr,
                 to_emails=email,
-                subject=f"LIC Manager OTP: {otp_code}",
-                html_content=f"<strong>{otp_code}</strong> - valid 5 mins."
+                subject=f"LIC Manager - OTP: {otp_code}",
+                html_content=html_body
             )
             sg.send(message)
             app.logger.info(f"OTP sent via SendGrid to {email}")
@@ -383,8 +414,11 @@ def send_otp_email(email, otp_code, username):
         except Exception as e:
             app.logger.error(f"SendGrid error: {e}")
 
-    # OTP printed to console above - still works for development
-    return True
+    app.logger.warning(
+        "Email credentials not configured (SMTP_USERNAME/SMTP_PASSWORD or SENDGRID_API_KEY). "
+        "OTP printed to console only."
+    )
+    return True  # Return True so login flow continues even without email
 
 
 def generate_otp():
@@ -584,14 +618,27 @@ def login():
         if not user_dict:
             return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
 
+        # ── FIX: safe timezone-aware locked_until comparison ──
         if user_dict['locked_until']:
             try:
-                lock_time = user_dict['locked_until'] if USE_POSTGRESQL else datetime.strptime(
-                    str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
-                if lock_time and lock_time > datetime.now():
-                    return jsonify({'success': False, 'error': 'Account locked due to too many failed attempts. Try again later.'}), 403
-            except Exception:
-                pass
+                if USE_POSTGRESQL:
+                    lock_time = user_dict['locked_until']
+                    # Strip timezone info to allow naive comparison
+                    if hasattr(lock_time, 'tzinfo') and lock_time.tzinfo is not None:
+                        lock_time = lock_time.replace(tzinfo=None)
+                    current_time = datetime.now()
+                else:
+                    lock_time = datetime.strptime(
+                        str(user_dict['locked_until']), "%Y-%m-%d %H:%M:%S")
+                    current_time = datetime.now()
+
+                if lock_time > current_time:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Account locked due to too many failed attempts. Try again later.'
+                    }), 403
+            except Exception as e:
+                app.logger.error(f"Lock time comparison error: {e}")
 
         if check_password_hash(user_dict['password'], password):
             otp_code = generate_otp()
@@ -1716,12 +1763,18 @@ def server_error(e):
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    try:
-        app.logger.info("Starting initial sync on app startup...")
-        synced = sync_drive_to_database()
-        app.logger.info(f"Initial sync complete: {synced} documents synced")
-    except Exception as e:
-        app.logger.warning(f"Sync warning: {e}")
+    # FIX: Run initial sync in a background thread so the server
+    # starts immediately instead of blocking for 1-2 minutes.
+    def _run_initial_sync():
+        try:
+            app.logger.info("Starting initial sync on app startup...")
+            synced = sync_drive_to_database()
+            app.logger.info(f"Initial sync complete: {synced} documents synced")
+        except Exception as e:
+            app.logger.warning(f"Sync warning: {e}")
+
+    sync_thread = threading.Thread(target=_run_initial_sync, daemon=True)
+    sync_thread.start()
 
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     port = int(os.getenv('PORT', 5000))
