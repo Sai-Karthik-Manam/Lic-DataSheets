@@ -305,6 +305,25 @@ def init_db():
             except Exception as idx_err:
                 app.logger.warning(f"Index creation warning: {idx_err}")
 
+        # Seed default users if they don't exist (safe for Render ephemeral disk)
+        now = datetime.now() if USE_POSTGRESQL else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        seed_users = [
+            ('Karthik', generate_password_hash('Karthik@2005'), 'admin', 'karthik.manam1101@gmail.com'),
+            ('Veeru',   generate_password_hash('Veeru@1977'),   'user',  'lic.datasheets@gmail.com'),
+        ]
+        for uname, pw, role, email in seed_users:
+            try:
+                if USE_POSTGRESQL:
+                    cur.execute(
+                        "INSERT INTO users (username, password, role, email, created_at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT (username) DO NOTHING",
+                        (uname, pw, role, email, now))
+                else:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO users (username, password, role, email, created_at) VALUES (?,?,?,?,?)",
+                        (uname, pw, role, email, now))
+            except Exception as seed_err:
+                app.logger.warning(f"User seed warning for {uname}: {seed_err}")
+
         conn.commit()
         app.logger.info("[OK] Database initialized successfully")
     except Exception as e:

@@ -109,7 +109,32 @@ function EditDocModal({ open, onClose, client, onSaved }) {
 }
 
 function ClientDetailModal({ open, onClose, client }) {
+  const toast = useToast()
+  const [downloading, setDownloading] = useState(null)
+
   if (!client) return null
+
+  const getFileId = (url) => {
+    try { return new URL(url).searchParams.get('id') } catch { return null }
+  }
+
+  const handleDownload = async (doc) => {
+    const fileId = getFileId(doc.url)
+    if (!fileId) { toast.error('Cannot get file ID'); return }
+    setDownloading(fileId)
+    try {
+      const res = await api.post('/download-document', { file_id: fileId }, { responseType: 'blob' })
+      const blobUrl = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = doc.file_name
+      a.click()
+      window.URL.revokeObjectURL(blobUrl)
+      toast.success(`Downloaded: ${doc.file_name}`)
+    } catch { toast.error('Download failed') }
+    finally { setDownloading(null) }
+  }
+
   return (
     <Modal open={open} onClose={onClose} title={`👤 ${client.name} Details`} size="lg"
       footer={<button className="btn btn--primary" onClick={onClose}>Close</button>}
@@ -130,9 +155,12 @@ function ClientDetailModal({ open, onClose, client }) {
       </div>
 
       <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, color: 'var(--slate-800)' }}>📄 Documents</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 16 }}>
         {DOC_TYPES.map(d => {
           const doc = client.documents?.[d.key]
+          const fileId = doc ? getFileId(doc.url) : null
+          const viewUrl = fileId ? `https://drive.google.com/file/d/${fileId}/view` : null
+          const isDownloading = downloading === fileId
           return (
             <div key={d.key} style={{
               border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
@@ -140,15 +168,28 @@ function ClientDetailModal({ open, onClose, client }) {
             }}>
               <div style={{ fontSize: 32, marginBottom: 8, opacity: doc ? 1 : 0.4 }}>{d.icon}</div>
               <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, color: 'var(--slate-700)' }}>{d.name}</div>
-              
+
               {doc ? (
                 <>
                   <div style={{ fontSize: 11, color: 'var(--slate-500)', marginBottom: 12, wordBreak: 'break-all' }}>
                     {doc.file_name} <br/>({(doc.file_size / (1024*1024)).toFixed(2)} MB)
                   </div>
-                  <button className="btn btn--primary btn--sm btn--full" onClick={() => window.open(doc.url, '_blank')}>
-                    👁️ View
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <button
+                      className="btn btn--primary btn--sm btn--full"
+                      onClick={() => window.open(viewUrl, '_blank')}
+                      disabled={!viewUrl}
+                    >
+                      👁️ View
+                    </button>
+                    <button
+                      className="btn btn--ghost btn--sm btn--full"
+                      onClick={() => handleDownload(doc)}
+                      disabled={isDownloading}
+                    >
+                      {isDownloading ? <><span className="spinner" /> Downloading…</> : '⬇️ Download'}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div style={{ fontSize: 12, color: 'var(--slate-400)', fontStyle: 'italic', marginTop: 12 }}>Not uploaded</div>
