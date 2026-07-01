@@ -3,13 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { LoadingOverlay, EmptyState } from '../components/UI'
 import api from '../api/client'
-
-const DOC_META = {
-  datasheet:    { label: 'Datasheet',    icon: '📄', color: 'var(--indigo-500)' },
-  aadhaar:      { label: 'Aadhaar',      icon: '🪪', color: '#8b5cf6' },
-  pan:          { label: 'PAN Card',     icon: '💳', color: '#ec4899' },
-  bank_account: { label: 'Bank Account', icon: '🏦', color: '#f59e0b' },
-}
+import { DOC_META } from '../constants'
 
 export default function DashboardPage() {
   const [data, setData] = useState(null)
@@ -216,12 +210,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .stats-grid + div { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+
     </>
   )
 }

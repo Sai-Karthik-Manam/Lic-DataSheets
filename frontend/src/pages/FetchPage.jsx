@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { Alert, ConfirmModal, LoadingOverlay } from '../components/UI'
+import { ConfirmModal, LoadingOverlay } from '../components/UI'
 import api from '../api/client'
-
-const DOC_META = {
-  datasheet:    { label: 'Datasheet',    icon: '📊' },
-  aadhaar:      { label: 'Aadhaar',      icon: '🪪' },
-  pan:          { label: 'PAN Card',     icon: '💳' },
-  bank_account: { label: 'Bank Account', icon: '🏦' },
-}
+import { DOC_META } from '../constants'
+import { useToast } from '../context/ToastContext'
 
 function DocCard({ type, doc, onDelete, onDownload }) {
   const meta = DOC_META[type] || { label: type, icon: '📄' }
@@ -76,9 +71,8 @@ export default function FetchPage() {
   const [query, setQuery] = useState('')
   const [client, setClient] = useState(location.state?.client || null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [notFound, setNotFound] = useState(false)
+  const toast = useToast()
   const [deleteTarget, setDeleteTarget] = useState(null)      // { file_id, label }
   const [deleteClientOpen, setDeleteClientOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -88,14 +82,14 @@ export default function FetchPage() {
   const handleSearch = async e => {
     e.preventDefault()
     if (!query.trim()) return
-    setLoading(true); setError(''); setNotFound(false); setClient(null)
+    setLoading(true); setNotFound(false); setClient(null)
     try {
       const res = await api.post('/fetch-data', { name: query })
       if (res.data.success) setClient(res.data.client)
       else if (res.data.not_found) setNotFound(true)
-      else setError(res.data.error || 'Search failed')
+      else toast.error(res.data.error || 'Search failed')
     } catch (err) {
-      setError(err.response?.data?.error || 'Search failed')
+      toast.error(err.response?.data?.error || 'Search failed')
     } finally { setLoading(false) }
   }
 
@@ -116,15 +110,15 @@ export default function FetchPage() {
     try {
       const res = await api.post('/delete-document', { file_id: deleteTarget.file_id })
       if (res.data.success) {
-        setSuccess('Document deleted successfully')
+        toast.success('Document deleted successfully')
         // refresh
         const r2 = await api.post('/fetch-data', { name: client.name })
         if (r2.data.success) setClient(r2.data.client)
       } else {
-        setError(res.data.error || 'Delete failed')
+        toast.error(res.data.error || 'Delete failed')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Delete failed')
+      toast.error(err.response?.data?.error || 'Delete failed')
     } finally {
       setDeleteLoading(false)
       setDeleteTarget(null)
@@ -136,13 +130,13 @@ export default function FetchPage() {
     try {
       const res = await api.post('/delete-client', { name: client.name })
       if (res.data.success) {
-        setSuccess('Client deleted successfully')
+        toast.success('Client deleted successfully')
         setClient(null); setDeleteClientOpen(false); setQuery('')
       } else {
-        setError(res.data.error)
+        toast.error(res.data.error)
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Delete failed')
+      toast.error(err.response?.data?.error || 'Delete failed')
     } finally {
       setDeleteLoading(false); setDeleteClientOpen(false)
     }
@@ -157,9 +151,6 @@ export default function FetchPage() {
             <h1 className="page-title">🔍 Search Client Documents</h1>
             <p className="page-subtitle">Enter a client name to find and manage their documents.</p>
           </div>
-
-          {error && <Alert type="error" onClose={() => setError('')}>{error}</Alert>}
-          {success && <Alert type="success" onClose={() => setSuccess('')}>{success}</Alert>}
 
           {/* Search Form */}
           <div className="card" style={{ marginBottom: 24 }}>

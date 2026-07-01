@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
-import LandingPage    from './pages/LandingPage'
-import LoginPage      from './pages/LoginPage'
-import VerifyOtpPage  from './pages/VerifyOtpPage'
-import DashboardPage  from './pages/DashboardPage'
-import UploadPage     from './pages/UploadPage'
-import FetchPage      from './pages/FetchPage'
-import ClientsPage    from './pages/ClientsPage'
-import AdminPage      from './pages/AdminPage'
-import ChangePassword from './pages/ChangePasswordPage'
-import NotFoundPage   from './pages/NotFoundPage'
+import LandingPage       from './pages/LandingPage'
+import LoginPage         from './pages/LoginPage'
+import DashboardPage     from './pages/DashboardPage'
+import UploadPage        from './pages/UploadPage'
+import FetchPage         from './pages/FetchPage'
+import ClientsPage       from './pages/ClientsPage'
+import AdminPage         from './pages/AdminPage'
+import ChangePassword    from './pages/ChangePasswordPage'
+import NotFoundPage      from './pages/NotFoundPage'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth()
@@ -43,26 +44,29 @@ function FullPageSpinner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/verify-otp" element={<VerifyOtpPage />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public */}
+              <Route path="/"        element={<LandingPage />} />
+              <Route path="/login"   element={<GuestRoute><LoginPage /></GuestRoute>} />
 
-          {/* Protected */}
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/upload"    element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
-          <Route path="/search"    element={<ProtectedRoute><FetchPage /></ProtectedRoute>} />
-          <Route path="/clients"   element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
-          <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-          <Route path="/admin"     element={<ProtectedRoute adminOnly><AdminPage /></ProtectedRoute>} />
+              {/* Protected */}
+              <Route path="/dashboard"       element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/upload"          element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
+              <Route path="/search"          element={<ProtectedRoute><FetchPage /></ProtectedRoute>} />
+              <Route path="/clients"         element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
+              <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+              <Route path="/admin"           element={<ProtectedRoute adminOnly><AdminPage /></ProtectedRoute>} />
 
-          {/* Fallback */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+              {/* Fallback */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

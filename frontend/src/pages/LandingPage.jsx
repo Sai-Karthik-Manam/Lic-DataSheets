@@ -21,7 +21,7 @@ export default function LandingPage() {
   if (user) return <Navigate to="/dashboard" replace />
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a1a4e 0%, #3030a0 60%, #5252e0 100%)' }}>
+    <div className="hero-bg">
       {/* Nav */}
       <nav style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -73,15 +73,7 @@ export default function LandingPage() {
           marginBottom: 56,
         }}>
           {FEATURES.map((f) => (
-            <div key={f.title} style={{
-              background: 'rgba(255,255,255,0.95)', borderRadius: 'var(--radius-xl)',
-              padding: '32px 24px', textAlign: 'center',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
-              transition: 'all 0.3s ease', cursor: 'default',
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-8px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-            >
+            <div key={f.title} className="feature-card">
               <div style={{ fontSize: 48, marginBottom: 14 }}>{f.icon}</div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--slate-800)', marginBottom: 10 }}>{f.title}</h3>
               <p style={{ fontSize: 13, color: 'var(--slate-500)', lineHeight: 1.6, marginBottom: 16 }}>{f.desc}</p>

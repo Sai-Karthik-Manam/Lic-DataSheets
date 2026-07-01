@@ -161,6 +161,22 @@ export default function AdminPage() {
     finally { setLoading(false) }
   }
 
+  const handleExportClients = async () => {
+    try {
+      const res = await api.get('/admin/export-clients', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'clients_export.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      setSuccess('Clients exported successfully!')
+    } catch (err) {
+      setError('Failed to export clients')
+    }
+  }
+
   useEffect(() => { fetchData() }, [])
 
   /* ─── Confirmed actions (role, unlock, delete) ─── */
@@ -222,7 +238,14 @@ export default function AdminPage() {
           {/* Users table header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--slate-800)' }}>📋 All Users</h2>
-            <button className="btn btn--primary" onClick={() => setAddOpen(true)}>➕ Add New User</button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn--ghost" onClick={handleExportClients}>
+                📥 Export Clients (CSV)
+              </button>
+              <button className="btn btn--primary" onClick={() => setAddOpen(true)}>
+                ➕ Add New User
+              </button>
+            </div>
           </div>
 
           {users.length === 0 ? (

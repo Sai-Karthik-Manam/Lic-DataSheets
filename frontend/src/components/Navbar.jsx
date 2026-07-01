@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -14,6 +14,20 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme') || 'light'
+    setTheme(saved)
+    document.documentElement.setAttribute('data-theme', saved)
+  }, [])
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(nextTheme)
+    document.documentElement.setAttribute('data-theme', nextTheme)
+    localStorage.setItem('theme', nextTheme)
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -64,6 +78,11 @@ export default function Navbar() {
             color: 'var(--slate-500)', textDecoration: 'none', fontSize: 13,
             fontWeight: 600, transition: 'all 0.2s',
           }}>🔑</Link>
+          <button 
+            className={`theme-toggle ${theme === 'dark' ? 'dark' : ''}`} 
+            onClick={toggleTheme}
+            aria-label="Toggle dark mode"
+          />
           <button onClick={handleLogout} className="btn btn--ghost btn--sm">
             🚪 Logout
           </button>
@@ -131,13 +150,7 @@ export default function Navbar() {
 
 function NavLink({ to, active, children }) {
   return (
-    <Link to={to} style={{
-      padding: '7px 13px', borderRadius: 'var(--radius-sm)',
-      fontWeight: 600, fontSize: 13, textDecoration: 'none',
-      color: active ? 'var(--indigo-700)' : 'var(--slate-600)',
-      background: active ? 'var(--indigo-50)' : 'transparent',
-      transition: 'all 0.2s',
-    }}>
+    <Link to={to} className={`nav-link ${active ? 'active' : ''}`}>
       {children}
     </Link>
   )
