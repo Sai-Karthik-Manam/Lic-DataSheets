@@ -129,15 +129,15 @@ export default function LoginPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">🔢 Enter 6-Digit OTP</label>
+                <label className="form-label">🔢 Enter Security PIN</label>
                 <input
                   className="form-input"
                   type="text"
                   value={otp}
-                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="Enter OTP"
+                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  placeholder="Enter PIN"
                   required
-                  maxLength={6}
+                  maxLength={8}
                   autoFocus
                   style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', fontWeight: 'bold' }}
                 />
@@ -146,7 +146,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 className="btn btn--primary btn--lg btn--full"
-                disabled={loading || otp.length !== 6}
+                disabled={loading || otp.length < 6}
                 style={{ marginTop: 8 }}
               >
                 {loading ? <><span className="spinner" /> Verifying…</> : '✓ Verify & Login'}
