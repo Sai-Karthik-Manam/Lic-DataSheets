@@ -125,8 +125,7 @@ export default function LoginPage() {
           ) : (
             <>
               <div style={{ marginBottom: 16, fontSize: 14, color: 'var(--slate-600)', textAlign: 'center', lineHeight: 1.5 }}>
-                We sent a 6-digit OTP code to: <br/>
-                <strong style={{ color: 'var(--indigo-600)' }}>{maskedEmail}</strong>
+                🔒 Enter your personal <strong style={{ color: 'var(--indigo-600)' }}>Security PIN</strong> to complete login.
               </div>
 
               <div className="form-group">

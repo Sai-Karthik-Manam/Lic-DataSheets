@@ -18,9 +18,6 @@ import re
 from datetime import datetime, timedelta
 import pytz
 import bleach
-import smtplib
-import string
-from email.mime.text import MIMEText
 
 load_dotenv()
 app = Flask(__name__, static_folder='static/dist', static_url_path='')
@@ -183,20 +180,10 @@ def cleanup_temp_file(filepath):
     return False
 
 
-def send_otp_email(to_email, otp):
-    smtp_user = os.getenv('SMTP_USERNAME')
-    smtp_pass = os.getenv('SMTP_PASSWORD')
-    if not smtp_user or not smtp_pass:
-        raise ValueError("SMTP credentials not configured. Please set SMTP_PASSWORD in .env")
-        
-    msg = MIMEText(f"Your login OTP is: {otp}\n\nIt is valid for 5 minutes.")
-    msg['Subject'] = "Your LIC Manager Login OTP"
-    msg['From'] = smtp_user
-    msg['To'] = to_email
-    
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-        server.login(smtp_user, smtp_pass)
-        server.send_message(msg)
+FIXED_OTP_HASHES = {
+    'veeru': 'scrypt:32768:8:1$ykHhADIwULYnK5sa$846d70329e5e6c137eba7a341074b74db298ee85d01f51e8ba8bf82938c14492d450f13ae202cf8833abfec77133e72b7b7635b426af5517fa376da9ad833a19',
+    'karthik': 'scrypt:32768:8:1$gvuMQgCRYBL881sL$7d5128135bce79c2561dc3baf80e89ea5491f290572077d9a0b778c8482412dc31e7d0345b7907a31b0e90bb61ee8ea92dcafc85537bb4c452eee5352b22a5af'
+}
 
 
 # ─── Database Init ────────────────────────────────────────────────────────────
@@ -473,33 +460,10 @@ def login():
                 cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = %s", (user_dict['id'],))
             else:
                 cur.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user_dict['id'],))
-            
-            # Generate OTP
-            otp = ''.join(random.choices(string.digits, k=6))
-            expires = datetime.now() + timedelta(minutes=5)
-            expires_str = expires if USE_POSTGRESQL else expires.strftime("%Y-%m-%d %H:%M:%S")
-
-            # Clean previous OTPs and insert new one
-            if USE_POSTGRESQL:
-                cur.execute("DELETE FROM otps WHERE user_id = %s", (user_dict['id'],))
-                cur.execute("INSERT INTO otps (user_id, otp, expires_at) VALUES (%s, %s, %s)", (user_dict['id'], otp, expires_str))
-            else:
-                cur.execute("DELETE FROM otps WHERE user_id = ?", (user_dict['id'],))
-                cur.execute("INSERT INTO otps (user_id, otp, expires_at) VALUES (?, ?, ?)", (user_dict['id'], otp, expires_str))
             conn.commit()
             
-            # Send Email
-            email_addr = user_dict.get('email')
-            if not email_addr:
-                return jsonify({'success': False, 'error': 'No email found for this user.'}), 400
-                
-            try:
-                send_otp_email(email_addr, otp)
-            except Exception as e:
-                app.logger.error(f"OTP Email Error: {e}")
-                return jsonify({'success': False, 'error': 'Failed to send OTP email. Make sure SMTP_PASSWORD is set in .env'}), 500
-                
             # Mask email for frontend
+            email_addr = user_dict.get('email', '')
             masked_email = email_addr
             if '@' in email_addr:
                 parts = email_addr.split('@')
@@ -509,7 +473,7 @@ def login():
                 'success': True,
                 'require_otp': True,
                 'email': masked_email,
-                'message': f'OTP sent to {masked_email}'
+                'message': 'OTP verification required.'
             })
         else:
             # Increment failed attempts
@@ -554,6 +518,12 @@ def verify_otp():
     if not username or not otp_code:
         return jsonify({'success': False, 'error': 'Missing username or OTP'}), 400
         
+    # Check static OTP
+    user_lower = username.lower()
+    expected_hash = FIXED_OTP_HASHES.get(user_lower)
+    if not expected_hash or not check_password_hash(expected_hash, otp_code):
+        return jsonify({'success': False, 'error': 'Invalid OTP code.'}), 401
+        
     conn = None
     cur = None
     try:
@@ -574,42 +544,8 @@ def verify_otp():
         if not user_dict:
             return jsonify({'success': False, 'error': 'Invalid user'}), 400
             
-        if USE_POSTGRESQL:
-            cur.execute("SELECT otp, expires_at FROM otps WHERE user_id = %s", (user_dict['id'],))
-        else:
-            cur.execute("SELECT otp, expires_at FROM otps WHERE user_id = ?", (user_dict['id'],))
-            
-        otp_row = cur.fetchone()
-        if not otp_row:
-            return jsonify({'success': False, 'error': 'No active OTP found. Please login again.'}), 400
-            
-        saved_otp = otp_row[0] if not USE_POSTGRESQL else otp_row['otp']
-        expires_at = otp_row[1] if not USE_POSTGRESQL else otp_row['expires_at']
-        
-        try:
-            if USE_POSTGRESQL:
-                exp_time = expires_at
-                if hasattr(exp_time, 'tzinfo') and exp_time.tzinfo is not None:
-                    exp_time = exp_time.replace(tzinfo=None)
-                current_time = datetime.now()
-            else:
-                exp_time = datetime.strptime(str(expires_at), "%Y-%m-%d %H:%M:%S")
-                current_time = datetime.now()
-                
-            if exp_time < current_time:
-                return jsonify({'success': False, 'error': 'OTP has expired. Please login again.'}), 400
-        except Exception as e:
-            app.logger.error(f"OTP time comparison error: {e}")
-            
-        if saved_otp != otp_code:
-            return jsonify({'success': False, 'error': 'Invalid OTP code.'}), 401
-            
-        # Success! Remove OTP and set session
-        if USE_POSTGRESQL:
-            cur.execute("DELETE FROM otps WHERE user_id = %s", (user_dict['id'],))
-        else:
-            cur.execute("DELETE FROM otps WHERE user_id = ?", (user_dict['id'],))
-        conn.commit()
+        # No otps DB operation needed for static OTPs
+        # Just set session directly
         
         session['user_id'] = user_dict['id']
         session['username'] = user_dict['username']
