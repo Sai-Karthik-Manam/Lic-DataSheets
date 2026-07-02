@@ -1743,7 +1743,9 @@ def sync_drive_to_database():
 
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({'success': False, 'error': 'Not found'}), 404
+    if request.path.startswith('/api/'):
+        return jsonify({'success': False, 'error': 'Not found'}), 404
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.errorhandler(413)
 def too_large(e):
