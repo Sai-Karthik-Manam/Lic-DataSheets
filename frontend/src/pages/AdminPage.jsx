@@ -236,9 +236,9 @@ export default function AdminPage() {
           </div>
 
           {/* Users table header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--slate-800)' }}>📋 All Users</h2>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="btn btn--ghost" onClick={handleExportClients}>
                 📥 Export Clients (CSV)
               </button>
@@ -269,26 +269,26 @@ export default function AdminPage() {
                     const isSelf = u.id === currentUser?.user_id
                     return (
                       <tr key={u.id}>
-                        <td style={{ color: 'var(--slate-400)', fontSize: 13 }}>{i + 1}</td>
-                        <td>
+                        <td data-label="#" style={{ color: 'var(--slate-400)', fontSize: 13 }}>{i + 1}</td>
+                        <td data-label="Username">
                           <strong style={{ color: 'var(--slate-800)' }}>{u.username}</strong>
                           {isSelf && <span className="badge badge--indigo" style={{ marginLeft: 8, fontSize: 10 }}>You</span>}
                         </td>
-                        <td style={{ fontSize: 13, color: 'var(--slate-500)' }}>{u.email || '—'}</td>
-                        <td>
+                        <td data-label="Email" style={{ fontSize: 13, color: 'var(--slate-500)' }}>{u.email || '—'}</td>
+                        <td data-label="Role">
                           <span className={`badge badge--${u.role === 'admin' ? 'red' : 'green'}`}>
                             {u.role.toUpperCase()}
                           </span>
                         </td>
-                        <td style={{ fontSize: 13, color: 'var(--slate-500)', whiteSpace: 'nowrap' }}>{u.created_at}</td>
-                        <td>
+                        <td data-label="Created" style={{ fontSize: 13, color: 'var(--slate-500)', whiteSpace: 'nowrap' }}>{u.created_at}</td>
+                        <td data-label="Status">
                           {u.locked_until
                             ? <span className="badge badge--amber">🔒 LOCKED</span>
                             : <span className="badge badge--green">✓ ACTIVE</span>
                           }
                         </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 240 }}>
+                        <td data-label="Actions">
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 240, justifyContent: 'flex-end' }}>
                             {/* Promote / Demote */}
                             {u.role === 'user' && (
                               <button className="btn btn--primary btn--sm" onClick={() => setConfirmAction({

@@ -139,7 +139,7 @@ function ClientDetailModal({ open, onClose, client }) {
     <Modal open={open} onClose={onClose} title={`👤 ${client.name} Details`} size="lg"
       footer={<button className="btn btn--primary" onClick={onClose}>Close</button>}
     >
-      <div style={{ display: 'flex', gap: 24, marginBottom: 20, padding: 16, background: 'var(--slate-50)', borderRadius: 'var(--radius-md)' }}>
+      <div style={{ display: 'flex', gap: 24, marginBottom: 20, padding: 16, background: 'var(--slate-50)', borderRadius: 'var(--radius-md)', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 12, color: 'var(--slate-500)', fontWeight: 600 }}>Total Documents</div>
           <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--indigo-700)' }}>{Object.keys(client.documents || {}).length}</div>
@@ -266,7 +266,7 @@ export default function ClientsPage() {
               <h1 className="page-title">👥 All Clients</h1>
               <p className="page-subtitle">{clients.length} client{clients.length !== 1 ? 's' : ''} found</p>
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button className="btn btn--ghost" onClick={handleSync}>🔄 Sync Drive</button>
               <button className="btn btn--primary" onClick={() => navigate('/upload')}>📤 Upload New</button>
             </div>
@@ -283,13 +283,13 @@ export default function ClientsPage() {
           )}
 
           {/* Search */}
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
             <input
               className="form-input"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="🔎 Search by client name…"
-              style={{ flex: 1 }}
+              style={{ flex: 1, minWidth: 200 }}
             />
             <button type="submit" className="btn btn--primary">🔍 Search</button>
           </form>
@@ -324,20 +324,20 @@ export default function ClientsPage() {
                     ))
                   ) : clients.map((c, i) => (
                     <tr key={c.id}>
-                      <td style={{ color: 'var(--slate-400)', fontSize: 13 }}>{(page - 1) * 20 + i + 1}</td>
-                      <td>
+                      <td data-label="#" style={{ color: 'var(--slate-400)', fontSize: 13 }}>{(page - 1) * 20 + i + 1}</td>
+                      <td data-label="Client">
                         <span
                           onClick={() => viewClient(c.name)}
                           style={{ fontWeight: 700, color: 'var(--indigo-600)', cursor: 'pointer' }}
                         >{c.name}</span>
                       </td>
-                      <td>
+                      <td data-label="Docs">
                         <span className="badge badge--indigo">{c.doc_count} doc{c.doc_count !== 1 ? 's' : ''}</span>
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--slate-500)' }}>{c.created_at}</td>
-                      <td style={{ fontSize: 13, color: 'var(--slate-500)' }}>{c.updated_at}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 8 }}>
+                      <td data-label="Created" style={{ fontSize: 13, color: 'var(--slate-500)' }}>{c.created_at}</td>
+                      <td data-label="Updated" style={{ fontSize: 13, color: 'var(--slate-500)' }}>{c.updated_at}</td>
+                      <td data-label="Actions">
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                           <button className="btn btn--ghost btn--sm" onClick={() => setEditClient(c)}>✏️ Edit</button>
                           <button className="btn btn--primary btn--sm" onClick={() => viewClient(c.name)}>👁️ View</button>
                         </div>

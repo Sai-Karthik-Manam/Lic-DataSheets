@@ -966,3 +966,278 @@ body {
   .page-content      { padding: 16px 12px; }
   .btn--lg           { padding: 12px 20px; font-size: 14px; }
 }
+/* ═══════════════════════════════════════════════════════════════
+   NAVBAR (consolidated account menu + responsive)
+   ═══════════════════════════════════════════════════════════════ */
+
+.navbar-root {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 500;
+  height: var(--nav-height);
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--nav-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+}
+
+.navbar-logo {
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--indigo-700);
+  text-decoration: none;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.nav-desktop-links {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-desktop-links::-webkit-scrollbar { display: none; }
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ─── Account dropdown ─────────────────────────────────────────── */
+
+.account-menu { position: relative; }
+
+.account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all 0.2s ease;
+}
+.account-trigger:hover { border-color: var(--indigo-300); background: var(--indigo-50); }
+
+.account-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.account-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-caret { font-size: 9px; color: var(--text-muted); }
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  animation: dropIn 0.18s var(--ease-smooth);
+  z-index: 600;
+}
+
+.account-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 10px;
+}
+
+.account-dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 6px 0;
+}
+
+.account-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.account-dropdown-item:hover { background: var(--hover-bg); color: var(--text-primary); }
+.account-dropdown-item--danger { color: var(--red-500); }
+.account-dropdown-item--danger:hover { background: var(--red-100); color: var(--red-800); }
+
+/* ─── Hamburger ─────────────────────────────────────────────────── */
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px 6px;
+  color: var(--text-secondary);
+}
+
+.mobile-drawer {
+  position: fixed;
+  top: var(--nav-height);
+  left: 0; right: 0;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 16px 16px;
+  z-index: 499;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: slideDown 0.2s ease;
+}
+
+.mobile-drawer-link {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+.mobile-drawer-link.active {
+  color: var(--indigo-700);
+  background: var(--indigo-50);
+}
+
+/* ─── Breakpoints ───────────────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .nav-desktop-links { display: none !important; }
+  .hamburger { display: block !important; }
+  .account-name { display: none; } /* keep just the avatar on small screens */
+  .account-trigger { padding: 6px; }
+}
+
+@media (max-width: 480px) {
+  .navbar-root { padding: 0 12px; gap: 10px; }
+  .navbar-logo-text { display: none; } /* logo icon only on very small screens */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE TABLES → stacked cards on small screens
+   Add className="table-responsive" to any .table wrapper's parent
+   or just rely on this generic rule for `.table-container table`
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 700px) {
+  .table-container { border: none; box-shadow: none; overflow: visible; }
+
+  .table-container .table,
+  .table-container .table thead,
+  .table-container .table tbody,
+  .table-container .table th,
+  .table-container .table td,
+  .table-container .table tr {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table-container .table thead {
+    display: none; /* hide header row, show labels via data-label instead */
+  }
+
+  .table-container .table tr {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    padding: 10px 4px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-container .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: right;
+  }
+
+  .table-container .table td:last-child { border-bottom: none; }
+
+  /* Show a label before each cell's value, driven by data-label attribute */
+  .table-container .table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .table-container .table td > div,
+  .table-container .table td > span {
+    text-align: right;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GENERAL RESPONSIVE POLISH
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 640px) {
+  .page-content, .page-content--narrow { padding: 16px 12px; }
+  .modal-box { max-width: 94vw !important; margin: 0 8px; }
+  .card { padding: 16px; }
+  /* two-column grids collapse to one column on phones */
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}

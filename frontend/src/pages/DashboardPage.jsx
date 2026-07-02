@@ -47,7 +47,7 @@ export default function DashboardPage() {
 
   if (loading) return <><Navbar /><div className="page-wrapper"><LoadingOverlay text="Loading dashboard…" /></div></>
 
-  const { total_clients = 0, total_docs = 0, total_users = 0, doc_distribution = [], recent_clients = [], recent_activity = [] } = data || {}
+  const { total_clients = 0, total_docs = 0, total_users = 0, doc_distribution = [], recent_clients = [] } = data || {}
   const completionRate = total_clients > 0 ? ((total_docs / (total_clients * 4)) * 100).toFixed(1) : 0
 
   const STATS = [
@@ -176,41 +176,8 @@ export default function DashboardPage() {
               }
             </div>
           </div>
-
-          {/* Recent Activity */}
-          <div className="card" style={{ marginTop: 24 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 20 }}>⚡ Recent Activity</h2>
-            {recent_activity.length === 0
-              ? <EmptyState icon="📋" title="No activity yet" text="Actions will appear here once users start using the system." />
-              : recent_activity.map((a, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 14,
-                  padding: '12px 0', borderBottom: i < recent_activity.length - 1 ? '1px solid var(--slate-100)' : 'none',
-                }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                    background: 'var(--indigo-100)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontWeight: 700, color: 'var(--indigo-700)', fontSize: 13,
-                  }}>
-                    {(a.username || 'S')[0].toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--slate-800)' }}>
-                      {a.username || 'System'}
-                      <span style={{ fontWeight: 400, color: 'var(--slate-500)', marginLeft: 6 }}>
-                        {a.action} {a.details ? `– ${a.details}` : ''}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 2 }}>🕐 {a.timestamp}</div>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
         </div>
       </div>
-
-
     </>
   )
 }
