@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [searchQ, setSearchQ] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchOpen, setSearchOpen] = useState(false)
+  const [missingClients, setMissingClients] = useState([])
   const searchRef = useRef()
   const navigate = useNavigate()
 
@@ -20,6 +21,15 @@ export default function DashboardPage() {
       if (res.data.success) setData(res.data.stats)
       else setError(res.data.error)
     }).catch(() => setError('Failed to load dashboard')).finally(() => setLoading(false))
+  }, [])
+
+  // Fetch clients with missing docs (doc_count < 4)
+  useEffect(() => {
+    api.get('/clients?limit=200').then(res => {
+      if (res.data.success) {
+        setMissingClients(res.data.clients.filter(c => c.doc_count < 4))
+      }
+    }).catch(() => {})
   }, [])
 
   // Quick search
@@ -47,21 +57,30 @@ export default function DashboardPage() {
 
   if (loading) return <><Navbar /><div className="page-wrapper"><LoadingOverlay text="Loading dashboard…" /></div></>
 
-  const { total_clients = 0, total_docs = 0, total_users = 0, doc_distribution = [], recent_clients = [] } = data || {}
+  const { total_clients = 0, total_docs = 0, total_users = 0, doc_distribution = [] } = data || {}
   const completionRate = total_clients > 0 ? ((total_docs / (total_clients * 4)) * 100).toFixed(1) : 0
 
   const STATS = [
-    { icon: '👥', value: total_clients, label: 'Total Clients', color: 'var(--grad-primary)' },
-    { icon: '📄', value: total_docs, label: 'Total Documents', color: 'linear-gradient(135deg,#0ea5e9,#0284c7)' },
-    { icon: '👤', value: total_users, label: 'Active Users', color: 'linear-gradient(135deg,#22c55e,#16a34a)' },
-    { icon: '📊', value: `${completionRate}%`, label: 'Completion Rate', color: 'linear-gradient(135deg,#f59e0b,#d97706)' },
+    { icon: '👥', value: total_clients,       label: 'Total Clients',    color: 'var(--grad-primary)' },
+    { icon: '📄', value: total_docs,           label: 'Total Documents',  color: 'linear-gradient(135deg,#0ea5e9,#0284c7)' },
+    { icon: '👤', value: total_users,          label: 'Active Users',     color: 'linear-gradient(135deg,#22c55e,#16a34a)' },
+    { icon: '📊', value: `${completionRate}%`, label: 'Completion Rate',  color: 'linear-gradient(135deg,#f59e0b,#d97706)' },
   ]
+
+  // Duplicate list for seamless infinite scroll
+  const tickerItems = missingClients.length > 0
+    ? [...missingClients, ...missingClients]
+    : []
+
+  // Speed: ~2s per item, min 8s total
+  const scrollDuration = Math.max(8, missingClients.length * 2)
 
   return (
     <>
       <Navbar />
       <div className="page-wrapper">
         <div className="page-content" style={{ maxWidth: 1280 }}>
+
           {/* Header row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
             <div className="page-header" style={{ marginBottom: 0 }}>
@@ -125,6 +144,7 @@ export default function DashboardPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+
             {/* Doc Distribution */}
             <div className="card">
               <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 20 }}>📊 Document Distribution</h2>
@@ -151,30 +171,84 @@ export default function DashboardPage() {
               }
             </div>
 
-            {/* Recent Clients */}
-            <div className="card">
-              <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 20 }}>🆕 Recent Clients</h2>
-              {recent_clients.length === 0
-                ? <EmptyState icon="👥" title="No clients yet" text="Start by uploading documents!" />
-                : recent_clients.map(c => (
-                  <div key={c.name} onClick={() => viewClient(c.name)}
-                    style={{
-                      padding: '12px 14px', borderRadius: 'var(--radius-sm)',
-                      marginBottom: 8, cursor: 'pointer', border: '1px solid var(--slate-100)',
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--indigo-50)'; e.currentTarget.style.borderColor = 'var(--indigo-200)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = 'var(--slate-100)' }}
-                  >
-                    <div style={{ fontWeight: 700, color: 'var(--indigo-700)', fontSize: 14, marginBottom: 4 }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--slate-500)', display: 'flex', gap: 12 }}>
-                      <span>📄 {c.doc_count} docs</span>
-                      <span>📅 {c.created_at}</span>
-                    </div>
+            {/* ── Missing Docs Ticker ── */}
+            <div className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexShrink: 0 }}>
+                <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>⚠️ Incomplete Documents</h2>
+                {missingClients.length > 0 && (
+                  <span style={{
+                    background: '#fee2e2', color: '#dc2626',
+                    borderRadius: 20, fontSize: 11, fontWeight: 700, padding: '2px 8px',
+                  }}>
+                    {missingClients.length} clients
+                  </span>
+                )}
+              </div>
+
+              {missingClients.length === 0 ? (
+                <EmptyState icon="✅" title="All docs complete!" text="Every client has all 4 documents." />
+              ) : (
+                <div style={{ flex: 1, overflow: 'hidden', position: 'relative', height: 230 }}>
+
+                  {/* Fade overlays */}
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, height: 36,
+                    background: 'linear-gradient(to bottom, white 60%, transparent)',
+                    zIndex: 2, pointerEvents: 'none',
+                  }} />
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 36,
+                    background: 'linear-gradient(to top, white 60%, transparent)',
+                    zIndex: 2, pointerEvents: 'none',
+                  }} />
+
+                  <style>{`
+                    @keyframes ticker-scroll {
+                      0%   { transform: translateY(0); }
+                      100% { transform: translateY(-50%); }
+                    }
+                    .ticker-track {
+                      animation: ticker-scroll ${scrollDuration}s linear infinite;
+                    }
+                    .ticker-track:hover {
+                      animation-play-state: paused;
+                    }
+                    .ticker-item:hover {
+                      background: #eef2ff !important;
+                      border-color: #c7d2fe !important;
+                    }
+                  `}</style>
+
+                  <div className="ticker-track">
+                    {tickerItems.map((c, i) => (
+                      <div
+                        key={`${c.name}-${i}`}
+                        className="ticker-item"
+                        onClick={() => viewClient(c.name)}
+                        style={{
+                          padding: '9px 12px', borderRadius: 8, marginBottom: 6,
+                          border: '1px solid var(--slate-100)', cursor: 'pointer',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          transition: 'all 0.15s', background: 'white',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, color: 'var(--slate-800)', fontSize: 13 }}>
+                          {c.name}
+                        </div>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, color: '#d97706',
+                          background: '#fffbeb', borderRadius: 12, padding: '2px 8px',
+                          border: '1px solid #fde68a', whiteSpace: 'nowrap',
+                        }}>
+                          {c.doc_count}/4 docs
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))
-              }
+                </div>
+              )}
             </div>
+
           </div>
         </div>
       </div>
