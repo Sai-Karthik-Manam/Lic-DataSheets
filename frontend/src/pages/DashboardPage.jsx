@@ -67,14 +67,6 @@ export default function DashboardPage() {
     { icon: '📊', value: `${completionRate}%`, label: 'Completion Rate',  color: 'linear-gradient(135deg,#f59e0b,#d97706)' },
   ]
 
-  // Duplicate list for seamless infinite scroll
-  const tickerItems = missingClients.length > 0
-    ? [...missingClients, ...missingClients]
-    : []
-
-  // Speed: ~2s per item, min 8s total
-  const scrollDuration = Math.max(8, missingClients.length * 2)
-
   return (
     <>
       <Navbar />
@@ -171,8 +163,8 @@ export default function DashboardPage() {
               }
             </div>
 
-            {/* ── Missing Docs Ticker ── */}
-            <div className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {/* ── Missing Docs Scrollable List ── */}
+            <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexShrink: 0 }}>
                 <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>⚠️ Incomplete Documents</h2>
                 {missingClients.length > 0 && (
@@ -188,63 +180,37 @@ export default function DashboardPage() {
               {missingClients.length === 0 ? (
                 <EmptyState icon="✅" title="All docs complete!" text="Every client has all 4 documents." />
               ) : (
-                <div style={{ flex: 1, overflow: 'hidden', position: 'relative', height: 230 }}>
-
-                  {/* Fade overlays */}
-                  <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, height: 36,
-                    background: 'linear-gradient(to bottom, white 60%, transparent)',
-                    zIndex: 2, pointerEvents: 'none',
-                  }} />
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 36,
-                    background: 'linear-gradient(to top, white 60%, transparent)',
-                    zIndex: 2, pointerEvents: 'none',
-                  }} />
-
-                  <style>{`
-                    @keyframes ticker-scroll {
-                      0%   { transform: translateY(0); }
-                      100% { transform: translateY(-50%); }
-                    }
-                    .ticker-track {
-                      animation: ticker-scroll ${scrollDuration}s linear infinite;
-                    }
-                    .ticker-track:hover {
-                      animation-play-state: paused;
-                    }
-                    .ticker-item:hover {
-                      background: #eef2ff !important;
-                      border-color: #c7d2fe !important;
-                    }
-                  `}</style>
-
-                  <div className="ticker-track">
-                    {tickerItems.map((c, i) => (
-                      <div
-                        key={`${c.name}-${i}`}
-                        className="ticker-item"
-                        onClick={() => viewClient(c.name)}
-                        style={{
-                          padding: '9px 12px', borderRadius: 8, marginBottom: 6,
-                          border: '1px solid var(--slate-100)', cursor: 'pointer',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          transition: 'all 0.15s', background: 'white',
-                        }}
-                      >
-                        <div style={{ fontWeight: 600, color: 'var(--slate-800)', fontSize: 13 }}>
-                          {c.name}
-                        </div>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, color: '#d97706',
-                          background: '#fffbeb', borderRadius: 12, padding: '2px 8px',
-                          border: '1px solid #fde68a', whiteSpace: 'nowrap',
-                        }}>
-                          {c.doc_count}/4 docs
-                        </span>
+                <div style={{
+                  overflowY: 'auto',
+                  maxHeight: 280,
+                  paddingRight: 4,
+                }}>
+                  {missingClients.map((c, i) => (
+                    <div
+                      key={c.name}
+                      onClick={() => viewClient(c.name)}
+                      style={{
+                        padding: '10px 12px', borderRadius: 8,
+                        marginBottom: i < missingClients.length - 1 ? 8 : 0,
+                        border: '1px solid var(--slate-100)', cursor: 'pointer',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        transition: 'all 0.15s', background: 'white',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#eef2ff'; e.currentTarget.style.borderColor = '#c7d2fe' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = 'var(--slate-100)' }}
+                    >
+                      <div style={{ fontWeight: 600, color: 'var(--slate-800)', fontSize: 13 }}>
+                        {c.name}
                       </div>
-                    ))}
-                  </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: '#d97706',
+                        background: '#fffbeb', borderRadius: 12, padding: '2px 8px',
+                        border: '1px solid #fde68a', whiteSpace: 'nowrap', flexShrink: 0,
+                      }}>
+                        {c.doc_count}/4 docs
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
